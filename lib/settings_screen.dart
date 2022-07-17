@@ -288,6 +288,7 @@ class SettingsScreen extends BaseSettingsScreen {
   }
 
   Widget getList(BuildContext context) {
+    TextStyle ts = TextStyle(fontSize:16, color:Colors.white);
     TextStyle tsOn = TextStyle(color:Colors.blueAccent);
     TextStyle tsNg = TextStyle(color:Colors.grey);
     bool pre = env.isPremium();
@@ -301,7 +302,6 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.autostop_sec),
         MyText('Premium'),
         MyListTile(
-          //title: pre ? Text('Premium ON') : Text('Premium None') ,
           title:Row(children:[
             Text('Premium'),
             Expanded(child: SizedBox(width:1)),
@@ -315,7 +315,21 @@ class SettingsScreen extends BaseSettingsScreen {
             );
           }
         ),
-        if(pre) MyValue(data: env.ex_storage),
+        if(pre)
+          MyListTile(
+            title:Row(children:[
+              Text(l10n(env.ex_storage.name),style:ts),
+              Expanded(child: SizedBox(width:1)),
+              Text(l10n(env.ex_storage.key),style:ts),
+            ]),
+            onTap:(){
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ExStrageScreen(),
+                )
+              );
+            }
+          ),
         if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
         MyText('Logs'),
         MyListTile(
@@ -430,8 +444,7 @@ class PremiumScreen extends BaseSettingsScreen {
   MyEdge _edge = MyEdge(provider:premiumScreenProvider);
   Environment env = Environment();
   bool bInit = false;
-  PremiumScreen(){
-  }
+
   Future init() async {
     if(bInit) return;
     bInit = true;
@@ -443,6 +456,7 @@ class PremiumScreen extends BaseSettingsScreen {
     }
     return true;
   }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(premiumScreenProvider);
@@ -509,51 +523,73 @@ class ExStrageScreen extends BaseSettingsScreen {
   int selValue = 0;
   int selValueOld = 0;
   late EnvData data;
+  bool bInit = false;
 
-  ExStrageScreen(){
-    env.load();
+  Future init() async {
+    if(bInit) return;
+    bInit = true;
+    try {
+      await env.load();
+      data = env.ex_storage;
+      _ref.read(exStragScreenProvider).notifyListeners();
+    } on Exception catch (e) {
+      print('-- ExStrageScreen init e=' + e.toString());
+    }
+    return true;
   }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(premiumScreenProvider);
+    ref.watch(exStragScreenProvider);
     this._context = context;
     this._ref = ref;
+    Future.delayed(Duration.zero, () => init());
     _edge.getEdge(context,ref);
 
     return WillPopScope(
-        onWillPop:() async {
-          Navigator.of(context).pop(1);
-          return Future.value(true);
-        },
-        child: Scaffold(
-          appBar: AppBar(title: Text('ExStrage'), backgroundColor:Color(0xFF000000),),
-          body: Container(
-            margin: _edge.settingsEdge,
-            child:getList(),
-          ),
-        )
+      onWillPop:() async {
+        Navigator.of(context).pop(1);
+        return Future.value(true);
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text(l10n('env.ex_storage.name')), backgroundColor:Color(0xFF000000),),
+        body: Container(
+          margin: _edge.settingsEdge,
+          child:getList(),
+        ),
+      )
     );
   }
 
   Widget getList() {
     List<Widget> list = [];
-
-      list.add(
-          Container(
-              margin: EdgeInsets.symmetric(horizontal:14, vertical:0),
-              child: RadioListTile(
-                shape: BeveledRectangleBorder(
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                tileColor: Color(0xFF333333),
-                activeColor: Colors.blueAccent,
-                title: Text(l10n(data.keys[0])),
-                value: data.vals[0],
-                groupValue: selValue,
-                onChanged: (value) => _onRadioSelected(data.vals[0]),
-              )));
-
-
+    int i = 0;
+    list.add(
+      MyRadioListTile(
+        title: env.ex_storage.keys[i],
+        value: env.ex_storage.vals[i],
+        groupValue: selValue,
+        onChanged: (value) => _onRadioSelected(data.vals[i]),
+      )
+    );
+    i++;
+    list.add(
+      MyRadioListTile(
+        title: env.ex_storage.keys[i],
+        value: env.ex_storage.vals[i],
+        groupValue: selValue,
+        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[i]),
+      )
+    );
+    i++;
+    list.add(
+      MyRadioListTile(
+        title: env.ex_storage.keys[i],
+        value: env.ex_storage.vals[i],
+        groupValue: selValue,
+        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[i]),
+      )
+    );
     return Column(children:list);
   }
 
