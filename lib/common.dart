@@ -28,25 +28,8 @@ class MyStorage {
   List<MyFile> libraryFiles = [];
   List<MyFile> gdriveFiles = [];
 
-  int _save_num = 100;
-  int _ex_storage = 0;
-  int _ex_save_num = 100;
-
-  Future read({required int save_num, required int ex_storage, required int ex_save_num}) async {
-    this._save_num = save_num;
-    this._ex_storage = ex_storage;
-    this._ex_save_num = ex_save_num;
-
-    getInApp();
-    if(_ex_storage==1){
-      getLibrary();
-    } else if(_ex_storage==2){
-      getGdrive();
-    }
-  }
-
   // アプリ内データ
-  Future getInApp() async {
+  Future getInApp(bool allinfo) async {
     if(kIsWeb) return;
     final dt1 = DateTime.now();
     files.clear();
@@ -63,9 +46,11 @@ class MyStorage {
       }
       MyFile f = new MyFile();
       f.path = e.path;
-      f.date = e.statSync().modified;
-      f.name = basename(f.path);
-      f.byte = e.statSync().size;
+      if(allinfo) {
+        f.date = e.statSync().modified;
+        f.name = basename(f.path);
+        f.byte = e.statSync().size;
+      }
       files.add(f);
     }
     print('-- inapp files=${files.length}'

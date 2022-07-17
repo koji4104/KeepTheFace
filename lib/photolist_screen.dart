@@ -118,9 +118,7 @@ class PhotoListScreen extends ConsumerWidget {
   // /data/user/0/com.example.take/app_flutter/photo/2022-0417-170926.mp4
   Future<bool> readFiles() async {
     try {
-      await _storage.getLibrary();
       fileList.clear();
-
       if (kIsWeb) {
         for (int i = 1; i < 30; i++) {
           MyFile f = new MyFile();
@@ -132,11 +130,10 @@ class PhotoListScreen extends ConsumerWidget {
         }
 
       } else {
-        // 写真リスト
-        final Directory appdir = await getApplicationDocumentsDirectory();
-        await _storage.getInApp();
+        // アプリ内データ
+        await _storage.getInApp(true);
         fileList = _storage.files;
-      } // if(kIsWeb) else
+      }
 
       if(_ref!=null) {
         _ref!.read(photoListProvider).num = _storage.files.length;

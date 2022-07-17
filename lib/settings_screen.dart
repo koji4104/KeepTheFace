@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 import 'localizations.dart';
 import 'log_screen.dart';
@@ -80,12 +81,14 @@ class Environment {
     keys:['None','PhotoLibrary','GoogleDrive'],
     name:'ex_storage',
   );
+
   EnvData camera_height = EnvData(
     val:480,
     vals:[240,480,720,1080],
     keys:['320X240','640x480','1280x720','1920x1080'],
     name:'camera_height',
   );
+
   // 0=back, 1=Front(Face)
   EnvData camera_pos = EnvData(
     val:0,
@@ -94,9 +97,55 @@ class Environment {
     name:'camera_pos',
   );
 
+  String trial_date = '';
+  Future<bool> startTrial() async {
+    if(kIsWeb)  return false;
+    String stime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('trial_date', stime);
+    return true;
+  }
+
+  // 開始から4時間
+  bool isTrial() {
+    bool r = false;
+    if(kIsWeb) return r;
+    if(trial_date.length<8)
+      return r;
+    try {
+      DateTime tri = DateTime.parse(trial_date);
+      Duration dur = DateTime.now().difference(tri);
+      if(-1<dur.inMinutes && dur.inMinutes<245)
+        r = true;
+    } on Exception catch (e) {
+      print('-- isTrial() Exception ' + e.toString());
+    }
+    return r;
+  }
+
+  // 開始から48時間
+  bool canStartTrial() {
+    bool r = true;
+    if(kIsWeb) return true;
+    if(trial_date.length<8)
+      return true;
+    try {
+      DateTime tri = DateTime.parse(trial_date);
+      Duration dur = DateTime.now().difference(tri);
+      if(dur.inHours<48)
+        r = false;
+    } on Exception catch (e) {
+      print('-- isTrial() Exception ' + e.toString());
+    }
+    return r;
+  }
+
+  bool isPremium() {
+    return isTrial();
+  }
+
   Future load() async {
-    if(kIsWeb)
-      return;
+    if(kIsWeb) return;
     print('-- load()');
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -107,6 +156,7 @@ class Environment {
       _loadSub(prefs, autostop_sec);
       _loadSub(prefs, camera_height);
       _loadSub(prefs, camera_pos);
+      trial_date = prefs.getString('trial_date') ?? '';
     } on Exception catch (e) {
       print('-- load() e=' + e.toString());
     }
@@ -124,25 +174,29 @@ class Environment {
 
 //----------------------------------------------------------
 class BaseSettingsScreen extends ConsumerWidget {
-  BuildContext? _context;
-  WidgetRef? _ref;
+  late BuildContext _context;
+  late WidgetRef _ref;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    _context = context;
+    _ref = ref;
     return Container();
   }
+
   Widget MyText(String label) {
     return Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical:10, horizontal:20),
-          child: Text(label, style:TextStyle(fontSize:13, color:Colors.white)),
-        )
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical:10, horizontal:20),
+        child: Text(label, style:TextStyle(fontSize:13, color:Colors.white)),
+      )
     );
   }
 
   Widget MyListTile({required Widget title, required Function() onTap}) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal:14, vertical:3),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 3),
       child: ListTile(
           shape: BeveledRectangleBorder(
             borderRadius: BorderRadius.circular(3),
@@ -156,11 +210,29 @@ class BaseSettingsScreen extends ConsumerWidget {
     );
   }
 
+  Widget MyRadioListTile(
+      { required String title,
+        required int value,
+        required int groupValue,
+        required void Function(int?)? onChanged}) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal:14, vertical:0),
+      child: RadioListTile(
+        shape: BeveledRectangleBorder(
+          borderRadius: BorderRadius.circular(3),
+        ),
+        tileColor: Color(0xFF333333),
+        activeColor: Colors.blueAccent,
+        title: Text(l10n(title)),
+        value: value,
+        groupValue: groupValue,
+        onChanged: onChanged,
+      )
+    );
+  }
+
   String l10n(String text) {
-    if(this._context!=null)
-      return Localized.of(this._context!).text(text);
-    else
-      return text;
+    return Localized.of(this._context).text(text);
   }
 }
 
@@ -176,7 +248,7 @@ class SettingsScreen extends BaseSettingsScreen {
       bInit = true;
     try {
       await env.load();
-      _ref!.read(settingsScreenProvider).notifyListeners();
+      _ref.read(settingsScreenProvider).notifyListeners();
     } on Exception catch (e) {
       print('-- SettingsScreen init e=' + e.toString());
     }
@@ -216,7 +288,10 @@ class SettingsScreen extends BaseSettingsScreen {
   }
 
   Widget getList(BuildContext context) {
-    int ex=env.ex_storage.val; // 0=none 1=library
+    TextStyle tsOn = TextStyle(color:Colors.blueAccent);
+    TextStyle tsNg = TextStyle(color:Colors.grey);
+    bool pre = env.isPremium();
+    int ex = env.ex_storage.val; // 0=none 1=library 2=Google
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(8,8,8,8),
       child: Column(children: [
@@ -226,7 +301,12 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.autostop_sec),
         MyText('Premium'),
         MyListTile(
-          title:Text('Premium'),
+          //title: pre ? Text('Premium ON') : Text('Premium None') ,
+          title:Row(children:[
+            Text('Premium'),
+            Expanded(child: SizedBox(width:1)),
+            env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg),
+          ]),
           onTap:(){
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -235,8 +315,8 @@ class SettingsScreen extends BaseSettingsScreen {
             );
           }
         ),
-        MyValue(data: env.ex_storage),
-        if(ex==1) MyValue(data: env.ex_save_num),
+        if(pre) MyValue(data: env.ex_storage),
+        if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
         MyText('Logs'),
         MyListTile(
           title:Text('Logs'),
@@ -261,15 +341,14 @@ class SettingsScreen extends BaseSettingsScreen {
         Text(l10n(data.key), style:ts),
       ]),
       onTap:() {
-        Navigator.of(_context!).push(
+        Navigator.of(_context).push(
           MaterialPageRoute<int>(
             builder: (BuildContext context) {
               return RadioListScreen(data: data);
           })).then((ret) {
-            if (data.val != ret) {
-              data.set(ret);
-              env.save(data);
-              _ref!.read(settingsScreenProvider).notifyListeners();
+            if (ret==1) {
+              env.load();
+              _ref.read(settingsScreenProvider).notifyListeners();
             }
           }
         );
@@ -279,22 +358,23 @@ class SettingsScreen extends BaseSettingsScreen {
 }
 
 //----------------------------------------------------------
-final radioSelectedProvider = StateProvider<int>((ref) {
-  return 0;
-});
 final radioListScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class RadioListScreen extends BaseSettingsScreen {
-  int selected = 0;
-  EnvData data;
+  int selValue = 0;
+  int selValueOld = 0;
+  late EnvData data;
+  Environment env = Environment();
   MyEdge _edge = MyEdge(provider:radioListScreenProvider);
 
-  RadioListScreen({required EnvData this.data}){
-    selected = data.val;
+  RadioListScreen({required EnvData data}){
+    this.data = data;
+    selValue = data.val;
+    selValueOld = selValue;
+    env.load();
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(radioSelectedProvider);
     ref.watch(radioListScreenProvider);
     this._context = context;
     this._ref = ref;
@@ -302,72 +382,183 @@ class RadioListScreen extends BaseSettingsScreen {
 
     return WillPopScope(
       onWillPop:() async {
-        Navigator.of(context).pop(selected);
+        int r = 0;
+        if(selValueOld!=selValue) {
+          data.set(selValue);
+          env.save(data);
+          r = 1;
+        }
+        Navigator.of(context).pop(r);
         return Future.value(true);
       },
       child: Scaffold(
         appBar: AppBar(title: Text(l10n(data.name)), backgroundColor:Color(0xFF000000),),
         body: Container(
           margin: _edge.settingsEdge,
-          child:getListView()
+          child:getList()
         ),
       )
     );
   }
 
-  Widget getListView() {
+  Widget getList() {
     List<Widget> list = [];
     for(int i=0; i<data.vals.length; i++){
       list.add(
-        Container(
-          margin: EdgeInsets.symmetric(horizontal:14, vertical:0),
-          child: RadioListTile(
-          shape: BeveledRectangleBorder(
-            borderRadius: BorderRadius.circular(3),
-          ),
-          tileColor: Color(0xFF333333),
-          activeColor: Colors.blueAccent,
-          title: Text(l10n(data.keys[i])),
+        MyRadioListTile(
+          title: data.keys[i],
           value: data.vals[i],
-          groupValue: selected,
-          onChanged: (value) => _onRadioSelected(data.vals[i]),
-      )));
+          groupValue: selValue,
+          onChanged:(value) => _onRadioSelected(data.vals[i]),
+        )
+      );
     }
-    list.add(MyText(data.name+'_desc')); // 説明
+    list.add(MyText(l10n(data.name+'_desc')));
     return Column(children:list);
   }
 
   _onRadioSelected(value) {
-    if(_ref!=null){
-      selected = value;
-      _ref!.read(radioSelectedProvider.state).state = selected;
-    };
+    selValue = value;
+    _ref.watch(radioListScreenProvider).notifyListeners();
   }
 }
 
 //----------------------------------------------------------
+// プレミアム
 final premiumScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class PremiumScreen extends BaseSettingsScreen {
   MyEdge _edge = MyEdge(provider:premiumScreenProvider);
+  Environment env = Environment();
+  bool bInit = false;
+  PremiumScreen(){
+  }
+  Future init() async {
+    if(bInit) return;
+    bInit = true;
+    try {
+      await env.load();
+      _ref.read(premiumScreenProvider).notifyListeners();
+    } on Exception catch (e) {
+      print('-- PremiumScreen init e=' + e.toString());
+    }
+    return true;
+  }
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(radioSelectedProvider);
-    ref.watch(radioListScreenProvider);
+    ref.watch(premiumScreenProvider);
+    this._context = context;
+    this._ref = ref;
+    Future.delayed(Duration.zero, () => init());
+    _edge.getEdge(context,ref);
+
+    return WillPopScope(
+      onWillPop:() async {
+        Navigator.of(context).pop(1);
+        return Future.value(true);
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text('Premium'), backgroundColor:Color(0xFF000000),),
+        body: Container(
+          margin: _edge.settingsEdge,
+          child:getList(context),
+        ),
+      )
+    );
+  }
+
+  Widget getList(BuildContext context) {
+    TextStyle tsOn = TextStyle(color:Colors.blueAccent);
+    TextStyle tsNg = TextStyle(color:Colors.grey);
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(8,8,8,8),
+      child: Column(children:[
+        MyText('Trial'),
+        MyListTile(
+          title:Row(children:[
+            Text('Trial'),
+            Expanded(child: SizedBox(width:1)),
+            env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg),
+          ]),
+          onTap:(){
+            env.startTrial();
+            _ref.watch(premiumScreenProvider).notifyListeners();
+          }
+        ),
+        MyText('Purchase'),
+        MyListTile(
+          title:Text('Purchase'),
+          onTap:(){
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => MyPurchase(),
+              )
+            );
+          }
+        ),
+      ])
+    );
+  }
+}
+
+//----------------------------------------------------------
+// 外部ストレージ
+final exStragScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
+class ExStrageScreen extends BaseSettingsScreen {
+  MyEdge _edge = MyEdge(provider:exStragScreenProvider);
+  Environment env = Environment();
+  int selValue = 0;
+  int selValueOld = 0;
+  late EnvData data;
+
+  ExStrageScreen(){
+    env.load();
+  }
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(premiumScreenProvider);
     this._context = context;
     this._ref = ref;
     _edge.getEdge(context,ref);
 
     return WillPopScope(
         onWillPop:() async {
+          Navigator.of(context).pop(1);
           return Future.value(true);
         },
         child: Scaffold(
-          appBar: AppBar(title: Text('Premium'), backgroundColor:Color(0xFF000000),),
+          appBar: AppBar(title: Text('ExStrage'), backgroundColor:Color(0xFF000000),),
           body: Container(
             margin: _edge.settingsEdge,
-            child:Container()
+            child:getList(),
           ),
         )
     );
+  }
+
+  Widget getList() {
+    List<Widget> list = [];
+
+      list.add(
+          Container(
+              margin: EdgeInsets.symmetric(horizontal:14, vertical:0),
+              child: RadioListTile(
+                shape: BeveledRectangleBorder(
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                tileColor: Color(0xFF333333),
+                activeColor: Colors.blueAccent,
+                title: Text(l10n(data.keys[0])),
+                value: data.vals[0],
+                groupValue: selValue,
+                onChanged: (value) => _onRadioSelected(data.vals[0]),
+              )));
+
+
+    return Column(children:list);
+  }
+
+  _onRadioSelected(value) {
+    selValue = value;
+    _ref.read(exStragScreenProvider).notifyListeners();
   }
 }

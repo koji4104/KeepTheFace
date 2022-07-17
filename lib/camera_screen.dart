@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+
+//import 'package:googleapis/content/v2_1.dart'; // err DateTime
+
 import 'package:path_provider/path_provider.dart';
 import 'photolist_screen.dart';
 import 'settings_screen.dart';
@@ -34,7 +37,6 @@ class CameraScreen extends ConsumerWidget {
   bool _isSaver = false;
 
   int _takeCount = 0;
-  int _inappCount = 0;
   DateTime? _startTime;
   DateTime? _retakeTime;
 
@@ -47,23 +49,21 @@ class CameraScreen extends ConsumerWidget {
   int _batteryLevel = -1;
   int _batteryLevelStart = -1;
 
-  bool bInit = false;
-  WidgetRef? _ref;
-  BuildContext? _context;
+  bool _bInit = false;
+  late WidgetRef _ref;
+  late BuildContext _context;
   AppLifecycleState? _state;
 
   MyEdge _edge = MyEdge(provider:cameraScreenProvider);
   MyStorage _storage = new MyStorage();
 
   void init(BuildContext context, WidgetRef ref) {
-    if(bInit == false){
-      print('-- _init()');
-      bInit = true;
+    if(_bInit == false){
+      print('-- init()');
+      _bInit = true;
       _timer = Timer.periodic(Duration(seconds:1), _onTimer);
       _env.load();
       _initCameraSync(ref);
-      //_storage.getInApp();
-      //_storage.getLibrary();
     }
   }
 
@@ -111,7 +111,6 @@ class CameraScreen extends ConsumerWidget {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays:[]);
       Wakelock.disable();
     }
-
     _edge.getEdge(context,ref);
 
     return Scaffold(
@@ -147,7 +146,7 @@ class CameraScreen extends ConsumerWidget {
         // PhotoList screen button
         if(_isSaver==false)
           MyButton(
-            top:50.0, left:30.0,
+            top:50.0, right:30.0,
             icon: Icon(Icons.folder, color: Colors.white),
             onPressed:() {
               Navigator.of(context).push(
@@ -161,7 +160,7 @@ class CameraScreen extends ConsumerWidget {
         // Settings screen button
         if(_isSaver==false)
           MyButton(
-            top: 50.0, right: 30.0,
+            top: 50.0, left: 30.0,
             icon: Icon(Icons.settings, color:Colors.white),
             onPressed:() async {
               await Navigator.of(context).push(
@@ -249,8 +248,7 @@ class CameraScreen extends ConsumerWidget {
     );
 
     _controller!.initialize().then((_) {
-      if(_ref!=null)
-        _ref!.read(cameraScreenProvider).notifyListeners();
+      _ref.read(cameraScreenProvider).notifyListeners();
     });
   }
 
@@ -272,8 +270,7 @@ class CameraScreen extends ConsumerWidget {
     );
     try {
       _controller!.initialize().then((_) {
-        if(_ref!=null)
-          _ref!.read(cameraScreenProvider).notifyListeners();
+        _ref.read(cameraScreenProvider).notifyListeners();
       });
     } catch (e) {
       await MyLog.err('${e.toString()}');
@@ -286,10 +283,8 @@ class CameraScreen extends ConsumerWidget {
       _isRunning = true;
       _startTime = DateTime.now();
       _batteryLevelStart = await _battery.batteryLevel;
-      if(_ref!=null) {
-        _ref!.read(isSaverProvider.state).state = true;
-        _ref!.read(isRunningProvider.state).state = true;
-      }
+      _ref.read(isSaverProvider.state).state = true;
+      _ref.read(isRunningProvider.state).state = true;
     }
 
     if (_controller!.value.isInitialized==false) {
@@ -307,11 +302,16 @@ class CameraScreen extends ConsumerWidget {
     _batteryLevelStart = await _battery.batteryLevel;
 
     // 先にセーバー起動
-    if(_ref!=null) {
-      _ref!.read(isSaverProvider.state).state = true;
-      _ref!.read(isRunningProvider.state).state = true;
-    }
+    _ref.read(isSaverProvider.state).state = true;
+    _ref.read(isRunningProvider.state).state = true;
 
+    await _storage.getInApp(false);
+    if(_env.isPremium()) {
+      if(_env.ex_storage.val==1)
+        _storage.getLibrary();
+      else if(_env.ex_storage.val==2)
+        _storage.getGdrive();
+    }
     _takeCount = 0;
     takePicture();
     await MyLog.info("Start");
@@ -331,8 +331,7 @@ class CameraScreen extends ConsumerWidget {
       _startTime = null;
       _retakeTime = null;
 
-      if(_ref!=null)
-        _ref!.read(isRunningProvider.state).state = false;
+      _ref.read(isRunningProvider.state).state = false;
 
       if(_controller!.value.isStreamingImages)
         _controller!.stopImageStream();
@@ -358,14 +357,15 @@ class CameraScreen extends ConsumerWidget {
           final File file = File(path);
           await file.writeAsBytes(imglib.encodeJpg(img));
 
-          if(_env.ex_storage.val == 1
-            && (_storage.libraryFiles.length + _takeCount) < _env.ex_save_num.val) {
-            _storage.saveLibrary(path);
-          } else if(_env.ex_storage.val == 2
-            && (_storage.gdriveFiles.length + _takeCount) < _env.ex_save_num.val) {
-            _storage.saveLibrary(path);
+          if(_env.isPremium()) {
+            if (_env.ex_storage.val == 1
+                && (_storage.libraryFiles.length + _takeCount) < _env.ex_save_num.val) {
+              _storage.saveLibrary(path);
+            } else if (_env.ex_storage.val == 2
+                && (_storage.gdriveFiles.length + _takeCount) < _env.ex_save_num.val) {
+              _storage.saveGdrive(path);
+            }
           }
-
           _retakeTime = dt;
           _takeCount++;
         } else {
@@ -374,12 +374,17 @@ class CameraScreen extends ConsumerWidget {
 
       } else {
         XFile xfile = await _controller!.takePicture();
-        String dst = await getSavePath('.jpg');
-        await moveFile(src:xfile.path, dst:dst);
+        String path = await getSavePath('.jpg');
+        await moveFile(src:xfile.path, dst:path);
 
-        if (_env.ex_storage.val == 1
-            && _storage.libraryFiles.length < _env.ex_save_num.val) {
-          _storage.saveLibrary(dst);
+        if(_env.isPremium()) {
+          if (_env.ex_storage.val == 1
+              && (_storage.libraryFiles.length + _takeCount) < _env.ex_save_num.val) {
+            _storage.saveLibrary(path);
+          } else if (_env.ex_storage.val == 2
+              && (_storage.gdriveFiles.length + _takeCount) < _env.ex_save_num.val) {
+            _storage.saveGdrive(path);
+          }
         }
 
         _retakeTime = dt;
@@ -482,8 +487,8 @@ class CameraScreen extends ConsumerWidget {
     try {
       // アプリ内で上限を超えた古いものを削除
       if (_env.save_num.val < await _storage.files.length) {
-        await _storage.getInApp();
-        for(int i=0; i<1000; i++) {
+        await _storage.getInApp(false);
+        for(int i=0; i<100; i++) {
           if ((_env.save_num.val) < _storage.files.length)
             break;
           await File(_storage.files.last.path).delete();
@@ -515,10 +520,8 @@ class CameraScreen extends ConsumerWidget {
   }
 
   void showSnackBar(String msg) {
-    if(_context!=null) {
-      final snackBar = SnackBar(content: Text(msg));
-      ScaffoldMessenger.of(_context!).showSnackBar(snackBar);
-    }
+    final snackBar = SnackBar(content: Text(msg));
+    ScaffoldMessenger.of(_context).showSnackBar(snackBar);
   }
 
   void logError(String code, String? message) {
@@ -595,7 +598,7 @@ class SaverScreen extends ConsumerWidget {
   Timer? _timer;
   DateTime? _waitTime;
   DateTime? _startTime;
-  WidgetRef? _ref;
+  late WidgetRef _ref;
   Environment _env = Environment();
   bool _isTaking = true;
   bool bInit = false;
@@ -678,8 +681,7 @@ class SaverScreen extends ConsumerWidget {
       if(_waitTime!=null) {
         if(DateTime.now().difference(_waitTime!).inSeconds > 5)
           _waitTime = null;
-        if(_ref!=null)
-          _ref!.read(saverProvider).notifyListeners();
+        _ref.read(saverProvider).notifyListeners();
       }
     } on Exception catch (e) {
       print('-- ScreenSaver _onTimer() Exception '+e.toString());

@@ -176,6 +176,7 @@ class _MyPurchaseState extends State<MyPurchase> {
     );
   }
 
+  /// 購入処理自体ができるかできないか
   Card _buildConnectionCheckTile() {
     if (_loading) {
       return const Card(child: ListTile(title: Text('Trying to connect...')));
