@@ -8,6 +8,7 @@ import 'localizations.dart';
 import 'log_screen.dart';
 import 'common.dart';
 import 'purchase_screen.dart';
+import 'gdrive_adapter.dart';
 
 class EnvData {
   int val;
@@ -69,8 +70,8 @@ class Environment {
 
   EnvData ex_save_num = EnvData(
     val:100,
-    vals:[100,500,1000],
-    keys:['100','500','1000'],
+    vals:[10,100,500,1000],
+    keys:['10','100','500','1000'],
     name:'ex_save_num',
   );
 
@@ -106,34 +107,45 @@ class Environment {
     return true;
   }
 
-  // 開始から4時間
-  bool isTrial() {
-    bool r = false;
-    if(kIsWeb) return r;
-    if(trial_date.length<8)
-      return r;
+  // 開始からの時間
+  int? trialHour(){
+    int? h = null;
+    if(kIsWeb) return h;
+    if(trial_date.length<8) return h;
     try {
       DateTime tri = DateTime.parse(trial_date);
       Duration dur = DateTime.now().difference(tri);
-      if(-1<dur.inMinutes && dur.inMinutes<245)
-        r = true;
+      h = dur.inHours;
+    } on Exception catch (e) {
+      print('-- trialHour() Exception ' + e.toString());
+    }
+    return h;
+  }
+
+  /// 0.9=開始から4時間
+  bool isTrial() {
+    bool r = false;
+    try {
+      int? h = trialHour();
+      if(h!=null)
+        if (0 <= h && h < 4)
+          r = true;
     } on Exception catch (e) {
       print('-- isTrial() Exception ' + e.toString());
     }
     return r;
   }
 
-  // 開始から48時間
-  bool canStartTrial() {
+  /// 0.9=常に
+  /// 1.0=開始から48時間
+  bool canReTrial() {
+    return true;
     bool r = true;
-    if(kIsWeb) return true;
-    if(trial_date.length<8)
-      return true;
     try {
-      DateTime tri = DateTime.parse(trial_date);
-      Duration dur = DateTime.now().difference(tri);
-      if(dur.inHours<48)
-        r = false;
+      int? h = trialHour();
+      if(h!=null)
+        if (0 <= h && h < 48)
+          r = false;
     } on Exception catch (e) {
       print('-- isTrial() Exception ' + e.toString());
     }
@@ -176,6 +188,9 @@ class Environment {
 class BaseSettingsScreen extends ConsumerWidget {
   late BuildContext _context;
   late WidgetRef _ref;
+  ProviderBase? _provider;
+  TextStyle tsOn = TextStyle(color:Colors.lightGreenAccent);
+  TextStyle tsNg = TextStyle(color:Colors.grey);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -184,28 +199,47 @@ class BaseSettingsScreen extends ConsumerWidget {
     return Container();
   }
 
-  Widget MyText(String label) {
+  Widget MyLabel(String label) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical:10, horizontal:20),
+        padding: const EdgeInsets.symmetric(horizontal:12, vertical:4),
         child: Text(label, style:TextStyle(fontSize:13, color:Colors.white)),
       )
     );
   }
 
-  Widget MyListTile({required Widget title, required Function() onTap}) {
+  Widget MyListTile({required Widget title, Widget? title2, required Function() onTap}) {
+    Widget exp = Expanded(child: SizedBox(width:1));
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal:8, vertical:2),
       child: ListTile(
-          shape: BeveledRectangleBorder(
-            borderRadius: BorderRadius.circular(3),
-          ),
-          title: title,
-          trailing: Icon(Icons.arrow_forward_ios),
-          tileColor: Color(0xFF333333),
-          hoverColor: Color(0xFF444444),
-          onTap: onTap
+        shape: BeveledRectangleBorder(
+          borderRadius: BorderRadius.circular(3),
+        ),
+        title: title2!=null ?
+          Row(children:[title, exp, title2]) :
+          Row(children:[exp, title, exp]),
+        trailing: Icon(Icons.arrow_forward_ios),
+        tileColor: Color(0xFF333333),
+        hoverColor: Color(0xFF444444),
+        onTap: onTap
+      ),
+    );
+  }
+
+  Widget MyTile({required Widget title, Widget? title2}) {
+    Widget exp = Expanded(child: SizedBox(width:1));
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal:8, vertical:2),
+      child: ListTile(
+        shape: BeveledRectangleBorder(
+          borderRadius: BorderRadius.circular(3),
+        ),
+        title: title2!=null ?
+          Row(children:[title, exp, title2]) :
+          Row(children:[exp, title, exp]),
+        tileColor: Color(0xFF000000),
       ),
     );
   }
@@ -216,13 +250,13 @@ class BaseSettingsScreen extends ConsumerWidget {
         required int groupValue,
         required void Function(int?)? onChanged}) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal:14, vertical:0),
+      padding: EdgeInsets.symmetric(horizontal:8, vertical:2),
       child: RadioListTile(
         shape: BeveledRectangleBorder(
           borderRadius: BorderRadius.circular(3),
         ),
         tileColor: Color(0xFF333333),
-        activeColor: Colors.blueAccent,
+        activeColor: Colors.lightBlue,
         title: Text(l10n(title)),
         value: value,
         groupValue: groupValue,
@@ -233,6 +267,11 @@ class BaseSettingsScreen extends ConsumerWidget {
 
   String l10n(String text) {
     return Localized.of(this._context).text(text);
+  }
+
+  redraw(){
+    if(_provider!=null)
+      _ref.read(_provider!).notifyListeners();
   }
 }
 
@@ -248,7 +287,8 @@ class SettingsScreen extends BaseSettingsScreen {
       bInit = true;
     try {
       await env.load();
-      _ref.read(settingsScreenProvider).notifyListeners();
+      _provider = settingsScreenProvider;
+      redraw();
     } on Exception catch (e) {
       print('-- SettingsScreen init e=' + e.toString());
     }
@@ -263,9 +303,8 @@ class SettingsScreen extends BaseSettingsScreen {
     _ref = ref;
     Future.delayed(Duration.zero, () => init());
     ref.watch(settingsScreenProvider);
-
     _edge.getEdge(context,ref);
-    print('-- build');
+
     return WillPopScope(
       onWillPop: () async {
         Navigator.of(context).pop(true);
@@ -289,8 +328,6 @@ class SettingsScreen extends BaseSettingsScreen {
 
   Widget getList(BuildContext context) {
     TextStyle ts = TextStyle(fontSize:16, color:Colors.white);
-    TextStyle tsOn = TextStyle(color:Colors.blueAccent);
-    TextStyle tsNg = TextStyle(color:Colors.grey);
     bool pre = env.isPremium();
     int ex = env.ex_storage.val; // 0=none 1=library 2=Google
     return SingleChildScrollView(
@@ -300,13 +337,11 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.take_interval_sec),
         MyValue(data: env.save_num),
         MyValue(data: env.autostop_sec),
-        MyText('Premium'),
+        MyLabel(''),
+        MyLabel(l10n('premium')),
         MyListTile(
-          title:Row(children:[
-            Text('Premium'),
-            Expanded(child: SizedBox(width:1)),
-            env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg),
-          ]),
+          title:Text(l10n('premium')),
+          title2:env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg),
           onTap:(){
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -317,21 +352,25 @@ class SettingsScreen extends BaseSettingsScreen {
         ),
         if(pre)
           MyListTile(
-            title:Row(children:[
-              Text(l10n(env.ex_storage.name),style:ts),
-              Expanded(child: SizedBox(width:1)),
-              Text(l10n(env.ex_storage.key),style:ts),
-            ]),
+            title:Text(l10n(env.ex_storage.name),style:ts),
+            title2:Text(l10n(env.ex_storage.key),style:ts),
             onTap:(){
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ExStrageScreen(),
-                )
+                MaterialPageRoute<int>(
+                  builder: (BuildContext context) {
+                    return ExstrageScreen();
+                  })).then((ret) {
+                    if (ret==1) {
+                      env.load();
+                      redraw();
+                    }
+                  }
               );
             }
           ),
         if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
-        MyText('Logs'),
+        MyLabel(''),
+        MyLabel('Logs'),
         MyListTile(
           title:Text('Logs'),
           onTap:(){
@@ -349,11 +388,8 @@ class SettingsScreen extends BaseSettingsScreen {
   Widget MyValue({required EnvData data}) {
     TextStyle ts = TextStyle(fontSize:16, color:Colors.white);
     return MyListTile(
-      title:Row(children:[
-        Text(l10n(data.name), style:ts),
-        Expanded(child: SizedBox(width:1)),
-        Text(l10n(data.key), style:ts),
-      ]),
+      title:Text(l10n(data.name), style:ts),
+      title2:Text(l10n(data.key), style:ts),
       onTap:() {
         Navigator.of(_context).push(
           MaterialPageRoute<int>(
@@ -385,6 +421,7 @@ class RadioListScreen extends BaseSettingsScreen {
     selValue = data.val;
     selValueOld = selValue;
     env.load();
+    _provider = radioListScreenProvider;
   }
 
   @override
@@ -427,7 +464,7 @@ class RadioListScreen extends BaseSettingsScreen {
         )
       );
     }
-    list.add(MyText(l10n(data.name+'_desc')));
+    list.add(MyLabel(l10n(data.name+'_desc')));
     return Column(children:list);
   }
 
@@ -450,7 +487,8 @@ class PremiumScreen extends BaseSettingsScreen {
     bInit = true;
     try {
       await env.load();
-      _ref.read(premiumScreenProvider).notifyListeners();
+      _provider = premiumScreenProvider;
+      redraw();
     } on Exception catch (e) {
       print('-- PremiumScreen init e=' + e.toString());
     }
@@ -471,7 +509,7 @@ class PremiumScreen extends BaseSettingsScreen {
         return Future.value(true);
       },
       child: Scaffold(
-        appBar: AppBar(title: Text('Premium'), backgroundColor:Color(0xFF000000),),
+        appBar: AppBar(title:Text(l10n('premium')), backgroundColor:Color(0xFF000000),),
         body: Container(
           margin: _edge.settingsEdge,
           child:getList(context),
@@ -481,24 +519,28 @@ class PremiumScreen extends BaseSettingsScreen {
   }
 
   Widget getList(BuildContext context) {
-    TextStyle tsOn = TextStyle(color:Colors.blueAccent);
-    TextStyle tsNg = TextStyle(color:Colors.grey);
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(8,8,8,8),
       child: Column(children:[
-        MyText('Trial'),
+        MyLabel(l10n('premium_desc')),
+        MyTile(
+          title:Text(l10n('trial')),
+          title2:env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg)
+        ),
         MyListTile(
-          title:Row(children:[
-            Text('Trial'),
-            Expanded(child: SizedBox(width:1)),
-            env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg),
-          ]),
-          onTap:(){
-            env.startTrial();
-            _ref.watch(premiumScreenProvider).notifyListeners();
+          title:Text('trial'),
+          onTap:() async {
+            await env.startTrial();
+            redraw();
           }
         ),
-        MyText('Purchase'),
+        MyLabel(l10n('trial_desc')),
+        MyLabel(''),
+        MyLabel('Purchase'),
+        MyTile(
+          title:Text(l10n('Purchase_desc')),
+        ),
+        /*
         MyListTile(
           title:Text('Purchase'),
           onTap:(){
@@ -508,7 +550,7 @@ class PremiumScreen extends BaseSettingsScreen {
               )
             );
           }
-        ),
+        ),*/
       ])
     );
   }
@@ -516,22 +558,26 @@ class PremiumScreen extends BaseSettingsScreen {
 
 //----------------------------------------------------------
 // 外部ストレージ
-final exStragScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
-class ExStrageScreen extends BaseSettingsScreen {
-  MyEdge _edge = MyEdge(provider:exStragScreenProvider);
+final exstragScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
+class ExstrageScreen extends BaseSettingsScreen {
+  MyEdge _edge = MyEdge(provider:exstragScreenProvider);
   Environment env = Environment();
   int selValue = 0;
   int selValueOld = 0;
   late EnvData data;
   bool bInit = false;
+  GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
 
   Future init() async {
     if(bInit) return;
     bInit = true;
     try {
       await env.load();
-      data = env.ex_storage;
-      _ref.read(exStragScreenProvider).notifyListeners();
+      selValue = env.ex_storage.val;
+      selValueOld = selValue;
+      await gdriveAd.loginSilently();
+      _provider = exstragScreenProvider;
+      redraw();
     } on Exception catch (e) {
       print('-- ExStrageScreen init e=' + e.toString());
     }
@@ -540,7 +586,7 @@ class ExStrageScreen extends BaseSettingsScreen {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(exStragScreenProvider);
+    ref.watch(exstragScreenProvider);
     this._context = context;
     this._ref = ref;
     Future.delayed(Duration.zero, () => init());
@@ -548,8 +594,14 @@ class ExStrageScreen extends BaseSettingsScreen {
 
     return WillPopScope(
       onWillPop:() async {
-        Navigator.of(context).pop(1);
-        return Future.value(true);
+        int r = 0;
+        if(selValueOld!=selValue) {
+          env.ex_storage.set(selValue);
+          env.save(env.ex_storage);
+          r = 1;
+        }
+        Navigator.of(context).pop(r);
+        return Future.value(false);
       },
       child: Scaffold(
         appBar: AppBar(title: Text(l10n('env.ex_storage.name')), backgroundColor:Color(0xFF000000),),
@@ -562,39 +614,58 @@ class ExStrageScreen extends BaseSettingsScreen {
   }
 
   Widget getList() {
-    List<Widget> list = [];
-    int i = 0;
-    list.add(
+    return Column(children:[
       MyRadioListTile(
-        title: env.ex_storage.keys[i],
-        value: env.ex_storage.vals[i],
+        title: env.ex_storage.keys[0],
+        value: env.ex_storage.vals[0],
         groupValue: selValue,
-        onChanged: (value) => _onRadioSelected(data.vals[i]),
-      )
-    );
-    i++;
-    list.add(
+        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[0]),
+      ),
       MyRadioListTile(
-        title: env.ex_storage.keys[i],
-        value: env.ex_storage.vals[i],
+        title: env.ex_storage.keys[1],
+        value: env.ex_storage.vals[1],
         groupValue: selValue,
-        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[i]),
-      )
-    );
-    i++;
-    list.add(
+        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[1]),
+      ),
       MyRadioListTile(
-        title: env.ex_storage.keys[i],
-        value: env.ex_storage.vals[i],
+        title: env.ex_storage.keys[2],
+        value: env.ex_storage.vals[2],
         groupValue: selValue,
-        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[i]),
-      )
-    );
-    return Column(children:list);
+        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[2]),
+      ),
+
+      MyLabel(''),
+      MyLabel('GoogleDrive'),
+      if(gdriveAd.isSignedIn()==false)
+        MyTile(title:Text('OFF',style:tsNg),title2:Text('')),
+
+      if(gdriveAd.isSignedIn()==true)
+        MyTile(title:Text(gdriveAd.getAccountName(),style:tsOn),title2:Text('')),
+
+      if(gdriveAd.isSignedIn()==false)
+        MyListTile(
+          title:Text('Login to GoogleDrive'),
+          onTap:() {
+            gdriveAd.loginWithGoogle().then((r){
+              if(r) redraw();
+            });
+          }
+        ),
+
+      if(gdriveAd.isSignedIn()==true)
+        MyListTile(
+          title:Text('Logout of GoogleDrive'),
+          onTap:() {
+            gdriveAd.logout().then((_){
+              redraw();
+            });
+          }
+        ),
+    ]);
   }
 
   _onRadioSelected(value) {
     selValue = value;
-    _ref.read(exStragScreenProvider).notifyListeners();
+    redraw();
   }
 }

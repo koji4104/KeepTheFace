@@ -23,7 +23,7 @@ public final class GeneratedPluginRegistrant {
     try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.camera.CameraPlugin());
     } catch(Exception e) {
-      Log.e(TAG, "Error registering plugin camera, io.flutter.plugins.camera.CameraPlugin", e);
+      Log.e(TAG, "Error registering plugin camera_android, io.flutter.plugins.camera.CameraPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new de.appgewaltig.disk_space.DiskSpacePlugin());
@@ -68,7 +68,7 @@ public final class GeneratedPluginRegistrant {
     try {
       flutterEngine.getPlugins().add(new com.baseflow.permissionhandler.PermissionHandlerPlugin());
     } catch(Exception e) {
-      Log.e(TAG, "Error registering plugin permission_handler, com.baseflow.permissionhandler.PermissionHandlerPlugin", e);
+      Log.e(TAG, "Error registering plugin permission_handler_android, com.baseflow.permissionhandler.PermissionHandlerPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.morbit.photogallery.PhotoGalleryPlugin());

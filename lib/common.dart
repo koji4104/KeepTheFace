@@ -125,7 +125,7 @@ class MyStorage {
     }
   }
 
-  GoogleDriveAdapter gdriveAd = GoogleDriveAdapter(folderName:ALBUM_NAME);
+  GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
   Future getGdrive() async {
     gdriveFiles.clear();
     if(gdriveAd.isSignedIn()==false)
@@ -133,12 +133,14 @@ class MyStorage {
     if(gdriveAd.isSignedIn()==false)
       return;
 
-    gdriveAd.getFiles();
-    for(ga.File f in gdriveAd.gfilelist!.files!){
-      MyFile data = MyFile();
-      data.path = f.id!;
-      data.name = f.name!;
-      gdriveFiles.add(data);
+    await gdriveAd.getFiles();
+    if(gdriveAd.gfilelist!=null) {
+      for (ga.File f in gdriveAd.gfilelist!.files!) {
+        MyFile data = MyFile();
+        data.path = f.id!;
+        data.name = f.name!;
+        gdriveFiles.add(data);
+      }
     }
   }
 

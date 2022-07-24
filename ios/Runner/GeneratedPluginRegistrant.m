@@ -12,10 +12,10 @@
 @import battery_plus;
 #endif
 
-#if __has_include(<camera/CameraPlugin.h>)
-#import <camera/CameraPlugin.h>
+#if __has_include(<camera_avfoundation/CameraPlugin.h>)
+#import <camera_avfoundation/CameraPlugin.h>
 #else
-@import camera;
+@import camera_avfoundation;
 #endif
 
 #if __has_include(<disk_space/SwiftDiskSpacePlugin.h>)
@@ -60,10 +60,10 @@
 @import path_provider_ios;
 #endif
 
-#if __has_include(<permission_handler/PermissionHandlerPlugin.h>)
-#import <permission_handler/PermissionHandlerPlugin.h>
+#if __has_include(<permission_handler_apple/PermissionHandlerPlugin.h>)
+#import <permission_handler_apple/PermissionHandlerPlugin.h>
 #else
-@import permission_handler;
+@import permission_handler_apple;
 #endif
 
 #if __has_include(<photo_gallery/PhotoGalleryPlugin.h>)

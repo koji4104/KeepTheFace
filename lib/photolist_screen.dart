@@ -18,6 +18,7 @@ import 'package:photo_gallery/photo_gallery.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:image/image.dart' as imglib;
 
+
 final photoListScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 
 class PhotoListScreen extends ConsumerWidget {
@@ -56,7 +57,7 @@ class PhotoListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n("photolist_title")),
+        title: Text(l10n("photolist_title")+' '+num.toString() +'pcs '+sizemb.toString() + 'mb'),
         backgroundColor:Color(0xFF000000),
         actions: <Widget>[
         ],
@@ -65,13 +66,10 @@ class PhotoListScreen extends ConsumerWidget {
         margin: _edge.homebarEdge,
         child: Stack(children: <Widget>[
           Positioned(
-            top:0, left:0, right:0,
-            height: 50,
+            top:0, left:0, right:0, height: 50,
             child: Container(
               color: Color(0xFF444444),
-              child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
+              child: Row(children: [
                 SizedBox(width: 50),
                 IconButton(
                   icon: Icon(Icons.save),
@@ -330,11 +328,11 @@ class MyCard extends ConsumerWidget {
         Positioned(
           right:6.0, bottom:6.0,
           child: CircleAvatar(
-            backgroundColor: _selected ? Colors.black54 : Color(0x00000000),
+            backgroundColor: _selected ? Color(0xFF303030) : Color(0x00000000),
             child: Icon(
               _selected ? Icons.check : null,
               size: 36,
-              color: Colors.blueAccent
+              color: Colors.white
             )
           )
         ),

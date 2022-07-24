@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:googleapis/drive/v3.dart' as ga;
 import 'package:path/path.dart';
 
+String ALBUM_NAME = "TheseDays";
+
 class GoogleHttpClient extends IOClient {
   Map<String, String> _headers;
   GoogleHttpClient(this._headers) : super();
@@ -26,11 +28,24 @@ class GoogleDriveAdapter {
   GoogleSignInAccount? gsa;
   bool isSignedIn(){ return gsa!=null; }
 
+  /// displayName(email) or email
+  String getAccountName(){
+    String r = 'None';
+    if(gsa!=null){
+      if(gsa!.displayName!=null) {
+        r = '${gsa!.displayName!}\n${gsa!.email}';
+      } else {
+        r = '${gsa!.email}';
+      }
+    }
+    return r;
+  }
+
   ga.FileList? gfilelist = null;
   String? folderId;
-  String folderName = '';
+  String folderName = ALBUM_NAME;
 
-  GoogleDriveAdapter({required String folderName}){}
+  GoogleDriveAdapter(){}
 
   /// Already logged in
   Future<bool> loginSilently() async {
@@ -84,13 +99,17 @@ class GoogleDriveAdapter {
     try{
       // folder id
       if(folderId==null) {
+        String q = "mimeType='application/vnd.google-apps.folder'";
+        q += " and name='${folderName}'";
+        q += " and trashed=False";
+        q += " and 'root' in parents";
         ga.FileList folders = await drive.files.list(
-          q: "mimeType='application/vnd.google-apps.folder' and name='${folderName}'",
+          q:q,
         );
         for (var i = 0; i < folders.files!.length; i++) {
-          if (folders.files![i].name == folderName && folders.files![i].id != null) {
+          if (folders.files![i].name == folderName && folders.files![i].id != null ) {
             folderId = folders.files![i].id!;
-            print('-- id=${folders.files![i].id} name=${folders.files![i].name}');
+            print('-- folderId=${folders.files![i].id} name=${folders.files![i].name}');
           }
         }
         // create folder
@@ -100,6 +119,7 @@ class GoogleDriveAdapter {
           googleApisFolder.mimeType = 'application/vnd.google-apps.folder';
           final response = await drive.files.create(googleApisFolder);
           folderId = response.id;
+          print('create folder');
         }
         print('folders.length=${folders.files!.length} folderid=${folderId}');
       }
@@ -119,7 +139,7 @@ class GoogleDriveAdapter {
   }
 
   Future<void> uploadFile(String path) async {
-    print('-- uploadFile');
+    print('-- GoogleDriveAdapter.uploadFile');
     if(isSignedIn()==false) {
       print('-- not SignedIn');
       return;

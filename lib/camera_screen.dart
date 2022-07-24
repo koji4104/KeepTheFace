@@ -39,6 +39,7 @@ class CameraScreen extends ConsumerWidget {
   int _takeCount = 0;
   DateTime? _startTime;
   DateTime? _retakeTime;
+  bool _bLogExstrageFull = true;
 
   Timer? _timer;
   Environment _env = Environment();
@@ -297,9 +298,11 @@ class CameraScreen extends ConsumerWidget {
       return false;
     }
 
+    _retakeTime = null;
     _isRunning = true;
     _startTime = DateTime.now();
     _batteryLevelStart = await _battery.batteryLevel;
+    _bLogExstrageFull = true;
 
     // 先にセーバー起動
     _ref.read(isSaverProvider.state).state = true;
@@ -308,14 +311,13 @@ class CameraScreen extends ConsumerWidget {
     await _storage.getInApp(false);
     if(_env.isPremium()) {
       if(_env.ex_storage.val==1)
-        _storage.getLibrary();
+        await _storage.getLibrary();
       else if(_env.ex_storage.val==2)
-        _storage.getGdrive();
+        await _storage.getGdrive();
     }
     _takeCount = 0;
     takePicture();
     await MyLog.info("Start");
-
     return true;
   }
 
@@ -358,14 +360,28 @@ class CameraScreen extends ConsumerWidget {
           await file.writeAsBytes(imglib.encodeJpg(img));
 
           if(_env.isPremium()) {
-            if (_env.ex_storage.val == 1
-                && (_storage.libraryFiles.length + _takeCount) < _env.ex_save_num.val) {
-              _storage.saveLibrary(path);
-            } else if (_env.ex_storage.val == 2
-                && (_storage.gdriveFiles.length + _takeCount) < _env.ex_save_num.val) {
-              _storage.saveGdrive(path);
+            if (_env.ex_storage.val == 1) {
+              if((_storage.libraryFiles.length+_takeCount) < _env.ex_save_num.val) {
+                _storage.saveLibrary(path);
+              } else {
+                if(_bLogExstrageFull) {
+                  MyLog.warn('Photolibrary is full');
+                  _bLogExstrageFull = false;
+                }
+              }
+
+            } else if (_env.ex_storage.val == 2) {
+              if((_storage.gdriveFiles.length+_takeCount) < _env.ex_save_num.val) {
+                _storage.saveGdrive(path);
+              } else {
+                if(_bLogExstrageFull) {
+                  MyLog.warn('GoogleDrive is full');
+                  _bLogExstrageFull = false;
+                }
+              }
             }
           }
+
           _retakeTime = dt;
           _takeCount++;
         } else {
@@ -378,12 +394,25 @@ class CameraScreen extends ConsumerWidget {
         await moveFile(src:xfile.path, dst:path);
 
         if(_env.isPremium()) {
-          if (_env.ex_storage.val == 1
-              && (_storage.libraryFiles.length + _takeCount) < _env.ex_save_num.val) {
-            _storage.saveLibrary(path);
-          } else if (_env.ex_storage.val == 2
-              && (_storage.gdriveFiles.length + _takeCount) < _env.ex_save_num.val) {
-            _storage.saveGdrive(path);
+          if (_env.ex_storage.val == 1) {
+             if((_storage.libraryFiles.length+_takeCount) < _env.ex_save_num.val) {
+               _storage.saveLibrary(path);
+             } else {
+               if(_bLogExstrageFull) {
+                 MyLog.warn('Photolibrary is full');
+                 _bLogExstrageFull = false;
+               }
+             }
+
+          } else if (_env.ex_storage.val == 2) {
+            if((_storage.gdriveFiles.length+_takeCount) < _env.ex_save_num.val) {
+              _storage.saveGdrive(path);
+            } else {
+              if(_bLogExstrageFull) {
+                MyLog.warn('GoogleDrive is full');
+                _bLogExstrageFull = false;
+              }
+            }
           }
         }
 

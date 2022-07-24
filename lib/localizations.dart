@@ -35,6 +35,12 @@ class Localized {
       'camera_height': 'camera size',
       'camera_height_desc': 'Select camera size.',
       'precautions':'precautions\nStop when the app goes to the background. Requires 5GB free space. Requires 10% battery.',
+      'trial':'trial',
+      'trial_desc':'You can turn it on for 4 hours for free. You can turn it on again after 48 hours.',
+      'Purchase':'Purchase',
+      'Purchase_desc':'in preparation',
+      'premium':'premium',
+      'premium_desc':'Photo library and Google Drive will be available.',
     },
     'ja': {
       'settings_title': '設定',
@@ -52,6 +58,12 @@ class Localized {
       'camera_height': 'カメラサイズ',
       'camera_height_desc': 'カメラサイズを選んでください。',
       'precautions':'注意事項\nアプリがバックグラウンドになると停止します。本体空き容量5GB以上必要です。バッテリー残量10%以上必要です。',
+      'trial':'お試し',
+      'trial_desc':'無料で4時間プレミアム機能をONにできます。48時間後に再度ONにできます。',
+      'Purchase':'購入',
+      'Purchase_desc':'準備中',
+      'premium':'プレミアム機能',
+      'premium_desc':'プレミアム機能をONにすると、本体のフォトライブラリとGoogleドライブが利用可能になります。',
     },
   };
 
@@ -62,7 +74,9 @@ class Localized {
         s = _localizedValues["ja"]?[text];
       else
         s = _localizedValues["en"]?[text];
-    } on Exception catch (e) {}
+    } on Exception catch (e) {
+      print('Localized.text() ${e.toString()}');
+    }
     return s!=null ? s : text;
   }
 }
