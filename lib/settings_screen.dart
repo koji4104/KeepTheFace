@@ -1,229 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 
 import 'localizations.dart';
 import 'log_screen.dart';
 import 'common.dart';
-import 'purchase_screen.dart';
 import 'gdrive_adapter.dart';
-
-class EnvData {
-  int val;
-  String key = '';
-  List<int> vals = [];
-  List<String> keys = [];
-  String name = '';
-
-  EnvData({
-    required int this.val,
-    required List<int> this.vals,
-    required List<String> this.keys,
-    required String this.name}){
-    set(val);
-  }
-
-  // 選択肢と同じものがなければひとつ大きいいものになる
-  set(int? newval) {
-    if (newval==null)
-      return;
-    if (vals.length > 0) {
-      val = vals[0];
-      for (var i=0; i<vals.length; i++) {
-        if (newval <= vals[i]) {
-          val = vals[i];
-          if(keys.length>=i)
-            key = keys[i];
-          break;
-        }
-      }
-    }
-  }
-}
-
-/// Environment
-class Environment {
-  /// 間隔
-  EnvData take_interval_sec = EnvData(
-    val:60,
-    vals:[30,60,300,600],
-    keys:['30','60','300','600'],
-    name:'take_interval_sec',
-  );
-
-  /// 自動停止
-  EnvData autostop_sec = EnvData(
-    val:3600,
-    vals:[60,3600,21600,43200,86400],
-    keys:['60 sec','1','6','12','24'],
-    name:'autostop_sec',
-  );
-
-  EnvData save_num = EnvData(
-    val:100,
-    vals:[100,500,1000],
-    keys:['100','500','1000'],
-    name:'save_num',
-  );
-
-  EnvData ex_save_num = EnvData(
-    val:100,
-    vals:[10,100,500,1000],
-    keys:['10','100','500','1000'],
-    name:'ex_save_num',
-  );
-
-  /// 外部ストレージ 0=None 1=PhotoLibrary
-  EnvData ex_storage = EnvData(
-    val:0,
-    vals:[0,1,2],
-    keys:['None','PhotoLibrary','GoogleDrive'],
-    name:'ex_storage',
-  );
-
-  EnvData camera_height = EnvData(
-    val:480,
-    vals:[240,480,720,1080],
-    keys:['320X240','640x480','1280x720','1920x1080'],
-    name:'camera_height',
-  );
-
-  // 0=back, 1=Front(Face)
-  EnvData camera_pos = EnvData(
-    val:0,
-    vals:[0,1],
-    keys:['back','front'],
-    name:'camera_pos',
-  );
-
-  String trial_date = '';
-  Future<bool> startTrial() async {
-    if(kIsWeb)  return false;
-    String stime = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('trial_date', stime);
-    return true;
-  }
-
-  // 開始からの時間
-  int? trialHour(){
-    int? h = null;
-    if(kIsWeb) return h;
-    if(trial_date.length<8) return h;
-    try {
-      DateTime tri = DateTime.parse(trial_date);
-      Duration dur = DateTime.now().difference(tri);
-      h = dur.inHours;
-    } on Exception catch (e) {
-      print('-- trialHour() Exception ' + e.toString());
-    }
-    return h;
-  }
-
-  /// 0.9=開始から4時間
-  bool isTrial() {
-    bool r = false;
-    try {
-      int? h = trialHour();
-      if(h!=null)
-        if (0 <= h && h < 4)
-          r = true;
-    } on Exception catch (e) {
-      print('-- isTrial() Exception ' + e.toString());
-    }
-    return r;
-  }
-
-  /// 0.9=常に
-  /// 1.0=開始から48時間
-  bool canReTrial() {
-    return true;
-    bool r = true;
-    try {
-      int? h = trialHour();
-      if(h!=null)
-        if (0 <= h && h < 48)
-          r = false;
-    } on Exception catch (e) {
-      print('-- isTrial() Exception ' + e.toString());
-    }
-    return r;
-  }
-
-  bool isPremium() {
-    return isTrial();
-  }
-
-  Future load() async {
-    if(kIsWeb) return;
-    print('-- load()');
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      _loadSub(prefs, take_interval_sec);
-      _loadSub(prefs, save_num);
-      _loadSub(prefs, ex_storage);
-      _loadSub(prefs, ex_save_num);
-      _loadSub(prefs, autostop_sec);
-      _loadSub(prefs, camera_height);
-      _loadSub(prefs, camera_pos);
-      trial_date = prefs.getString('trial_date') ?? '';
-    } on Exception catch (e) {
-      print('-- load() e=' + e.toString());
-    }
-  }
-  _loadSub(SharedPreferences prefs, EnvData data) {
-    data.set(prefs.getInt(data.name) ?? data.val);
-  }
-
-  Future save(EnvData data) async {
-    if(kIsWeb) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(data.name, data.val);
-  }
-}
+import 'environment.dart';
 
 //----------------------------------------------------------
 class BaseSettingsScreen extends ConsumerWidget {
   late BuildContext _context;
   late WidgetRef _ref;
-  ProviderBase? _provider;
+  final _baseProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
+  late MyEdge _edge = MyEdge(provider:_baseProvider);
+
+  bool bInit = false;
+  Environment env = new Environment();
+
   TextStyle tsOn = TextStyle(color:Colors.lightGreenAccent);
   TextStyle tsNg = TextStyle(color:Colors.grey);
 
+  Color btnTextColor = Colors.white;
+  Color btnTileColor = Color(0xFF404040);
+  Color btnHoverColor = Color(0xFF505050);
+
+  Color tileColor = Color(0xFF404040);
+  Color hoverColor = Color(0xFF505050);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return Container();
+  }
+
+  @override
+  Future init() async {
+    if(bInit) return;
+    env.load().then((_){
+      redraw();
+    });
+    bInit = true;
+  }
+
+  void baseBuild(BuildContext context, WidgetRef ref) {
     _context = context;
     _ref = ref;
-    return Container();
+    _edge.getEdge(context,ref);
+    ref.watch(_baseProvider);
+    Future.delayed(Duration.zero, () => init());
   }
 
   Widget MyLabel(String label) {
     return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal:12, vertical:4),
-        child: Text(label, style:TextStyle(fontSize:13, color:Colors.white)),
-      )
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal:12, vertical:4),
+          child: Text(label, style:TextStyle(fontSize:13, color:Colors.white)),
+        )
     );
   }
 
   Widget MyListTile({required Widget title, Widget? title2, required Function() onTap}) {
     Widget exp = Expanded(child: SizedBox(width:1));
     return Container(
-      padding: EdgeInsets.symmetric(horizontal:8, vertical:2),
+      padding: EdgeInsets.symmetric(vertical:2, horizontal:8),
       child: ListTile(
-        shape: BeveledRectangleBorder(
-          borderRadius: BorderRadius.circular(3),
-        ),
-        title: title2!=null ?
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3))),
+          title: title2!=null ?
           Row(children:[title, exp, title2]) :
           Row(children:[exp, title, exp]),
-        trailing: Icon(Icons.arrow_forward_ios),
-        tileColor: Color(0xFF333333),
-        hoverColor: Color(0xFF444444),
-        onTap: onTap
+          trailing: Icon(Icons.arrow_forward_ios),
+          tileColor: tileColor,
+          hoverColor: hoverColor,
+          onTap: onTap
       ),
     );
   }
@@ -231,15 +80,31 @@ class BaseSettingsScreen extends ConsumerWidget {
   Widget MyTile({required Widget title, Widget? title2}) {
     Widget exp = Expanded(child: SizedBox(width:1));
     return Container(
-      padding: EdgeInsets.symmetric(horizontal:8, vertical:2),
+      padding: EdgeInsets.symmetric(vertical:2, horizontal:8),
       child: ListTile(
-        shape: BeveledRectangleBorder(
-          borderRadius: BorderRadius.circular(3),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3))),
         title: title2!=null ?
-          Row(children:[title, exp, title2]) :
-          Row(children:[exp, title, exp]),
+        Row(children:[title, exp, title2]) :
+        Row(children:[exp, title, exp]),
         tileColor: Color(0xFF000000),
+      ),
+    );
+  }
+
+  Widget MyButton({required String title, required Function() onTap}) {
+    Widget exp = Expanded(child: SizedBox(width:1));
+    return Container(
+      padding: EdgeInsets.symmetric(vertical:2, horizontal:80),
+      child: ListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(30))),
+          title: Row(children:[
+            exp,
+            Text(title,style:TextStyle(color:btnTextColor)),
+            exp
+          ]),
+          tileColor: btnTileColor,
+          hoverColor: btnHoverColor,
+          onTap: onTap
       ),
     );
   }
@@ -250,19 +115,34 @@ class BaseSettingsScreen extends ConsumerWidget {
         required int groupValue,
         required void Function(int?)? onChanged}) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal:8, vertical:2),
-      child: RadioListTile(
-        shape: BeveledRectangleBorder(
-          borderRadius: BorderRadius.circular(3),
-        ),
-        tileColor: Color(0xFF333333),
-        activeColor: Colors.lightBlue,
-        title: Text(l10n(title)),
-        value: value,
-        groupValue: groupValue,
-        onChanged: onChanged,
-      )
+        margin: EdgeInsets.symmetric(vertical:2, horizontal:8),
+        child: RadioListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3))),
+          tileColor: tileColor,
+          activeColor: Colors.white,
+          title: Text(l10n(title)),
+          value: value,
+          groupValue: groupValue,
+          onChanged: onChanged,
+        )
     );
+  }
+
+  Future<int> NavigatorPush(var screen) async {
+    int? ret = await Navigator.of(_context).push(
+        MaterialPageRoute<int>(
+            builder: (context) {
+              return screen;
+            }
+        )
+    );
+    ret = ret ?? 0;
+    if (ret==1) {
+      env.load().then((_) {
+        redraw();
+      });
+    }
+    return ret;
   }
 
   String l10n(String text) {
@@ -270,40 +150,22 @@ class BaseSettingsScreen extends ConsumerWidget {
   }
 
   redraw(){
-    if(_provider!=null)
-      _ref.read(_provider!).notifyListeners();
+    _ref.read(_baseProvider).notifyListeners();
   }
 }
 
 //----------------------------------------------------------
-final settingsScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class SettingsScreen extends BaseSettingsScreen {
-  SettingsScreen(){}
-  Environment env = new Environment();
-  bool bInit = false;
-
+  @override
   Future init() async {
     if(bInit) return;
-      bInit = true;
-    try {
-      await env.load();
-      _provider = settingsScreenProvider;
-      redraw();
-    } on Exception catch (e) {
-      print('-- SettingsScreen init e=' + e.toString());
-    }
-    return true;
+    super.init();
+    bInit = true;
   }
-
-  MyEdge _edge = MyEdge(provider:settingsScreenProvider);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    _context = context;
-    _ref = ref;
-    Future.delayed(Duration.zero, () => init());
-    ref.watch(settingsScreenProvider);
-    _edge.getEdge(context,ref);
+    baseBuild(context, ref);
 
     return WillPopScope(
       onWillPop: () async {
@@ -343,11 +205,7 @@ class SettingsScreen extends BaseSettingsScreen {
           title:Text(l10n('premium')),
           title2:env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg),
           onTap:(){
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => PremiumScreen(),
-              )
-            );
+            NavigatorPush(PremiumScreen());
           }
         ),
         if(pre)
@@ -355,17 +213,7 @@ class SettingsScreen extends BaseSettingsScreen {
             title:Text(l10n(env.ex_storage.name),style:ts),
             title2:Text(l10n(env.ex_storage.key),style:ts),
             onTap:(){
-              Navigator.of(context).push(
-                MaterialPageRoute<int>(
-                  builder: (BuildContext context) {
-                    return ExstrageScreen();
-                  })).then((ret) {
-                    if (ret==1) {
-                      env.load();
-                      redraw();
-                    }
-                  }
-              );
+              NavigatorPush(ExStrageScreen());
             }
           ),
         if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
@@ -388,54 +236,35 @@ class SettingsScreen extends BaseSettingsScreen {
   Widget MyValue({required EnvData data}) {
     TextStyle ts = TextStyle(fontSize:16, color:Colors.white);
     return MyListTile(
-      title:Text(l10n(data.name), style:ts),
-      title2:Text(l10n(data.key), style:ts),
-      onTap:() {
-        Navigator.of(_context).push(
-          MaterialPageRoute<int>(
-            builder: (BuildContext context) {
-              return RadioListScreen(data: data);
-          })).then((ret) {
-            if (ret==1) {
-              env.load();
-              _ref.read(settingsScreenProvider).notifyListeners();
-            }
-          }
-        );
-      }
+        title:Text(l10n(data.name), style:ts),
+        title2:Text(l10n(data.key), style:ts),
+        onTap:() {
+          NavigatorPush(RadioListScreen(data:data));
+        }
     );
   }
 }
 
 //----------------------------------------------------------
-final radioListScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class RadioListScreen extends BaseSettingsScreen {
-  int selValue = 0;
-  int selValueOld = 0;
+  int selVal = 0;
+  int selOld = 0;
   late EnvData data;
-  Environment env = Environment();
-  MyEdge _edge = MyEdge(provider:radioListScreenProvider);
 
   RadioListScreen({required EnvData data}){
     this.data = data;
-    selValue = data.val;
-    selValueOld = selValue;
-    env.load();
-    _provider = radioListScreenProvider;
+    selVal = data.val;
+    selOld = selVal;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(radioListScreenProvider);
-    this._context = context;
-    this._ref = ref;
-    _edge.getEdge(context,ref);
-
+    baseBuild(context, ref);
     return WillPopScope(
       onWillPop:() async {
         int r = 0;
-        if(selValueOld!=selValue) {
-          data.set(selValue);
+        if(selOld!=selVal) {
+          data.set(selVal);
           env.save(data);
           r = 1;
         }
@@ -459,7 +288,7 @@ class RadioListScreen extends BaseSettingsScreen {
         MyRadioListTile(
           title: data.keys[i],
           value: data.vals[i],
-          groupValue: selValue,
+          groupValue: selVal,
           onChanged:(value) => _onRadioSelected(data.vals[i]),
         )
       );
@@ -469,40 +298,24 @@ class RadioListScreen extends BaseSettingsScreen {
   }
 
   _onRadioSelected(value) {
-    selValue = value;
-    _ref.watch(radioListScreenProvider).notifyListeners();
+    selVal = value;
+    redraw();
   }
 }
 
 //----------------------------------------------------------
 // プレミアム
-final premiumScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class PremiumScreen extends BaseSettingsScreen {
-  MyEdge _edge = MyEdge(provider:premiumScreenProvider);
-  Environment env = Environment();
-  bool bInit = false;
-
+  @override
   Future init() async {
     if(bInit) return;
+    super.init();
     bInit = true;
-    try {
-      await env.load();
-      _provider = premiumScreenProvider;
-      redraw();
-    } on Exception catch (e) {
-      print('-- PremiumScreen init e=' + e.toString());
-    }
-    return true;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(premiumScreenProvider);
-    this._context = context;
-    this._ref = ref;
-    Future.delayed(Duration.zero, () => init());
-    _edge.getEdge(context,ref);
-
+    baseBuild(context, ref);
     return WillPopScope(
       onWillPop:() async {
         Navigator.of(context).pop(1);
@@ -512,13 +325,13 @@ class PremiumScreen extends BaseSettingsScreen {
         appBar: AppBar(title:Text(l10n('premium')), backgroundColor:Color(0xFF000000),),
         body: Container(
           margin: _edge.settingsEdge,
-          child:getList(context),
+          child:getList(),
         ),
       )
     );
   }
 
-  Widget getList(BuildContext context) {
+  Widget getList() {
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(8,8,8,8),
       child: Column(children:[
@@ -527,20 +340,20 @@ class PremiumScreen extends BaseSettingsScreen {
           title:Text(l10n('trial')),
           title2:env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg)
         ),
-        MyListTile(
-          title:Text('trial'),
+        MyButton(
+          title: 'trial',
           onTap:() async {
             await env.startTrial();
             redraw();
           }
         ),
         MyLabel(l10n('trial_desc')),
+        /*
         MyLabel(''),
         MyLabel('Purchase'),
         MyTile(
           title:Text(l10n('Purchase_desc')),
         ),
-        /*
         MyListTile(
           title:Text('Purchase'),
           onTap:(){
@@ -559,44 +372,38 @@ class PremiumScreen extends BaseSettingsScreen {
 //----------------------------------------------------------
 // 外部ストレージ
 final exstragScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
-class ExstrageScreen extends BaseSettingsScreen {
+class ExStrageScreen extends BaseSettingsScreen {
   MyEdge _edge = MyEdge(provider:exstragScreenProvider);
   Environment env = Environment();
-  int selValue = 0;
-  int selValueOld = 0;
+  int selVal = 0;
+  int selOld = 0;
   late EnvData data;
   bool bInit = false;
   GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
 
+  @override
   Future init() async {
     if(bInit) return;
-    bInit = true;
     try {
       await env.load();
-      selValue = env.ex_storage.val;
-      selValueOld = selValue;
+      selVal = env.ex_storage.val;
+      selOld = selVal;
       await gdriveAd.loginSilently();
-      _provider = exstragScreenProvider;
       redraw();
     } on Exception catch (e) {
       print('-- ExStrageScreen init e=' + e.toString());
     }
-    return true;
+    bInit = true;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(exstragScreenProvider);
-    this._context = context;
-    this._ref = ref;
-    Future.delayed(Duration.zero, () => init());
-    _edge.getEdge(context,ref);
-
+    baseBuild(context, ref);
     return WillPopScope(
       onWillPop:() async {
         int r = 0;
-        if(selValueOld!=selValue) {
-          env.ex_storage.set(selValue);
+        if(selOld!=selVal) {
+          env.ex_storage.set(selVal);
           env.save(env.ex_storage);
           r = 1;
         }
@@ -618,19 +425,19 @@ class ExstrageScreen extends BaseSettingsScreen {
       MyRadioListTile(
         title: env.ex_storage.keys[0],
         value: env.ex_storage.vals[0],
-        groupValue: selValue,
+        groupValue: selVal,
         onChanged: (value) => _onRadioSelected(env.ex_storage.vals[0]),
       ),
       MyRadioListTile(
         title: env.ex_storage.keys[1],
         value: env.ex_storage.vals[1],
-        groupValue: selValue,
+        groupValue: selVal,
         onChanged: (value) => _onRadioSelected(env.ex_storage.vals[1]),
       ),
       MyRadioListTile(
         title: env.ex_storage.keys[2],
         value: env.ex_storage.vals[2],
-        groupValue: selValue,
+        groupValue: selVal,
         onChanged: (value) => _onRadioSelected(env.ex_storage.vals[2]),
       ),
 
@@ -643,8 +450,8 @@ class ExstrageScreen extends BaseSettingsScreen {
         MyTile(title:Text(gdriveAd.getAccountName(),style:tsOn),title2:Text('')),
 
       if(gdriveAd.isSignedIn()==false)
-        MyListTile(
-          title:Text('Login to GoogleDrive'),
+        MyButton(
+          title:'Login GoogleDrive',
           onTap:() {
             gdriveAd.loginWithGoogle().then((r){
               if(r) redraw();
@@ -653,8 +460,8 @@ class ExstrageScreen extends BaseSettingsScreen {
         ),
 
       if(gdriveAd.isSignedIn()==true)
-        MyListTile(
-          title:Text('Logout of GoogleDrive'),
+        MyButton(
+          title:'Logout GoogleDrive',
           onTap:() {
             gdriveAd.logout().then((_){
               redraw();
@@ -665,7 +472,7 @@ class ExstrageScreen extends BaseSettingsScreen {
   }
 
   _onRadioSelected(value) {
-    selValue = value;
+    selVal = value;
     redraw();
   }
 }

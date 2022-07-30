@@ -46,3 +46,6 @@ final startTimeProvider = StateProvider<DateTime?>((ref) {
   return null;
 });
 
+final isSelectModeProvider = StateProvider<bool>((ref) {
+  return false;
+});

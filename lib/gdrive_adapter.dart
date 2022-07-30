@@ -81,11 +81,9 @@ class GoogleDriveAdapter {
 
   Future logout() async {
     print('-- logout');
-    googleSignIn.signOut().then((value) {
-      storage.write(key:'signedIn',value:'false').then((value) {
-        gsa = null;
-      });
-    });
+    await googleSignIn.signOut();
+    await storage.write(key:'signedIn',value:'false');
+    gsa = null;
   }
 
   Future<void> getFiles() async {

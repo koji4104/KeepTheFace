@@ -21,6 +21,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'log_screen.dart';
 import 'common.dart';
 import 'camera_adapter.dart';
+import 'environment.dart';
 
 bool disableCamera = kIsWeb; // true=test
 final bool _testMode = true;

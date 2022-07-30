@@ -7,57 +7,57 @@ import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'provider.dart';
-//import 'package:video_thumbnail/video_thumbnail.dart' as video_thumbnail;
-import 'model.dart';
-//import 'package:flutter_video_info/flutter_video_info.dart';
 import 'localizations.dart';
-//import 'package:video_player/video_player.dart';
-import 'dart:math';
 import 'common.dart';
-import 'package:photo_gallery/photo_gallery.dart';
-import 'package:photo_manager/photo_manager.dart';
-import 'package:image/image.dart' as imglib;
-
 
 final photoListScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
-
 class PhotoListScreen extends ConsumerWidget {
   PhotoListScreen(){}
 
   String title='In-app data';
   List<MyFile> fileList = [];
-  int numIndex = 20;
+  List<MyCard> cardList = [];
+
+  int _crossAxisCount = 3;
+  int _gridZoom = 0;
+  int _photocount = 0;
+  int _sizemb = 0;
 
   bool _init = false;
   int selectedIndex = 0;
-  BuildContext? _context;
-  WidgetRef? _ref;
+  late BuildContext _context;
+  late WidgetRef _ref;
   MyEdge _edge = MyEdge(provider:photoListScreenProvider);
   MyStorage _storage = new MyStorage();
 
   void init(BuildContext context, WidgetRef ref) {
-    if(_init == false){
-      readFiles();
-      _init = true;
-    }
+    if(_init) return;
+    readFiles();
+    // 392x829
+    double w = MediaQuery.of(context).size.width;
+    if(w>800)
+      _crossAxisCount = 5;
+    else if(w>600)
+      _crossAxisCount = 4;
+    _init = true;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     this._context = context;
     this._ref = ref;
-    int num = ref.watch(photoListProvider).num;
-    int size = ref.watch(photoListProvider).size;
-    int sizemb = (size/1024/1024).toInt();
-
+    bool bSelectMode = ref.watch(isSelectModeProvider);
     ref.watch(photoListScreenProvider);
     _edge.getEdge(context,ref);
-
     Future.delayed(Duration.zero, () => init(context,ref));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n("photolist_title")+' '+num.toString() +'pcs '+sizemb.toString() + 'mb'),
+        title:Row(children:[
+          Text(l10n("photolist_title")),
+          Expanded(child: SizedBox(width:1)),
+          Text(_photocount.toString() +' pcs '+_sizemb.toString() + ' mb',style:TextStyle(fontSize:13)),
+        ]),
         backgroundColor:Color(0xFF000000),
         actions: <Widget>[
         ],
@@ -66,17 +66,57 @@ class PhotoListScreen extends ConsumerWidget {
         margin: _edge.homebarEdge,
         child: Stack(children: <Widget>[
           Positioned(
-            top:0, left:0, right:0, height: 50,
+            top:0, left:0, right:0, height:50,
             child: Container(
               color: Color(0xFF444444),
               child: Row(children: [
-                SizedBox(width: 50),
+                SizedBox(width: 30),
+                // ズームアウト
+                IconButton(
+                  icon: Icon(Icons.zoom_out),
+                  iconSize: 32.0,
+                  onPressed:(){
+                    if(_gridZoom>-2) {
+                      _gridZoom--;
+                      redraw();
+                    }
+                  },
+                ),
+                SizedBox(width:20),
+                // ズームイン
+                IconButton(
+                  icon: Icon(Icons.zoom_in),
+                  iconSize: 32.0,
+                  onPressed:(){
+                    if(_gridZoom<2) {
+                      _gridZoom++;
+                      redraw();
+                    }
+                  },
+                ),
+                SizedBox(width:20),
+                IconButton(
+                  icon: bSelectMode==false ?
+                    Icon(Icons.check_circle_outline) :
+                    Icon(Icons.check_circle),
+                  iconSize: 32.0,
+                  onPressed:(){
+                    _ref.read(isSelectModeProvider.state).state = !bSelectMode;
+                    _ref.read(selectedListProvider).clear();
+                    redraw();
+                  },
+                ),
+                SizedBox(width:20),
+                // 保存
+                if(bSelectMode)
                 IconButton(
                   icon: Icon(Icons.save),
                   iconSize: 32.0,
                   onPressed: () => _saveFileWithDialog(context,ref),
                 ),
-                Expanded(child: Text(num.toString() +' pcs '+sizemb.toString() + ' mb',textAlign:TextAlign.center)),
+                SizedBox(width:20),
+                // 削除
+                if(bSelectMode)
                 IconButton(
                   icon: Icon(Icons.delete),
                   iconSize: 32.0,
@@ -88,28 +128,21 @@ class PhotoListScreen extends ConsumerWidget {
           )),
           Container(
             margin: EdgeInsets.only(top:52),
-            child:getListView(context,ref),
+            child:getList(context,ref),
           ),
         ])
       )
     );
   }
 
-  Widget getListView(BuildContext context, WidgetRef ref) {
-    int crossAxisCount = 3;
-    double w = MediaQuery.of(context).size.width;
-    if(w>800)
-      crossAxisCount = 5;
-    else if(w>600)
-      crossAxisCount = 4;
-
+  Widget getList(BuildContext context, WidgetRef ref) {
     return Container(
       padding: EdgeInsets.symmetric(vertical:4, horizontal:6),
       child: GridView.count(
-        crossAxisCount: crossAxisCount,
-        children: List.generate(fileList.length, (index) {
-          return MyCard(data: fileList[index]);
-        })),
+          crossAxisCount: _crossAxisCount + _gridZoom,
+          children: List.generate(fileList.length, (index) {
+            return cardList[index];
+          })),
     );
   }
 
@@ -124,22 +157,28 @@ class PhotoListScreen extends ConsumerWidget {
           int m = (i % 10).toInt();
           f.date = DateTime(2022, 1, 1, h, m, 0);
           f.path = 'aaa.mp4';
+          f.byte = 2*1024*1024;
           fileList.add(f);
         }
+        _photocount = fileList.length;
+        _sizemb = 1;
 
       } else {
         // アプリ内データ
         await _storage.getInApp(true);
         fileList = _storage.files;
+        _photocount = fileList.length;
+        _sizemb = (_storage.totalBytes/1024/1024).toInt();
+        if(_storage.totalBytes>0 && _sizemb==0)
+          _sizemb = 1;
       }
 
-      if(_ref!=null) {
-        _ref!.read(photoListProvider).num = _storage.files.length;
-        _ref!.read(photoListProvider).size = _storage.totalBytes;
-        _ref!.read(photoListProvider).notifyListeners();
-        _ref!.read(selectedListProvider).clear();
+      for (MyFile f in fileList) {
+        cardList.add(MyCard(data:f));
       }
 
+      _ref.read(selectedListProvider).clear();
+      redraw();
     } on Exception catch (e) {
       print('-- readFiles() e=' + e.toString());
     }
@@ -178,7 +217,7 @@ class PhotoListScreen extends ConsumerWidget {
       showSnackBar('Please select');
     } else {
       Text msg = Text('Delete files (${list.length})');
-      Text btn = Text('Delete', style: TextStyle(fontSize: 16, color: Colors.lightBlue));
+      Text btn = Text('Delete', style: TextStyle(fontSize: 16, color: Colors.redAccent));
       showDialogEx(context, msg, btn, _deleteFile, list);
     }
   }
@@ -211,7 +250,7 @@ class PhotoListScreen extends ConsumerWidget {
           content: msg,
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel', style:TextStyle(fontSize:16, color:Colors.lightBlue)),
+              child: Text('Cancel', style:TextStyle(fontSize:16, color:Color(0xFFcccccc))),
               onPressed:(){ Navigator.of(context).pop(); },
             ),
             TextButton(
@@ -225,17 +264,16 @@ class PhotoListScreen extends ConsumerWidget {
   }
 
   String l10n(String text){
-    if(_context!=null) {
-      return Localized.of(_context!).text(text);
-    }
-    return '';
+    return Localized.of(_context).text(text);
   }
 
   void showSnackBar(String msg) {
-    if(_context!=null) {
-      final snackBar = SnackBar(content: Text(msg));
-      ScaffoldMessenger.of(_context!).showSnackBar(snackBar);
-    }
+    final snackBar = SnackBar(content:Text(msg));
+    ScaffoldMessenger.of(_context).showSnackBar(snackBar);
+  }
+
+  redraw(){
+    _ref.read(photoListScreenProvider).notifyListeners();
   }
 }
 
@@ -259,9 +297,11 @@ class MyCard extends ConsumerWidget {
   bool _init = false;
   void init(BuildContext context, WidgetRef ref) async {
     if(_init == false){
+      print('-- card init');
       _init = true;
       if(kIsWeb) {
-        _thumbWidget = Image.network('/lib/assets/test.png', fit: BoxFit.cover);
+        _thumbWidget = Image.network('/lib/assets/test.png', fit:BoxFit.cover);
+        ref.read(myCardScreenProvider).notifyListeners();
       } else if(await File(data.path).exists()==true){
         _thumbWidget = Image.file(File(data.path), fit:BoxFit.cover);
         ref.read(myCardScreenProvider).notifyListeners();
@@ -275,21 +315,29 @@ class MyCard extends ConsumerWidget {
     ref.watch(myCardScreenProvider);
     this._ref = ref;
     Future.delayed(Duration.zero, () => init(context,ref));
+    bool bSelectMode = ref.watch(isSelectModeProvider);
 
     return Container(
       width: 100.0, height: 100.0,
-      margin: EdgeInsets.all(4),
+      margin: EdgeInsets.all(2),
       padding: EdgeInsets.all(0),
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap:(){
-          ref.read(selectedListProvider).select(data);
+          bSelectMode ?
+          ref.read(selectedListProvider).select(data) :
+          Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PreviewScreen(data:data),
+              )
+          );
         },
         onLongPress:(){
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PreviewScreen(data:data),
-            ));
+            )
+          );
         },
         child: getWidget(ref),
       ),
@@ -367,9 +415,6 @@ class PreviewScreen extends ConsumerWidget {
     if(_init == false){
       try{
         if(data.path.contains('.jpg')){
-          //_img = Image.file(File(data.path), fit:BoxFit.contain);
-          //ref.read(previewScreenProvider).notifyListeners();
-
           _img = Image.file(File(data.path), fit:BoxFit.contain);
           _img!.image.resolve(ImageConfiguration.empty).addListener(
             ImageStreamListener((ImageInfo info, bool b) {
