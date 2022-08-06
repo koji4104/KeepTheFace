@@ -150,8 +150,8 @@ class CameraScreen extends ConsumerWidget {
           MyButton(
             top:50.0, right:30.0,
             icon: Icon(Icons.folder, color: Colors.white),
-            onPressed:() {
-              Navigator.of(context).push(
+            onPressed:() async {
+              await Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => PhotoListScreen(),
                 )
@@ -188,7 +188,7 @@ class CameraScreen extends ConsumerWidget {
     if(disableCamera) {
       return Positioned(
         left:0, top:0, right:0, bottom:0,
-        child: Container(color: Color(0xFF222244)));
+        child: Container(color: Color(0xFF222222)));
     }
     if (_controller == null || _controller!.value.previewSize == null) {
       return Center(

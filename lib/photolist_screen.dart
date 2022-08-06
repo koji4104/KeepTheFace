@@ -44,12 +44,13 @@ class PhotoListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    Future.delayed(Duration.zero, () => init(context,ref));
     this._context = context;
     this._ref = ref;
+    _edge.getEdge(context,ref);
+
     bool bSelectMode = ref.watch(isSelectModeProvider);
     ref.watch(photoListScreenProvider);
-    _edge.getEdge(context,ref);
-    Future.delayed(Duration.zero, () => init(context,ref));
 
     return Scaffold(
       appBar: AppBar(
@@ -71,25 +72,27 @@ class PhotoListScreen extends ConsumerWidget {
               color: Color(0xFF444444),
               child: Row(children: [
                 SizedBox(width: 30),
-                // ズームアウト
+                // ズームイン
                 IconButton(
                   icon: Icon(Icons.zoom_out),
                   iconSize: 32.0,
                   onPressed:(){
-                    if(_gridZoom>-2) {
-                      _gridZoom--;
+                    if(_gridZoom<2) {
+                      _gridZoom++;
+                      ref.read(cardWidthProvider.state).state = (_edge.width/(_crossAxisCount + _gridZoom)).toInt();
                       redraw();
                     }
                   },
                 ),
                 SizedBox(width:20),
-                // ズームイン
+                // ズームアウト
                 IconButton(
                   icon: Icon(Icons.zoom_in),
                   iconSize: 32.0,
                   onPressed:(){
-                    if(_gridZoom<2) {
-                      _gridZoom++;
+                    if(_gridZoom>-2) {
+                      _gridZoom--;
+                      ref.read(cardWidthProvider.state).state = (_edge.width/(_crossAxisCount + _gridZoom)).toInt();
                       redraw();
                     }
                   },
@@ -136,11 +139,13 @@ class PhotoListScreen extends ConsumerWidget {
   }
 
   Widget getList(BuildContext context, WidgetRef ref) {
+    if(_init==false)
+      return Container();
     return Container(
       padding: EdgeInsets.symmetric(vertical:4, horizontal:6),
       child: GridView.count(
           crossAxisCount: _crossAxisCount + _gridZoom,
-          children: List.generate(fileList.length, (index) {
+          children: List.generate(cardList.length, (index) {
             return cardList[index];
           })),
     );
@@ -191,8 +196,8 @@ class PhotoListScreen extends ConsumerWidget {
     if(list.length==0) {
       showSnackBar('Please select');
     } else {
-      Text msg = Text('Save to photolibrary (${list.length})');
-      Text btn = Text('OK', style: TextStyle(fontSize: 16, color: Colors.lightBlue));
+      Text msg = Text(l10n('save_files') + ' (${list.length})');
+      Text btn = Text(l10n('save'), style: TextStyle(fontSize: 16, color: Colors.lightBlue));
       showDialogEx(context, msg, btn, _saveFile, list);
     }
   }
@@ -204,7 +209,7 @@ class PhotoListScreen extends ConsumerWidget {
           await new Future.delayed(new Duration(milliseconds:100));
         }
       }
-      readFiles();
+      //readFiles();
     } on Exception catch (e) {
       print('-- _saveFile ${e.toString()}');
     }
@@ -216,8 +221,8 @@ class PhotoListScreen extends ConsumerWidget {
     if(list.length==0) {
       showSnackBar('Please select');
     } else {
-      Text msg = Text('Delete files (${list.length})');
-      Text btn = Text('Delete', style: TextStyle(fontSize: 16, color: Colors.redAccent));
+      Text msg = Text(l10n('delete_files') + ' (${list.length})');
+      Text btn = Text(l10n('delete'), style: TextStyle(fontSize:16, color:Colors.redAccent));
       showDialogEx(context, msg, btn, _deleteFile, list);
     }
   }
@@ -250,7 +255,7 @@ class PhotoListScreen extends ConsumerWidget {
           content: msg,
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel', style:TextStyle(fontSize:16, color:Color(0xFFcccccc))),
+              child: Text(l10n('cancel'), style:TextStyle(fontSize:16, color:Color(0xFFcccccc))),
               onPressed:(){ Navigator.of(context).pop(); },
             ),
             TextButton(
@@ -277,6 +282,7 @@ class PhotoListScreen extends ConsumerWidget {
   }
 }
 
+///--------------------------------------------------------
 /// MyCard
 class MyCard extends ConsumerWidget {
   final myCardScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
@@ -287,12 +293,9 @@ class MyCard extends ConsumerWidget {
   MyFile data = MyFile();
   bool _selected = false;
   WidgetRef? _ref;
+  int _width = 200;
 
-  Widget _thumbWidget = Center(
-    child: SizedBox(
-      width:32,height:32,
-      child: CircularProgressIndicator(),
-    ));
+  Widget? _thumbWidget ;
 
   bool _init = false;
   void init(BuildContext context, WidgetRef ref) async {
@@ -316,6 +319,7 @@ class MyCard extends ConsumerWidget {
     this._ref = ref;
     Future.delayed(Duration.zero, () => init(context,ref));
     bool bSelectMode = ref.watch(isSelectModeProvider);
+    _width = ref.watch(cardWidthProvider);
 
     return Container(
       width: 100.0, height: 100.0,
@@ -327,9 +331,9 @@ class MyCard extends ConsumerWidget {
           bSelectMode ?
           ref.read(selectedListProvider).select(data) :
           Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => PreviewScreen(data:data),
-              )
+            MaterialPageRoute(
+              builder: (context) => PreviewScreen(data:data),
+            )
           );
         },
         onLongPress:(){
@@ -349,13 +353,10 @@ class MyCard extends ConsumerWidget {
       fit: StackFit.expand,
       children: <Widget>[
         // サムネイル
-        _thumbWidget,
+        getThumbnail(),
 
         // 日付
-        Container(
-          child: Text(' ' + DateFormat("MM/dd HH:mm").format(data.date) + ' ',
-            style: TextStyle(fontSize:14, color:Colors.white, backgroundColor:Colors.black38),
-        ),),
+        getDateText(),
 
         // 保存済アイコン
         if(data.isLibrary)
@@ -377,9 +378,10 @@ class MyCard extends ConsumerWidget {
           right:6.0, bottom:6.0,
           child: CircleAvatar(
             backgroundColor: _selected ? Color(0xFF303030) : Color(0x00000000),
+            radius: _width<150 ? 12.0+4.0 : _width>300 ? 24.0+4.0 : 18.0+4.0,
             child: Icon(
               _selected ? Icons.check : null,
-              size: 36,
+              size: _width<150 ? 24.0 : _width>300 ? 48.0 : 36.0,
               color: Colors.white
             )
           )
@@ -394,6 +396,33 @@ class MyCard extends ConsumerWidget {
     s += (sec.remainder(3600)/60).toInt().toString().padLeft(2,'0') + ':';
     s += sec.remainder(60).toString().padLeft(2,'0');
     return s;
+  }
+
+  Widget getThumbnail() {
+    if (_thumbWidget == null) {
+      return Center(
+          child: SizedBox(
+            width: 32, height: 32,
+            child: CircularProgressIndicator(),
+          ));
+    } else {
+      return _thumbWidget!;
+    }
+  }
+
+  Widget getDateText(){
+    double fsize = 14;
+    String s = DateFormat("MM/dd HH:mm").format(data.date);
+    if(_width<150){
+      fsize = 13;
+      s = DateFormat("MM/dd HH").format(data.date);
+    } else if(_width>300){
+      fsize = 15;
+    }
+    return Container(
+      child: Text(' ' + s + ' ',
+        style: TextStyle(fontSize:fsize, color:Colors.white, backgroundColor:Colors.black38),
+      ),);
   }
 }
 

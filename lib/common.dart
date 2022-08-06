@@ -11,6 +11,10 @@ import 'package:photo_manager/photo_manager.dart';
 import 'gdrive_adapter.dart';
 import 'package:googleapis/drive/v3.dart' as ga;
 
+
+import 'package:permission_handler/permission_handler.dart';
+
+
 String ALBUM_NAME = "TheseDays";
 
 class MyFile{
@@ -33,6 +37,7 @@ class MyStorage {
     if(kIsWeb) return;
     final dt1 = DateTime.now();
     files.clear();
+    totalBytes = 0;
     final Directory appdir = await getApplicationDocumentsDirectory();
     final photodir = Directory('${appdir.path}/photo');
     await Directory('${appdir.path}/photo').create(recursive: true);
@@ -50,6 +55,7 @@ class MyStorage {
         f.date = e.statSync().modified;
         f.name = basename(f.path);
         f.byte = e.statSync().size;
+        totalBytes += f.byte;
       }
       files.add(f);
     }
@@ -119,7 +125,25 @@ class MyStorage {
 
   saveLibrary(String path) async {
     try {
-      await GallerySaver.saveImage(path, albumName:ALBUM_NAME);
+      if (Platform.isAndroid) {
+        var permission = await Permission.storage.isGranted;
+        if (permission == false) {
+          var request = await Permission.storage.request();
+          permission = request.isGranted;
+        }
+        if (permission) {
+          var result = await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
+        }
+      } else {
+        var permission = await Permission.storage.isGranted;
+        if (permission == false) {
+          var request = await Permission.storage.request();
+          permission = request.isGranted;
+        }
+        if (permission) {
+          var result = await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
+        }
+      }
     } on Exception catch (e) {
       print('-- err saveGallery=${e.toString()}');
     }
@@ -193,15 +217,15 @@ class MyEdge {
   static double leftMargin = 200.0; // タブレット時の左マージン
 
   ProviderBase? _provider;
-  double _width = 0;
+  double width = 100;
 
   /// Edgeを取得
   /// 各スクリーンのbuild()内で呼び出す
   void getEdge(BuildContext context, WidgetRef ref) async {
-    if (_width == MediaQuery.of(context).size.width)
+    if (width == MediaQuery.of(context).size.width)
       return;
-    _width = MediaQuery.of(context).size.width;
-    print('-- getEdge() width=${_width.toInt()}');
+    width = MediaQuery.of(context).size.width;
+    print('-- getEdge() width=${width.toInt()}');
 
     if (!kIsWeb && Platform.isAndroid) {
       print('-- isAndroid');

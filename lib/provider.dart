@@ -49,3 +49,7 @@ final startTimeProvider = StateProvider<DateTime?>((ref) {
 final isSelectModeProvider = StateProvider<bool>((ref) {
   return false;
 });
+
+final cardWidthProvider = StateProvider<int>((ref) {
+  return 200;
+});
