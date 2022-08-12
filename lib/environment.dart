@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
 
 class EnvData {
   int val;
@@ -75,10 +76,14 @@ class Environment {
     name:'ex_storage',
   );
 
+  // 640x480 720x480
+  // 352x288 320x240
   EnvData camera_height = EnvData(
     val:480,
     vals:[240,480,720,1080],
-    keys:['320X240','640x480','1280x720','1920x1080'],
+    keys:Platform.isAndroid
+        ? ['320X240','720x480','1280x720','1920x1080']
+        : ['352x288','640x480','1280x720','1920x1080'],
     name:'camera_height',
   );
 
