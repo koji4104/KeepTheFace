@@ -71,7 +71,7 @@ class PhotoListScreen extends ConsumerWidget {
             child: Container(
               color: Color(0xFF444444),
               child: Row(children: [
-                SizedBox(width: 30),
+                SizedBox(width: 20),
                 // ズームイン
                 IconButton(
                   icon: Icon(Icons.zoom_out),
@@ -84,7 +84,7 @@ class PhotoListScreen extends ConsumerWidget {
                     }
                   },
                 ),
-                SizedBox(width:20),
+                SizedBox(width:16),
                 // ズームアウト
                 IconButton(
                   icon: Icon(Icons.zoom_in),
@@ -97,7 +97,7 @@ class PhotoListScreen extends ConsumerWidget {
                     }
                   },
                 ),
-                SizedBox(width:20),
+                SizedBox(width:16),
                 IconButton(
                   icon: bSelectMode==false ?
                     Icon(Icons.check_circle_outline) :
@@ -109,7 +109,7 @@ class PhotoListScreen extends ConsumerWidget {
                     redraw();
                   },
                 ),
-                SizedBox(width:20),
+                SizedBox(width:16),
                 // 保存
                 if(bSelectMode)
                 IconButton(
@@ -117,7 +117,7 @@ class PhotoListScreen extends ConsumerWidget {
                   iconSize: 32.0,
                   onPressed: () => _saveFileWithDialog(context,ref),
                 ),
-                SizedBox(width:20),
+                SizedBox(width:16),
                 // 削除
                 if(bSelectMode)
                 IconButton(
@@ -125,7 +125,7 @@ class PhotoListScreen extends ConsumerWidget {
                   iconSize: 32.0,
                   onPressed: () => _deleteFileWithDialog(context,ref),
                 ),
-                SizedBox(width: 50),
+                SizedBox(width: 20),
               ]
             )
           )),
