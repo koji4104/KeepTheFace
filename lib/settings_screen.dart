@@ -54,6 +54,7 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.take_interval_sec),
         MyValue(data: env.save_num),
         MyValue(data: env.autostop_sec),
+        /*
         MyLabel(''),
         MyLabel(l10n('premium')),
         MyListTile(
@@ -72,6 +73,7 @@ class SettingsScreen extends BaseSettingsScreen {
             }
           ),
         if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
+        */
         MyLabel(''),
         MyLabel('Logs'),
         MyListTile(

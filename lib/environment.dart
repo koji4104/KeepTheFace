@@ -48,8 +48,8 @@ class Environment {
   /// 自動停止
   EnvData autostop_sec = EnvData(
     val:3600,
-    vals:[60,3600,21600,43200,86400],
-    keys:['60 sec','1','6','12','24'],
+    vals:[3600,21600,43200,86400],
+    keys:['1','6','12','24'],
     name:'autostop_sec',
   );
 
