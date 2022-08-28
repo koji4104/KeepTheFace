@@ -8,37 +8,30 @@ import 'common.dart';
 import 'gdrive_adapter.dart';
 import 'environment.dart';
 import 'base_settings_screen.dart';
+import 'purchase_screen.dart';
+
+bool IS_PREMIUM = false;
 
 //----------------------------------------------------------
 class SettingsScreen extends BaseSettingsScreen {
   @override
   Future init() async {
-    if(bInit) return;
-    super.init();
-    bInit = true;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     baseBuild(context, ref);
-
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.of(context).pop(true);
-        return Future.value(false);
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n("settings_title")),
-          backgroundColor:Color(0xFF000000),
-          actions: <Widget>[],
-        ),
-        body: Container(
-          margin: edge.settingsEdge,
-          child: Stack(children: <Widget>[
-            getList(context),
-          ])
-        )
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n("settings_title")),
+        backgroundColor:Color(0xFF000000),
+        actions: <Widget>[],
+      ),
+      body: Container(
+        margin: edge.settingsEdge,
+        child: Stack(children: <Widget>[
+          getList(context),
+        ])
       )
     );
   }
@@ -54,9 +47,12 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.take_interval_sec),
         MyValue(data: env.save_num),
         MyValue(data: env.autostop_sec),
-        /*
+
+        if(IS_PREMIUM)
         MyLabel(''),
+        if(IS_PREMIUM)
         MyLabel(l10n('premium')),
+        if(IS_PREMIUM)
         MyListTile(
           title:Text(l10n('premium')),
           title2:env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg),
@@ -73,7 +69,7 @@ class SettingsScreen extends BaseSettingsScreen {
             }
           ),
         if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
-        */
+
         MyLabel(''),
         MyLabel('Logs'),
         MyListTile(
@@ -105,36 +101,22 @@ class SettingsScreen extends BaseSettingsScreen {
 //----------------------------------------------------------
 class RadioListScreen extends BaseSettingsScreen {
   int selVal = 0;
-  int selOld = 0;
   late EnvData data;
 
   RadioListScreen({required EnvData data}){
     this.data = data;
     selVal = data.val;
-    selOld = selVal;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     baseBuild(context, ref);
-    return WillPopScope(
-      onWillPop:() async {
-        int r = 0;
-        if(selOld!=selVal) {
-          data.set(selVal);
-          env.save(data);
-          r = 1;
-        }
-        Navigator.of(context).pop(r);
-        return Future.value(true);
-      },
-      child: Scaffold(
-        appBar: AppBar(title: Text(l10n(data.name)), backgroundColor:Color(0xFF000000),),
-        body: Container(
-          margin: edge.settingsEdge,
-          child:getList()
-        ),
-      )
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n(data.name)), backgroundColor:Color(0xFF000000),),
+      body: Container(
+        margin: edge.settingsEdge,
+        child:getList()
+      ),
     );
   }
 
@@ -156,7 +138,7 @@ class RadioListScreen extends BaseSettingsScreen {
 
   _onRadioSelected(value) {
     selVal = value;
-    redraw();
+    ref.read(environmentProvider).saveData(data,selVal);
   }
 }
 
@@ -165,26 +147,17 @@ class RadioListScreen extends BaseSettingsScreen {
 class PremiumScreen extends BaseSettingsScreen {
   @override
   Future init() async {
-    if(bInit) return;
-    super.init();
-    bInit = true;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     baseBuild(context, ref);
-    return WillPopScope(
-      onWillPop:() async {
-        Navigator.of(context).pop(1);
-        return Future.value(true);
-      },
-      child: Scaffold(
-        appBar: AppBar(title:Text(l10n('premium')), backgroundColor:Color(0xFF000000),),
-        body: Container(
-          margin: edge.settingsEdge,
-          child:getList(),
-        ),
-      )
+    return  Scaffold(
+      appBar: AppBar(title:Text(l10n('premium')), backgroundColor:Color(0xFF000000),),
+      body: Container(
+        margin: edge.settingsEdge,
+        child:getList(),
+      ),
     );
   }
 
@@ -199,20 +172,22 @@ class PremiumScreen extends BaseSettingsScreen {
         ),
         MyButton(
           title: 'trial',
+          ok: true,
           onTap:() async {
-            await env.startTrial();
+            ref.read(environmentProvider).startTrial();
             redraw();
           }
         ),
         MyLabel(l10n('trial_desc')),
-        /*
+
         MyLabel(''),
         MyLabel('Purchase'),
         MyTile(
           title:Text(l10n('Purchase_desc')),
         ),
-        MyListTile(
-          title:Text('Purchase'),
+        MyButton(
+          title: 'Purchase',
+          ok: true,
           onTap:(){
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -220,7 +195,7 @@ class PremiumScreen extends BaseSettingsScreen {
               )
             );
           }
-        ),*/
+        ),
       ])
     );
   }
@@ -230,50 +205,25 @@ class PremiumScreen extends BaseSettingsScreen {
 // 外部ストレージ
 final exstragScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class ExStrageScreen extends BaseSettingsScreen {
-  MyEdge _edge = MyEdge(provider:exstragScreenProvider);
-  Environment env = Environment();
   int selVal = 0;
-  int selOld = 0;
   late EnvData data;
-  bool bInit = false;
   GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
 
   @override
   Future init() async {
-    if(bInit) return;
-    try {
-      await env.load();
-      selVal = env.ex_storage.val;
-      selOld = selVal;
-      await gdriveAd.loginSilently();
-      redraw();
-    } on Exception catch (e) {
-      print('-- ExStrageScreen init e=' + e.toString());
-    }
-    bInit = true;
+    selVal = env.ex_storage.val;
+    redraw();
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     baseBuild(context, ref);
-    return WillPopScope(
-      onWillPop:() async {
-        int r = 0;
-        if(selOld!=selVal) {
-          env.ex_storage.set(selVal);
-          env.save(env.ex_storage);
-          r = 1;
-        }
-        Navigator.of(context).pop(r);
-        return Future.value(false);
-      },
-      child: Scaffold(
-        appBar: AppBar(title: Text(l10n('env.ex_storage.name')), backgroundColor:Color(0xFF000000),),
-        body: Container(
-          margin: _edge.settingsEdge,
-          child:getList(),
-        ),
-      )
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n('env.ex_storage.name')), backgroundColor:Color(0xFF000000),),
+      body: Container(
+        margin: edge.settingsEdge,
+        child:getList(),
+      ),
     );
   }
 
@@ -330,6 +280,6 @@ class ExStrageScreen extends BaseSettingsScreen {
 
   _onRadioSelected(value) {
     selVal = value;
-    redraw();
+    ref.read(environmentProvider).saveData(env.ex_storage,selVal);
   }
 }

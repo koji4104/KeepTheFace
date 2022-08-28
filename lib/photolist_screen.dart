@@ -151,7 +151,7 @@ class PhotoListScreen extends ConsumerWidget {
     );
   }
 
-  // /data/user/0/com.example.take/app_flutter/photo/2022-0417-170926.mp4
+  // /data/user/0/com.github.koji4104/app_flutter/photo/2022-0417-170926.mp4
   Future<bool> readFiles() async {
     try {
       fileList.clear();

@@ -64,7 +64,6 @@ class CameraScreen extends ConsumerWidget {
       print('-- init()');
       _bInit = true;
       _timer = Timer.periodic(Duration(seconds:1), _onTimer);
-      _env.load();
       _initCameraSync(ref);
     }
   }
@@ -100,6 +99,7 @@ class CameraScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     this._ref = ref;
     this._context = context;
+    this._env = ref.watch(environmentProvider).env;
     Future.delayed(Duration.zero, () => init(context,ref));
     ref.watch(cameraScreenProvider);
 
@@ -110,8 +110,8 @@ class CameraScreen extends ConsumerWidget {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays:[]);
       Wakelock.enable();
     } else {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays:[]);
-      Wakelock.disable();
+      //SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays:[]);
+      //Wakelock.disable();
     }
     _edge.getEdge(context,ref);
 
@@ -170,7 +170,6 @@ class CameraScreen extends ConsumerWidget {
                   builder: (context) => SettingsScreen(),
                 )
               );
-              await _env.load();
               if(_preset != getPreset()){
                 print('-- change camera ${_env.camera_height.val}');
                 _preset = getPreset();
@@ -559,7 +558,7 @@ class CameraScreen extends ConsumerWidget {
   }
 
   /// キャッシュ削除
-  /// data/user/0/com.example.take/cache/CAP628722182744800763.mp4
+  /// data/user/0/com.github.koji4104/cache/CAP628722182744800763.mp4
   Future<void> _deleteCacheDir() async {
     try{
       final cacheDir = await getTemporaryDirectory();
