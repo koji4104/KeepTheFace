@@ -31,6 +31,11 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin disk_space, de.appgewaltig.disk_space.DiskSpacePlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new com.one.file_saver.FileSaverPlugin());
+    } catch(Exception e) {
+      Log.e(TAG, "Error registering plugin file_saver, com.one.file_saver.FileSaverPlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.flutter_plugin_android_lifecycle.FlutterAndroidLifecyclePlugin());
     } catch(Exception e) {
       Log.e(TAG, "Error registering plugin flutter_plugin_android_lifecycle, io.flutter.plugins.flutter_plugin_android_lifecycle.FlutterAndroidLifecyclePlugin", e);
@@ -39,6 +44,11 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new com.it_nomads.fluttersecurestorage.FlutterSecureStoragePlugin());
     } catch(Exception e) {
       Log.e(TAG, "Error registering plugin flutter_secure_storage, com.it_nomads.fluttersecurestorage.FlutterSecureStoragePlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new com.example.flutter_video_info.FlutterVideoInfoPlugin());
+    } catch(Exception e) {
+      Log.e(TAG, "Error registering plugin flutter_video_info, com.example.flutter_video_info.FlutterVideoInfoPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new carnegietechnologies.gallery_saver.GallerySaverPlugin());
@@ -81,9 +91,24 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin photo_manager, com.fluttercandies.photo_manager.PhotoManagerPlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new com.llfbandit.record.RecordPlugin());
+    } catch(Exception e) {
+      Log.e(TAG, "Error registering plugin record, com.llfbandit.record.RecordPlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin());
     } catch(Exception e) {
       Log.e(TAG, "Error registering plugin shared_preferences_android, io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new io.flutter.plugins.videoplayer.VideoPlayerPlugin());
+    } catch(Exception e) {
+      Log.e(TAG, "Error registering plugin video_player_android, io.flutter.plugins.videoplayer.VideoPlayerPlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new xyz.justsoft.video_thumbnail.VideoThumbnailPlugin());
+    } catch(Exception e) {
+      Log.e(TAG, "Error registering plugin video_thumbnail, xyz.justsoft.video_thumbnail.VideoThumbnailPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new creativemaybeno.wakelock.WakelockPlugin());

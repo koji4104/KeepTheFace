@@ -11,9 +11,10 @@ import 'package:photo_manager/photo_manager.dart';
 import 'gdrive_adapter.dart';
 import 'package:googleapis/drive/v3.dart' as ga;
 
-
 import 'package:permission_handler/permission_handler.dart';
 
+import 'package:file_saver/file_saver.dart';
+import 'dart:convert' show utf8;
 
 String ALBUM_NAME = "TheseDays";
 
@@ -45,10 +46,10 @@ class MyStorage {
     _files.sort((a,b) { return b.path.compareTo(a.path); });
 
     for (FileSystemEntity e in _files) {
-      if (e.path.contains('.jpg') == false) {
-        print('-- err inapp .jpg==false');
-        continue;
-      }
+      //if (e.path.contains('.jpg') == false) {
+      //  print('-- err inapp .jpg==false');
+      //  continue;
+      //}
       MyFile f = new MyFile();
       f.path = e.path;
       if(allinfo) {
@@ -132,7 +133,7 @@ class MyStorage {
           permission = request.isGranted;
         }
         if (permission) {
-          var result = await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
+          await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
         }
       } else {
         var permission = await Permission.storage.isGranted;
@@ -143,6 +144,34 @@ class MyStorage {
         if (permission) {
           var result = await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
         }
+      }
+    } on Exception catch (e) {
+      print('-- err saveGallery=${e.toString()}');
+    }
+  }
+
+  saveFileSaver(String path) async {
+    try {
+      if (Platform.isAndroid) {
+        ///storage/emulated/0/Android/data/com.github.koji4104.thesedays/files/2022-1005-125744.mp4
+        final b = File(path).readAsBytesSync();
+        String ext = "";
+        if(path.contains('.jpg')) ext = "jpg";
+        else if(path.contains('.mp4')) ext = "mp4";
+        else if(path.contains('.m4a')) ext = "m4a";
+        String res = await FileSaver.instance.saveFile(basenameWithoutExtension(path), b, ext);
+        print('-- saveFileSaver ${res}');
+
+      } else {
+        // info.list
+        // Supports Documents Browser
+        final b = File(path).readAsBytesSync();
+        String ext = "";
+        if(path.contains('.jpg')) ext = "jpg";
+        else if(path.contains('.mp4')) ext = "mp4";
+        else if(path.contains('.m4a')) ext = "m4a";
+        String res = await FileSaver.instance.saveFile(basenameWithoutExtension(path), b, ext);
+        print('-- saveFileSaver ${res}');
       }
     } on Exception catch (e) {
       print('-- err saveGallery=${e.toString()}');
@@ -214,7 +243,7 @@ class MyEdge {
 
   static double homebarWidth = 50.0; // ホームバーの幅
   static double margin = 10.0; // 基本マージン
-  static double leftMargin = 200.0; // タブレット時の左マージン
+  static double rightMargin = 200.0; // タブレット時の右マージン
 
   ProviderBase? _provider;
   double width = 100;
@@ -249,7 +278,7 @@ class MyEdge {
 
     EdgeInsetsGeometry leftEdge = EdgeInsets.all(0.0);
     if (MediaQuery.of(context).size.width > 700) {
-      leftEdge = EdgeInsets.only(left: leftMargin);
+      leftEdge = EdgeInsets.only(right: rightMargin);
     }
     this.settingsEdge = EdgeInsets.all(margin);
     this.settingsEdge = this.settingsEdge.add(leftEdge);

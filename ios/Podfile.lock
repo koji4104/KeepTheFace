@@ -11,8 +11,12 @@ PODS:
     - Flutter
   - disk_space (0.0.1):
     - Flutter
+  - file_saver (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
   - flutter_secure_storage (3.3.1):
+    - Flutter
+  - flutter_video_info (1.1.0):
     - Flutter
   - gallery_saver (0.0.1):
     - Flutter
@@ -29,6 +33,15 @@ PODS:
   - GTMSessionFetcher/Core (1.7.2)
   - in_app_purchase_storekit (0.0.1):
     - Flutter
+  - libwebp (1.2.3):
+    - libwebp/demux (= 1.2.3)
+    - libwebp/mux (= 1.2.3)
+    - libwebp/webp (= 1.2.3)
+  - libwebp/demux (1.2.3):
+    - libwebp/webp
+  - libwebp/mux (1.2.3):
+    - libwebp/demux
+  - libwebp/webp (1.2.3)
   - native_device_orientation (0.0.1):
     - Flutter
   - path_provider_ios (0.0.1):
@@ -40,8 +53,15 @@ PODS:
   - photo_manager (2.0.0):
     - Flutter
     - FlutterMacOS
+  - record (0.0.1):
+    - Flutter
   - shared_preferences_ios (0.0.1):
     - Flutter
+  - video_player_avfoundation (0.0.1):
+    - Flutter
+  - video_thumbnail (0.0.1):
+    - Flutter
+    - libwebp
   - wakelock (0.0.1):
     - Flutter
 
@@ -49,8 +69,10 @@ DEPENDENCIES:
   - battery_plus (from `.symlinks/plugins/battery_plus/ios`)
   - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
   - disk_space (from `.symlinks/plugins/disk_space/ios`)
+  - file_saver (from `.symlinks/plugins/file_saver/ios`)
   - Flutter (from `Flutter`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - flutter_video_info (from `.symlinks/plugins/flutter_video_info/ios`)
   - gallery_saver (from `.symlinks/plugins/gallery_saver/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/ios`)
   - in_app_purchase_storekit (from `.symlinks/plugins/in_app_purchase_storekit/ios`)
@@ -59,7 +81,10 @@ DEPENDENCIES:
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - photo_gallery (from `.symlinks/plugins/photo_gallery/ios`)
   - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
+  - record (from `.symlinks/plugins/record/ios`)
   - shared_preferences_ios (from `.symlinks/plugins/shared_preferences_ios/ios`)
+  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/ios`)
+  - video_thumbnail (from `.symlinks/plugins/video_thumbnail/ios`)
   - wakelock (from `.symlinks/plugins/wakelock/ios`)
 
 SPEC REPOS:
@@ -68,6 +93,7 @@ SPEC REPOS:
     - GoogleSignIn
     - GTMAppAuth
     - GTMSessionFetcher
+    - libwebp
 
 EXTERNAL SOURCES:
   battery_plus:
@@ -76,10 +102,14 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/camera_avfoundation/ios"
   disk_space:
     :path: ".symlinks/plugins/disk_space/ios"
+  file_saver:
+    :path: ".symlinks/plugins/file_saver/ios"
   Flutter:
     :path: Flutter
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  flutter_video_info:
+    :path: ".symlinks/plugins/flutter_video_info/ios"
   gallery_saver:
     :path: ".symlinks/plugins/gallery_saver/ios"
   google_sign_in_ios:
@@ -96,8 +126,14 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/photo_gallery/ios"
   photo_manager:
     :path: ".symlinks/plugins/photo_manager/ios"
+  record:
+    :path: ".symlinks/plugins/record/ios"
   shared_preferences_ios:
     :path: ".symlinks/plugins/shared_preferences_ios/ios"
+  video_player_avfoundation:
+    :path: ".symlinks/plugins/video_player_avfoundation/ios"
+  video_thumbnail:
+    :path: ".symlinks/plugins/video_thumbnail/ios"
   wakelock:
     :path: ".symlinks/plugins/wakelock/ios"
 
@@ -106,22 +142,28 @@ SPEC CHECKSUMS:
   battery_plus: 7851ab482c336dd101ae735dc9363f01e1223c7c
   camera_avfoundation: 07c77549ea54ad95d8581be86617c094a46280d9
   disk_space: e94d34bbdf77954adfb39e60bde9cc5c7233eda6
-  Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
+  file_saver: 503e386464dbe118f630e17b4c2e1190fa0cf808
+  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
   flutter_secure_storage: 7953c38a04c3fdbb00571bcd87d8e3b5ceb9daec
+  flutter_video_info: a932e1b0da369bba95c3a14b7f61d5f8b0d03280
   gallery_saver: 9fc173c9f4fcc48af53b2a9ebea1b643255be542
   google_sign_in_ios: 4f85eb9f937450765c8573bb85fd8cd6a5af675c
   GoogleSignIn: 9c69f4188921d8f789816e4c99ba2a1f5f868ddc
   GTMAppAuth: 4d8f864896f3646f0c33baf38a28362f4c601e15
   GTMSessionFetcher: 5595ec75acf5be50814f81e9189490412bad82ba
   in_app_purchase_storekit: d7fcf4646136ec258e237872755da8ea6c1b6096
+  libwebp: 60305b2e989864154bd9be3d772730f08fc6a59c
   native_device_orientation: 3b4cfc9565a7b879cc4fde282b3e27745e852d0d
   path_provider_ios: 14f3d2fd28c4fdb42f44e0f751d12861c43cee02
   permission_handler_apple: 44366e37eaf29454a1e7b1b7d736c2cceaeb17ce
   photo_gallery: 9f95e57747cd22c10676ece3660d1ffe6c603ee5
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
+  record: cae05d8dd3cdb1dea3511b20e5a5811a1ae00d0d
   shared_preferences_ios: 548a61f8053b9b8a49ac19c1ffbc8b92c50d68ad
+  video_player_avfoundation: e489aac24ef5cf7af82702979ed16f2a5ef84cff
+  video_thumbnail: c4e2a3c539e247d4de13cd545344fd2d26ffafd1
   wakelock: d0fc7c864128eac40eba1617cb5264d9c940b46f
 
-PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
+PODFILE CHECKSUM: ef19549a9bc3046e7bb7d2fab4d021637c0c58a3
 
 COCOAPODS: 1.11.3

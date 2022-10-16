@@ -9,6 +9,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'provider.dart';
 import 'localizations.dart';
 import 'common.dart';
+import 'package:video_thumbnail/video_thumbnail.dart' as video_thumbnail;
+import 'package:video_player/video_player.dart';
+import 'package:flutter_video_info/flutter_video_info.dart';
 
 final photoListScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class PhotoListScreen extends ConsumerWidget {
@@ -160,8 +163,11 @@ class PhotoListScreen extends ConsumerWidget {
           MyFile f = new MyFile();
           int h = (i / 10).toInt();
           int m = (i % 10).toInt();
-          f.date = DateTime(2022, 1, 1, h, m, 0);
-          f.path = 'aaa.mp4';
+          f.date = DateTime(2022, 10, 1, h, m, 0);
+          f.path = (i%3==0)?'http://localhost:8000/test.mp4'
+              :(i%3==1)?'http://localhost:8000/test.m4a'
+              :'http://localhost:8000/test.jpg';
+          f.thumb = 'http://localhost:8000/test.jpg';
           f.byte = 2*1024*1024;
           fileList.add(f);
         }
@@ -176,6 +182,40 @@ class PhotoListScreen extends ConsumerWidget {
         _sizemb = (_storage.totalBytes/1024/1024).toInt();
         if(_storage.totalBytes>0 && _sizemb==0)
           _sizemb = 1;
+
+        // thumb
+        final Directory appdir = await getApplicationDocumentsDirectory();
+        final _thumbdir = Directory('${appdir.path}/thumb');
+        await Directory('${appdir.path}/thumb').create(recursive: true);
+        List<FileSystemEntity> _entities = _thumbdir.listSync(recursive:true, followLinks:false);
+        List<String> _thumbs = [];
+        for (FileSystemEntity e in _entities) {
+          _thumbs.add(e.path);
+        }
+
+        final String thumbDir = '${appdir.path}/thumb/';
+        for (MyFile f in fileList) {
+          if(f.path.contains('.mp4')) {
+            f.thumb = thumbDir + basenameWithoutExtension(f.path) + ".jpg";
+            if (await File(f.thumb).exists() == false) {
+              String? s = await video_thumbnail.VideoThumbnail.thumbnailFile(
+                  video: f.path,
+                  thumbnailPath: f.thumb,
+                  imageFormat: video_thumbnail.ImageFormat.JPEG,
+                  maxHeight: 240,
+                  quality: 70);
+              f.thumb = (s != null) ? s : "";
+            }
+            if (_thumbs.indexOf(f.thumb) >= 0)
+              _thumbs.removeAt(_thumbs.indexOf(f.thumb));
+          }
+        }
+        // delete unused thumbnail
+        for (String u1 in _thumbs) {
+          if (await File(u1).exists()) {
+            await File(u1).delete();
+          }
+        }
       }
 
       for (MyFile f in fileList) {
@@ -197,7 +237,7 @@ class PhotoListScreen extends ConsumerWidget {
       showSnackBar('Please select');
     } else {
       Text msg = Text(l10n('save_files') + ' (${list.length})');
-      Text btn = Text(l10n('save'), style: TextStyle(fontSize: 16, color: Colors.lightBlue));
+      Text btn = Text(l10n('save'), style: TextStyle(fontSize:16, color: Colors.lightBlue));
       showDialogEx(context, msg, btn, _saveFile, list);
     }
   }
@@ -205,7 +245,8 @@ class PhotoListScreen extends ConsumerWidget {
     try {
       for(MyFile f in list){
         if(f.isLibrary==false) {
-          await _storage.saveLibrary(f.path);
+          //await _storage.saveLibrary(f.path);
+          await _storage.saveFileSaver(f.path);
           await new Future.delayed(new Duration(milliseconds:100));
         }
       }
@@ -299,16 +340,42 @@ class MyCard extends ConsumerWidget {
 
   bool _init = false;
   void init(BuildContext context, WidgetRef ref) async {
-    if(_init == false){
-      print('-- card init');
+    if(_init == false) {
       _init = true;
+      /*
       if(kIsWeb) {
-        _thumbWidget = Image.network('/lib/assets/test.png', fit:BoxFit.cover);
+        if(data.path.contains('.m4a')) {
+          _thumbWidget = Icon(
+              Icons.mic,
+              size: 48,
+              color: Color(0xFF888888));
+        } else {
+          _thumbWidget = Image.network('/lib/assets/test.jpg', fit:BoxFit.cover);
+        }
         ref.read(myCardScreenProvider).notifyListeners();
-      } else if(await File(data.path).exists()==true){
-        _thumbWidget = Image.file(File(data.path), fit:BoxFit.cover);
+*/
+      //if(await f.exists()==true){
+        if(data.path.contains('.jpg')) {
+          if(kIsWeb) {
+            _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
+          } else if(await File(data.path).exists()==true) {
+            _thumbWidget = Image.file(File(data.path), fit: BoxFit.cover);
+          }
+        } else if(data.path.contains('.m4a')) {
+          _thumbWidget = Icon(
+              Icons.volume_mute ,
+              size: 48,
+              color: Color(0xFF666666));
+
+        } else if(data.path.contains('.mp4')) {
+          if(kIsWeb) {
+            _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
+          }  else if(await File(data.thumb).exists()==true) {
+            _thumbWidget = Image.file(File(data.thumb), fit: BoxFit.cover);
+          }
+        }
         ref.read(myCardScreenProvider).notifyListeners();
-      }
+      //}
     }
   }
 
@@ -378,14 +445,15 @@ class MyCard extends ConsumerWidget {
           right:6.0, bottom:6.0,
           child: CircleAvatar(
             backgroundColor: _selected ? Color(0xFF303030) : Color(0x00000000),
-            radius: _width<150 ? 12.0+4.0 : _width>300 ? 24.0+4.0 : 18.0+4.0,
+            radius: _width<100 ? 12.0+4.0 : _width>200 ? 24.0+4.0 : 18.0+4.0,
             child: Icon(
               _selected ? Icons.check : null,
-              size: _width<150 ? 24.0 : _width>300 ? 48.0 : 36.0,
+              size: _width<100 ? 24.0 : _width>200 ? 48.0 : 36.0,
               color: Colors.white
             )
           )
         ),
+
       ]
     );
   }
@@ -413,11 +481,12 @@ class MyCard extends ConsumerWidget {
   Widget getDateText(){
     double fsize = 14;
     String s = DateFormat("MM/dd HH:mm").format(data.date);
-    if(_width<150){
-      fsize = 13;
-      s = DateFormat("MM/dd HH").format(data.date);
-    } else if(_width>300){
-      fsize = 15;
+    if(_width<100){
+      fsize = 14;
+      s = DateFormat("MM/dd").format(data.date);
+    } else if(_width>200){
+      fsize = 14;
+      s = DateFormat("yyyy/MM/dd HH:mm").format(data.date);
     }
     return Container(
       child: Text(' ' + s + ' ',
@@ -437,28 +506,80 @@ class PreviewScreen extends ConsumerWidget {
   Image? _img;
   int _width=0;
   int _height=0;
+  int _duration=0;
+  int _orientation=0;
   bool _init = false;
+  Offset _offset = Offset(0,0);
   MyEdge _edge = MyEdge(provider:previewScreenProvider);
+  VideoPlayerController? _videoPlayer;
+  bool _isPlaying = false;
 
   void init(BuildContext context, WidgetRef ref) async {
     if(_init == false){
+      _init = true;
+      //if(kIsWeb) return;
       try{
         if(data.path.contains('.jpg')){
-          _img = Image.file(File(data.path), fit:BoxFit.contain);
-          _img!.image.resolve(ImageConfiguration.empty).addListener(
-            ImageStreamListener((ImageInfo info, bool b) {
+          if(kIsWeb) {
+            _img = Image.network('/lib/assets/test.jpg', fit: BoxFit.contain);
+            ref.read(previewScreenProvider).notifyListeners();
+          } else {
+            _img = Image.file(File(data.path), fit: BoxFit.contain);
+            _img!.image.resolve(ImageConfiguration.empty).addListener(
+              ImageStreamListener((ImageInfo info, bool b) {
                 print('width=${info.image.width}');
                 _width = info.image.width.toInt();
                 _height = info.image.height.toInt();
                 ref.read(previewScreenProvider).notifyListeners();
               },
-            ),
-          );
+              ),
+            );
+          }
+
+        } else if(data.path.contains('.m4a')) {
+          if(kIsWeb) {
+            _videoPlayer = VideoPlayerController.network(data.path)
+              ..initialize().then((_) {
+                _duration = _videoPlayer!.value.duration.inSeconds;
+                ref.read(previewScreenProvider).notifyListeners();
+              });
+
+          } else {
+            _videoPlayer = VideoPlayerController.file(File(data.path))
+              ..initialize().then((_) {
+                _duration = _videoPlayer!.value.duration.inSeconds;
+                ref.read(previewScreenProvider).notifyListeners();
+              });
+          }
+
+        } else if(data.path.contains('.mp4')) {
+          if(kIsWeb){
+            _videoPlayer = VideoPlayerController.network(data.path)
+              ..initialize().then((_) {
+                _duration = _videoPlayer!.value.duration.inSeconds;
+                ref.read(previewScreenProvider).notifyListeners();
+              });
+
+          } else {
+            _videoPlayer = VideoPlayerController.file(File(data.path))
+              ..initialize().then((_) {
+                _duration = _videoPlayer!.value.duration.inSeconds;
+                ref.read(previewScreenProvider).notifyListeners();
+              });
+
+            final videoInfo = FlutterVideoInfo();
+            var a = await videoInfo.getVideoInfo(data.path).then((value) {
+              if(value!=null) {
+                _orientation = value.orientation!=null ? value.orientation! : 0;
+                ref.read(previewScreenProvider).notifyListeners();
+              }
+            });
+          }
+
         }
       } on Exception catch (e) {
         print('-- PreviewScreen.init ${e.toString()}');
       }
-      _init = true;
     }
   }
 
@@ -478,57 +599,169 @@ class PreviewScreen extends ConsumerWidget {
         margin: _edge.homebarEdge,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTap:(){
-            Navigator.of(context).pop();
+          onPanUpdate: (DragUpdateDetails details) {
+            if(details.delta.dy>10) {
+              if(_videoPlayer!=null) {
+                _videoPlayer!.dispose();
+              }
+              Navigator.of(context).pop();
+            }
           },
           child: Stack(children: <Widget>[
             player(),
             getInfoText(),
+            leftButton(),
+            playButton(),
+            rightButton(),
+            if(_videoPlayer!=null)
+        Positioned(
+        left:0, right:0, bottom:10,
+            child:VideoProgressIndicator(
+              _videoPlayer!,
+              allowScrubbing:true,
+              colors: new VideoProgressColors(
+                playedColor: Colors.red,
+                bufferedColor: Colors.black,
+                backgroundColor: Colors.black,
+              ),
+            )),
           ])
         ),
     ));
   }
 
   Widget player() {
-    if(kIsWeb) {
-      return Center(child:Image.network('/lib/assets/test.png',fit:BoxFit.contain));
-    } else if(data.path.contains('.jpg')) {
-      return (_img!=null) ? Center(child:_img) : Container();
-    } else {
-      return Center(child:Image.network('/lib/assets/test.png',fit:BoxFit.contain));
-    }
-  }
-
-  Widget getInfoText(){
+    //if(kIsWeb) {
+    //  return Center(child:Image.network('/lib/assets/test.jpg',fit:BoxFit.contain));
     if(data.path.contains('.jpg')) {
-      if(_img==null){
-        return Container();
-      } else {
-        return Container(
-          padding: EdgeInsets.symmetric(vertical:4, horizontal:8),
-          width:160, height:66,
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
-              getText('${_width} x ${_height}'),
-              getText('${(data.byte/1024).toInt()} KB'),
-            ]
-          )
-        );
-      }
+      return (_img!=null) ? Center(child:_img) : Container();
+    } else if(data.path.contains('.mp4')) {
+      return (_videoPlayer!=null) ? Center(child:VideoPlayer(_videoPlayer!)) : Container();
     } else {
       return Container();
     }
   }
 
+  Widget getInfoText(){
+    if(data.path.contains('.jpg')) {
+      if (_img == null) {
+        return Container();
+      } else {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
+            getText('${(data.byte / 1024).toInt()} kb'),
+            getText('${_width} x ${_height}'),
+          ]
+        );
+      }
+
+    } else if(data.path.contains('.m4a')) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
+          getText('${(data.byte / 1024).toInt()} kb'),
+          getText('${_duration} sec'),
+        ]
+      );
+
+    } else if(data.path.contains('.mp4')) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
+          getText('${(data.byte / 1024).toInt()} kb'),
+          getText('${(_duration).toInt()} sec'),
+          getText('${_orientation} deg'),
+        ]
+      );
+    } else {
+      return Container();
+    }
+  }
+
+  Widget leftButton() {
+    if(data.path.contains('.jpg') || _videoPlayer==null)
+      return Container();
+    return Positioned(
+        top:0, bottom:0, left:30,
+        child: myButton(
+          icon: Icon(Icons.chevron_left),
+          onPressed:(){
+            int sec = _videoPlayer!.value.position.inSeconds - 15;
+            _videoPlayer!.seekTo(Duration(seconds:sec));
+            _ref!.read(previewScreenProvider).notifyListeners();
+          },
+        )
+    );
+  }
+
+  Widget rightButton() {
+    if(data.path.contains('.jpg') || _videoPlayer==null)
+      return Container();
+    return Positioned(
+      top:0, bottom:0, right:30,
+      child: myButton(
+        icon: Icon(Icons.chevron_right),
+        onPressed:() async {
+          int sec = _videoPlayer!.value.position.inSeconds + 15;
+          _videoPlayer!.seekTo(Duration(seconds:sec));
+          _ref!.read(previewScreenProvider).notifyListeners();
+        },
+      )
+    );
+  }
+
+  Widget playButton() {
+    if(data.path.contains('.jpg') || _videoPlayer==null)
+      return Container();
+    if(_isPlaying==false) {
+      return Center(
+        child: myButton(
+          icon: Icon(Icons.play_arrow),
+          onPressed:(){
+            _videoPlayer!.play();
+            _isPlaying = true;
+            _ref!.read(previewScreenProvider).notifyListeners();
+          },
+        )
+      );
+    } else {
+      return Center(
+        child: myButton(
+          icon: Icon(Icons.pause),
+          onPressed:(){
+            _videoPlayer!.pause();
+            _isPlaying = false;
+            _ref!.read(previewScreenProvider).notifyListeners();
+          },
+        )
+      );
+    }
+  }
+
+  Widget myButton({required Icon icon, required void Function()? onPressed}) {
+    return CircleAvatar(
+      backgroundColor: Colors.black38,
+      radius: 38.0,
+      child: IconButton(
+        iconSize: 48,
+        icon: icon,
+        onPressed:onPressed,
+      )
+    );
+  }
+
   Widget getText(String txt){
-    return Align(alignment:Alignment.centerLeft,
-      child:Text(txt),
+    return Container(
+      padding: EdgeInsets.symmetric(vertical:2, horizontal:2),
+      width: 200,
+      color: Colors.black54,
+      child: Align(alignment:Alignment.centerLeft,
+        child:Text(txt,style:TextStyle(color:Colors.white, fontSize:16)),
+      )
     );
   }
 }

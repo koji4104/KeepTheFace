@@ -53,3 +53,33 @@ final isSelectModeProvider = StateProvider<bool>((ref) {
 final cardWidthProvider = StateProvider<int>((ref) {
   return 200;
 });
+
+class StatusData {
+  bool isRunning = false;
+  bool isSaver = false;
+  DateTime? startTime;
+}
+
+final statusProvider = ChangeNotifierProvider((ref) => statusNotifier(ref));
+class statusNotifier extends ChangeNotifier {
+  StatusData statsu = StatusData();
+  statusNotifier(ref){}
+  start() {
+    statsu.isRunning = true;
+    statsu.isSaver = true;
+    statsu.startTime = DateTime.now();
+    this.notifyListeners();
+  }
+  stopflag() {
+    statsu.isRunning = false;
+    statsu.isSaver = false;
+    this.notifyListeners();
+  }
+  stop() {
+    statsu.isRunning = false;
+    statsu.isSaver = false;
+    statsu.startTime = null;
+    this.notifyListeners();
+  }
+
+}

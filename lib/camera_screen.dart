@@ -10,6 +10,7 @@ import 'settings_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as imglib;
 import 'package:wakelock/wakelock.dart';
+import 'package:record/record.dart';
 
 import 'package:disk_space/disk_space.dart';
 import 'package:intl/intl.dart';
@@ -33,13 +34,15 @@ class CameraScreen extends ConsumerWidget {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  Record _record = Record();
 
-  bool _isRunning = false;
-  bool _isSaver = false;
+  StatusData _status = StatusData();
 
   int _takeCount = 0;
-  DateTime? _startTime;
-  DateTime? _retakeTime;
+  DateTime? _photoTime;
+  DateTime? _videoTime;
+  DateTime? _audioTime;
+
   bool _bLogExstrageFull = true;
 
   Timer? _timer;
@@ -103,10 +106,11 @@ class CameraScreen extends ConsumerWidget {
     Future.delayed(Duration.zero, () => init(context,ref));
     ref.watch(cameraScreenProvider);
 
-    this._isSaver = ref.watch(isSaverProvider);
-    this._isRunning = ref.watch(isRunningProvider);
+    //this._isSaver = ref.watch(isSaverProvider);
+    //this._isRunning = ref.watch(isRunningProvider);
+    this._status = _ref.watch(statusProvider).statsu;
 
-    if(_isSaver) {
+    if(_status.isSaver) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays:[]);
       Wakelock.enable();
     } else {
@@ -123,14 +127,14 @@ class CameraScreen extends ConsumerWidget {
         child: Stack(children: <Widget>[
 
         // screen saver
-        if (_isSaver)
-          SaverScreen(startTime:_startTime),
+        if (_status.isSaver)
+          SaverScreen(),
 
-        if(_isSaver==false)
+        if(_status.isSaver==false && _env.take_mode.val!=2)
           _cameraWidget(context),
 
         // START
-        if (_isSaver==false)
+        if (_status.isSaver==false)
           RecordButton(
             onPressed:(){
               onStart();
@@ -138,7 +142,7 @@ class CameraScreen extends ConsumerWidget {
           ),
 
         // Camera Switch button
-        if(_isSaver==false)
+        if(_status.isSaver==false)
           MyButton(
             bottom: 30.0, right: 30.0,
             icon: Icon(Icons.flip_camera_ios, color: Colors.white),
@@ -146,7 +150,7 @@ class CameraScreen extends ConsumerWidget {
           ),
 
         // PhotoList screen button
-        if(_isSaver==false)
+        if(_status.isSaver==false)
           MyButton(
             top:50.0, right:30.0,
             icon: Icon(Icons.folder, color: Colors.white),
@@ -160,7 +164,7 @@ class CameraScreen extends ConsumerWidget {
           ),
 
         // Settings screen button
-        if(_isSaver==false)
+        if(_status.isSaver==false)
           MyButton(
             top: 50.0, left: 30.0,
             icon: Icon(Icons.settings, color:Colors.white),
@@ -281,11 +285,12 @@ class CameraScreen extends ConsumerWidget {
   /// 開始
   Future<bool> onStart() async {
     if(kIsWeb) {
-      _isRunning = true;
-      _startTime = DateTime.now();
-      _batteryLevelStart = await _battery.batteryLevel;
-      _ref.read(isSaverProvider.state).state = true;
-      _ref.read(isRunningProvider.state).state = true;
+      //_isRunning = true;
+      //_startTime = DateTime.now();
+      //_batteryLevelStart = await _battery.batteryLevel;
+      //_ref.read(isSaverProvider.state).state = true;
+      //_ref.read(isRunningProvider.state).state = true;
+      _ref.read(statusProvider).start();
     }
 
     if (_controller!.value.isInitialized==false) {
@@ -298,15 +303,14 @@ class CameraScreen extends ConsumerWidget {
       return false;
     }
 
-    _retakeTime = null;
-    _isRunning = true;
-    _startTime = DateTime.now();
+    _photoTime = null;
+    //_startTime = DateTime.now();
     _batteryLevelStart = await _battery.batteryLevel;
     _bLogExstrageFull = true;
 
     // 先にセーバー起動
-    _ref.read(isSaverProvider.state).state = true;
-    _ref.read(isRunningProvider.state).state = true;
+    //_ref.read(isSaverProvider.state).state = true;
+    _ref.read(statusProvider).start();
 
     await _storage.getInApp(false);
     if(_env.isPremium()) {
@@ -316,7 +320,13 @@ class CameraScreen extends ConsumerWidget {
         await _storage.getGdrive();
     }
     _takeCount = 0;
-    takePicture();
+    if(_env.take_mode.val==1 || _env.take_mode.val==3)
+      takePhoto();
+    if(_env.take_mode.val==2 || _env.take_mode.val==3)
+      startAudio();
+    if(_env.take_mode.val==4)
+      startVideo();
+
     await MyLog.info("Start");
     return true;
   }
@@ -325,18 +335,20 @@ class CameraScreen extends ConsumerWidget {
   Future<void> onStop() async {
     print('-- onStop');
     try {
-      await MyLog.info("Stop " + takingTimeString() + ' ' + _takeCount.toString() + 'pcs');
+      MyLog.info("Stop " + takingTimeString());
       if(_batteryLevelStart>0) {
-        await MyLog.info("Battery ${_batteryLevelStart}->${_batteryLevel}%");
+        MyLog.info("Battery ${_batteryLevelStart}->${_batteryLevel}%");
       }
-      _isRunning = false;
-      _startTime = null;
-      _retakeTime = null;
 
-      _ref.read(isRunningProvider.state).state = false;
+      _ref.read(statusProvider).stop();
 
-      if(_controller!.value.isStreamingImages)
-        _controller!.stopImageStream();
+      if(_env.take_mode.val==1 || _env.take_mode.val==3)
+        if(_controller!.value.isStreamingImages)
+          await _controller!.stopImageStream();
+      if(_env.take_mode.val==2 || _env.take_mode.val==3)
+        await stopAudio();
+      if(_env.take_mode.val==4)
+        await stopVideo();
 
       await Future.delayed(Duration(milliseconds:100));
       await _deleteCacheDir();
@@ -346,10 +358,10 @@ class CameraScreen extends ConsumerWidget {
   }
 
   // 写真
-  Future<void> takePicture() async {
-    print("photoShooting");
+  Future<void> takePhoto() async {
+    print("-- takePhoto");
     if (kIsWeb) return;
-    _retakeTime = null;
+    _photoTime = null;
     DateTime dt = DateTime.now();
     try {
       if (Platform.isIOS) {
@@ -382,7 +394,7 @@ class CameraScreen extends ConsumerWidget {
             }
           }
 
-          _retakeTime = dt;
+          _photoTime = dt;
           _takeCount++;
         } else {
           print('-- photoShooting img=null');
@@ -415,12 +427,63 @@ class CameraScreen extends ConsumerWidget {
             }
           }
         }
-
-        _retakeTime = dt;
+        _photoTime = dt;
         _takeCount++;
       }
     } catch (e) {
       await MyLog.err('${e.toString()}');
+    }
+  }
+
+  Future<void> startVideo() async {
+    print("-- startVideo");
+    if(kIsWeb) return;
+    try {
+      await _controller!.startVideoRecording();
+      _videoTime = DateTime.now();
+    } on CameraException catch (e) {
+      MyLog.err('${e.code} ${e.description}');
+    } catch (e) {
+      MyLog.err('${e.toString()}');
+    }
+  }
+
+  Future<void> stopVideo() async {
+    print("-- stopVideo");
+    if(kIsWeb) return;
+    try {
+      _videoTime = null;
+      XFile xfile = await _controller!.stopVideoRecording();
+      await moveFile(src:xfile.path, dst:await getSavePath('.mp4'));
+    } catch (e) {
+      await MyLog.err('${e.toString()}');
+    }
+  }
+
+  Future<void> startAudio() async {
+    print("-- startAudio");
+    try{
+      if (await _record.hasPermission()) {
+        String path = await getSavePath('.m4a');
+        await _record.start(
+          path:path
+        );
+        _audioTime = DateTime.now();
+      }
+    } catch (e) {
+      MyLog.err('${e.toString()}');
+    }
+  }
+
+  Future<void> stopAudio() async {
+    try{
+      _audioTime = null;
+      final path = await _record.stop();
+      //if (path != null) {
+        //await moveFile(src:path, dst:await getSavePath('.m4a'));
+      //}
+    } catch (e) {
+      MyLog.err('stop audio e=${e.toString()}');
     }
   }
 
@@ -429,6 +492,16 @@ class CameraScreen extends ConsumerWidget {
   Future<File> moveFile({required String src, required String dst}) async {
     File srcfile = File(src);
     try {
+      for(var i=1; i<=5; i++) {
+        if (await srcfile.exists()) {
+          return await srcfile.rename(dst);
+        } else {
+          await Future.delayed(Duration(milliseconds:400));
+        }
+      }
+      MyLog.warn('move file not exists src=${src}');
+      return srcfile;
+      /*
       if (await srcfile.exists() == false) {
         MyLog.warn('move file not exists');
         await Future.delayed(Duration(milliseconds: 100));
@@ -440,7 +513,7 @@ class CameraScreen extends ConsumerWidget {
       print('-- move file src=${src}');
       print('-- move file dst=${dst}');
       return await srcfile.rename(dst);
-
+      */
     } on FileSystemException catch (e) {
       MyLog.err('move file e=${e.message} path=${e.path}');
       final newfile = await srcfile.copy(dst);
@@ -455,14 +528,14 @@ class CameraScreen extends ConsumerWidget {
       this._batteryLevel = await _battery.batteryLevel;
 
     // セーバーで停止ボタンを押したとき
-    if(_isRunning==false && _retakeTime!=null) {
+    if(_status.isRunning==false && _status.startTime!=null) {
       onStop();
       return;
     }
 
     // 自動停止
-    if(_isRunning==true && _startTime!=null) {
-      Duration dur = DateTime.now().difference(_startTime!);
+    if(_status.isRunning==true && _status.startTime!=null) {
+      Duration dur = DateTime.now().difference(_status.startTime!);
       if (_env.autostop_sec.val > 0 && dur.inSeconds>_env.autostop_sec.val) {
         await MyLog.info("Autostop");
         onStop();
@@ -471,7 +544,7 @@ class CameraScreen extends ConsumerWidget {
     }
 
     // バッテリーチェック（1分毎）
-    if(_isRunning==true && DateTime.now().second == 0) {
+    if(_status.isRunning==true && DateTime.now().second == 0) {
       this._batteryLevel = await _battery.batteryLevel;
       if (this._batteryLevel < 10) {
         await MyLog.warn("Low battery");
@@ -481,18 +554,42 @@ class CameraScreen extends ConsumerWidget {
     }
 
     // インターバル
-    if(_isRunning==true && _retakeTime!=null) {
-      Duration dur = DateTime.now().difference(_retakeTime!);
-      if (dur.inSeconds > _env.take_interval_sec.val) {
-        if(await isUnitStorageFree()) {
-          takePicture();
-        } else {
-          onStop();
+    if(_status.isRunning == true) {
+      if(_photoTime!=null) {
+        Duration dur = DateTime.now().difference(_photoTime!);
+        if (dur.inSeconds > _env.photo_interval_sec.val) {
+          if (await isUnitStorageFree()) {
+            takePhoto();
+          } else {
+            onStop();
+          }
+        }
+      }
+      if(_videoTime!=null) {
+        Duration dur = DateTime.now().difference(_videoTime!);
+        if (dur.inSeconds > _env.video_interval_sec.val) {
+          if (await isUnitStorageFree()) {
+            await stopVideo();
+            await startVideo();
+          } else {
+            onStop();
+          }
+        }
+      }
+      if(_audioTime!=null) {
+        Duration dur = DateTime.now().difference(_audioTime!);
+        if (dur.inSeconds > _env.audio_interval_sec.val) {
+          if (await isUnitStorageFree()) {
+            await stopAudio();
+            await startAudio();
+          } else {
+            onStop();
+          }
         }
       }
     }
 
-    if(_isRunning==true && _state!=null) {
+    if(_status.isRunning==true && _state!=null) {
       if (_state == AppLifecycleState.inactive ||
           _state == AppLifecycleState.detached) {
         await MyLog.warn("App is stop or background");
@@ -506,7 +603,8 @@ class CameraScreen extends ConsumerWidget {
     final Directory appdir = await getApplicationDocumentsDirectory();
     final String dirPath = '${appdir.path}/photo';
     await Directory(dirPath).create(recursive: true);
-    return '$dirPath/${DateFormat("yyyy-MMdd-HHmmss").format(DateTime.now())}${ext}';
+    String dt = DateFormat("yyyy-MMdd-HHmmss").format(DateTime.now());
+    return '${dirPath}/${dt}${ext}';
   }
 
   /// 本体ストレージの空き容量
@@ -563,10 +661,21 @@ class CameraScreen extends ConsumerWidget {
     try{
       final cacheDir = await getTemporaryDirectory();
       if (cacheDir.existsSync()) {
-        cacheDir.deleteSync(recursive: true);
+        List<FileSystemEntity> files = cacheDir.listSync(recursive:true,followLinks:false);
+        if(files.length>0) {
+          for (FileSystemEntity e in files) {
+            try{
+              await File(e.path).delete();
+              print('-- del ok ${e.path}');
+            } on Exception catch (err) {
+              print('-- del err ${e.path}');
+            }
+          }
+          //cacheDir.deleteSync(recursive: true);
+        }
       }
     } on Exception catch (e) {
-      print('-- _deleteCacheDir() Exception ' + e.toString());
+      print('-- Exception _deleteCacheDir() e=' + e.toString());
     }
   }
 
@@ -614,8 +723,8 @@ class CameraScreen extends ConsumerWidget {
   /// 時間の文字列
   String takingTimeString() {
     String s = '';
-    if(_startTime!=null) {
-      Duration dur = DateTime.now().difference(_startTime!);
+    if(_status.startTime!=null) {
+      Duration dur = DateTime.now().difference(_status.startTime!);
       s = dur.inMinutes.toString() + 'min';
     }
     return s;
@@ -626,20 +735,15 @@ final saverProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class SaverScreen extends ConsumerWidget {
   Timer? _timer;
   DateTime? _waitTime;
-  DateTime? _startTime;
   late WidgetRef _ref;
   Environment _env = Environment();
-  bool _isTaking = true;
   bool bInit = false;
-
-  SaverScreen({DateTime? startTime}){
-    this._startTime = startTime;
-    this._waitTime = DateTime.now();
-  }
+  StatusData _status = StatusData();
 
   void init(WidgetRef ref) {
     if(bInit==false){
       bInit = true;
+      _waitTime = DateTime.now();
       _env.load();
       _timer = Timer.periodic(Duration(seconds:1), _onTimer);
     }
@@ -650,11 +754,12 @@ class SaverScreen extends ConsumerWidget {
     this._ref = ref;
     Future.delayed(Duration.zero, () => init(ref));
     ref.watch(saverProvider);
-    _isTaking = ref.read(isRunningProvider);
+    this._status = ref.read(statusProvider).statsu;
 
     return Scaffold(
       extendBody: true,
       body: Stack(children: <Widget>[
+        // Tap
         Positioned(
           top:0, bottom:0, left:0, right:0,
           child: TextButton(
@@ -672,34 +777,14 @@ class SaverScreen extends ConsumerWidget {
             child: Container(
               width: 160, height: 160,
               child: StopButton(
+                text:takingString(),
                 onPressed:(){
                   _waitTime = null;
-                  ref.read(isSaverProvider.state).state = false;
-                  ref.read(isRunningProvider.state).state = false;
+                  ref.read(statusProvider).stopflag();
                 }
               )
             )
           ),
-
-        // 撮影中
-        if(_waitTime!=null)
-          Positioned(
-            bottom:60, left:0, right:0,
-            child: Text(
-              takingString(),
-              textAlign:TextAlign.center,
-              style:TextStyle(color:COL_SS_TEXT),
-          )),
-
-        // 経過時間
-        if(_waitTime!=null)
-          Positioned(
-            bottom:40, left:0, right:0,
-            child: Text(
-              elapsedTimeString(),
-              textAlign:TextAlign.center,
-              style:TextStyle(color:COL_SS_TEXT),
-          )),
         ]
       )
     );
@@ -717,7 +802,7 @@ class SaverScreen extends ConsumerWidget {
     }
   }
 
-  Widget StopButton({required void Function()? onPressed}) {
+  Widget StopButton({required String text, required void Function()? onPressed}) {
     return TextButton(
       style: TextButton.styleFrom(
         backgroundColor: Colors.black26,
@@ -729,7 +814,7 @@ class SaverScreen extends ConsumerWidget {
           ),
         ),
       ),
-      child: Text('STOP', style:TextStyle(fontSize:16, color:COL_SS_TEXT)),
+      child: Text(text, style:TextStyle(fontSize:16, color:COL_SS_TEXT)),
       onPressed: onPressed,
     );
   }
@@ -738,18 +823,19 @@ class SaverScreen extends ConsumerWidget {
     String s = '';
     if(_timer==null) {
       s = '';
-    } else if(_isTaking==false) {
-      s = 'Stoped';
-    } else {
-      s = 'Now Shooting';
+    } else if(_status.isRunning==false) {
+      s = 'STOP\n--:--';
+    } else if(_status.startTime!=null && _status.isRunning){
+      Duration dur = DateTime.now().difference(_status.startTime!);
+      s = 'STOP\n' + dur2str(dur);
     }
     return s;
   }
 
   String elapsedTimeString(){
     String s = '';
-    if(_startTime!=null && _isTaking) {
-      Duration dur = DateTime.now().difference(_startTime!);
+    if(_status.startTime!=null && _status.isRunning) {
+      Duration dur = DateTime.now().difference(_status.startTime!);
       s = dur2str(dur);
     }
     return s;

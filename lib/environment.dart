@@ -41,33 +41,52 @@ class EnvData {
 
 /// Environment
 class Environment {
+  // 1photo 2audio 3photo+audio 4video
+  EnvData take_mode = EnvData(
+    val:1,
+    vals:[1,2,3,4],
+    keys:['photo','audio','photo_audio','video'],
+    name:'take_mode',
+  );
+
   /// 間隔
-  EnvData take_interval_sec = EnvData(
+  EnvData photo_interval_sec = EnvData(
     val:60,
-    vals:[30,60,300,600],
-    keys:['30 sec','60 sec','5 min','10 min'],
-    name:'take_interval_sec',
+    vals:[30,60,120,300,600],
+    keys:['30 sec','1 min','2 min','5 min','10 min'],
+    name:'photo_interval_sec',
+  );
+  EnvData video_interval_sec = EnvData(
+    val:60,
+    vals:[60,300,600],
+    keys:['1 min','5 min','10 min'],
+    name:'video_interval_sec',
+  );
+  EnvData audio_interval_sec = EnvData(
+    val:60,
+    vals:[60,300,600],
+    keys:['1 min','5 min','10 min'],
+    name:'audio_interval_sec',
   );
 
   /// 自動停止
   EnvData autostop_sec = EnvData(
     val:3600,
-    vals:[3600,21600,43200,86400],
-    keys:['1 hour','6 hour','12 hour','24 hour'],
+    vals:[120, 3600,7200,14400,21600,43200,86400],
+    keys:['2 min','1 hour','2 hour','4 hour','6 hour','12 hour','24 hour'],
     name:'autostop_sec',
   );
 
   EnvData save_num = EnvData(
     val:100,
-    vals:[100,500,1000],
-    keys:['100','500','1000'],
+    vals:[100,500],
+    keys:['100','500'],
     name:'save_num',
   );
-
   EnvData ex_save_num = EnvData(
     val:100,
-    vals:[10,100,500,1000],
-    keys:['10','100','500','1000'],
+    vals:[100,500],
+    keys:['100','500'],
     name:'ex_save_num',
   );
 
@@ -164,7 +183,10 @@ class Environment {
     print('-- load()');
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      _loadSub(prefs, take_interval_sec);
+      _loadSub(prefs, take_mode);
+      _loadSub(prefs, photo_interval_sec);
+      _loadSub(prefs, audio_interval_sec);
+      _loadSub(prefs, video_interval_sec);
       _loadSub(prefs, save_num);
       _loadSub(prefs, ex_storage);
       _loadSub(prefs, ex_save_num);
@@ -219,8 +241,12 @@ class environmentNotifier extends ChangeNotifier {
   }
 
   EnvData getData(EnvData data){
-    EnvData ret = env.take_interval_sec;
+    EnvData ret = env.take_mode;
     switch(data.name){
+      case 'take_mode': ret = env.take_mode; break;
+      case 'photo_interval_sec': ret = env.photo_interval_sec; break;
+      case 'audio_interval_sec': ret = env.audio_interval_sec; break;
+      case 'video_interval_sec': ret = env.video_interval_sec; break;
       case 'autostop_sec': ret = env.autostop_sec; break;
       case 'save_num': ret = env.save_num; break;
       case 'ex_save_num': ret = env.ex_save_num; break;

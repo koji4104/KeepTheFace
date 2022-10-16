@@ -43,8 +43,11 @@ class SettingsScreen extends BaseSettingsScreen {
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(8,8,8,8),
       child: Column(children: [
+        MyValue(data: env.take_mode),
         MyValue(data: env.camera_height),
-        MyValue(data: env.take_interval_sec),
+        MyValue(data: env.photo_interval_sec),
+        MyValue(data: env.audio_interval_sec),
+        MyValue(data: env.video_interval_sec),
         MyValue(data: env.save_num),
         MyValue(data: env.autostop_sec),
 

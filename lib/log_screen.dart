@@ -148,6 +148,7 @@ class LogScreen extends ConsumerWidget {
     TextStyle tsWarn = TextStyle(color:Color(0xFFeeee44));
     TextStyle tsTime = TextStyle(color:Color(0xFFcccccc));
 
+    String format = MediaQuery.of(context).size.width > 400 ? "yyyy-MM-dd HH:mm" : "MM-dd HH:mm";
     for(MyLogData d in list) {
       String stime = DateFormat("yyyy-MM-dd HH:mm").format(DateTime.parse(d.time));
       Wrap w = Wrap(children:[getText(stime),getText(d.msg)]);
@@ -163,7 +164,7 @@ class LogScreen extends ConsumerWidget {
       width: MediaQuery.of(context).size.width-20,
       height: MediaQuery.of(context).size.height-120,
         decoration: BoxDecoration(
-          color: Color(0xFF333333),
+          color: Color(0xFF404040),
           borderRadius: BorderRadius.circular(4),
         ),
       child: SingleChildScrollView(
