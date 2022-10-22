@@ -2,8 +2,6 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-//import 'package:googleapis/content/v2_1.dart'; // err DateTime
-
 import 'package:path_provider/path_provider.dart';
 import 'photolist_screen.dart';
 import 'settings_screen.dart';
@@ -285,11 +283,6 @@ class CameraScreen extends ConsumerWidget {
   /// 開始
   Future<bool> onStart() async {
     if(kIsWeb) {
-      //_isRunning = true;
-      //_startTime = DateTime.now();
-      //_batteryLevelStart = await _battery.batteryLevel;
-      //_ref.read(isSaverProvider.state).state = true;
-      //_ref.read(isRunningProvider.state).state = true;
       _ref.read(statusProvider).start();
     }
 
@@ -335,11 +328,16 @@ class CameraScreen extends ConsumerWidget {
   Future<void> onStop() async {
     print('-- onStop');
     try {
-      MyLog.info("Stop " + takingTimeString());
-      if(_batteryLevelStart>0) {
-        MyLog.info("Battery ${_batteryLevelStart}->${_batteryLevel}%");
+      String s = 'Stop';
+      if(_status.startTime!=null) {
+        Duration dur = DateTime.now().difference(_status.startTime!);
+        if(dur.inMinutes>0)
+          s += ' ${dur.inMinutes}min';
       }
-
+      if(_batteryLevelStart-_batteryLevel>0) {
+        s += ' batt${_batteryLevelStart}->${_batteryLevel}%';
+      }
+      MyLog.info(s);
       _ref.read(statusProvider).stop();
 
       if(_env.take_mode.val==1 || _env.take_mode.val==3)
@@ -501,19 +499,6 @@ class CameraScreen extends ConsumerWidget {
       }
       MyLog.warn('move file not exists src=${src}');
       return srcfile;
-      /*
-      if (await srcfile.exists() == false) {
-        MyLog.warn('move file not exists');
-        await Future.delayed(Duration(milliseconds: 100));
-        if (await srcfile.exists() == false) {
-          MyLog.warn('move file not exists 2');
-          await Future.delayed(Duration(milliseconds: 100));
-        }
-      }
-      print('-- move file src=${src}');
-      print('-- move file dst=${dst}');
-      return await srcfile.rename(dst);
-      */
     } on FileSystemException catch (e) {
       MyLog.err('move file e=${e.message} path=${e.path}');
       final newfile = await srcfile.copy(dst);
@@ -701,8 +686,8 @@ class CameraScreen extends ConsumerWidget {
   Widget RecordButton({required void Function()? onPressed}) {
     return Center(
       child: Container(
-        width: 160, height: 160,
-        child: TextButton(
+        width:160, height:160,
+        child:TextButton(
           style: TextButton.styleFrom(
             backgroundColor: Colors.black26,
             shape: const CircleBorder(
@@ -718,16 +703,6 @@ class CameraScreen extends ConsumerWidget {
         )
       )
     );
-  }
-
-  /// 時間の文字列
-  String takingTimeString() {
-    String s = '';
-    if(_status.startTime!=null) {
-      Duration dur = DateTime.now().difference(_status.startTime!);
-      s = dur.inMinutes.toString() + 'min';
-    }
-    return s;
   }
 }
 

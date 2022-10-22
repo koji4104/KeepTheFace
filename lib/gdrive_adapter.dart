@@ -21,12 +21,15 @@ class GoogleHttpClient extends IOClient {
 }
 
 class GoogleDriveAdapter {
+  GoogleDriveAdapter(){}
+
   GoogleSignIn googleSignIn = GoogleSignIn(
     scopes:[ga.DriveApi.driveScope]
   );
   final storage = new FlutterSecureStorage();
   GoogleSignInAccount? gsa;
   bool isSignedIn(){ return gsa!=null; }
+  String loginerr = '';
 
   /// displayName(email) or email
   String getAccountName(){
@@ -45,11 +48,10 @@ class GoogleDriveAdapter {
   String? folderId;
   String folderName = ALBUM_NAME;
 
-  GoogleDriveAdapter(){}
-
   /// Already logged in
   Future<bool> loginSilently() async {
     gsa = null;
+    loginerr = '';
     try{
       if (await storage.read(key:'signedIn')=='true') {
         gsa = await googleSignIn.signInSilently();
@@ -59,6 +61,7 @@ class GoogleDriveAdapter {
       }
     } on Exception catch (e) {
       print('-- err loginSilently() ${e.toString()}');
+      loginerr = e.toString();
     }
     print('-- loginSilently() is ${gsa!=null}');
     return gsa!=null;
@@ -67,6 +70,7 @@ class GoogleDriveAdapter {
   // New account or Existing account
   Future<bool> loginWithGoogle() async {
     print('-- loginWithGoogle()');
+    loginerr = '';
     try{
       gsa = await googleSignIn.signIn();
       if(gsa!=null) {
@@ -74,6 +78,7 @@ class GoogleDriveAdapter {
       }
     } on Exception catch (e) {
       print('-- err loginWithGoogle() ${e.toString()}');
+      loginerr = e.toString();
     }
     print('-- loginWithGoogle() is ${gsa!=null}');
     return gsa!=null;

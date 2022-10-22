@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'model.dart';
 import 'common.dart';
+import 'gdrive_adapter.dart';
 
 final selectedListProvider = ChangeNotifierProvider((ref) => selectedListNotifier(ref));
 class selectedListNotifier extends ChangeNotifier {
@@ -81,5 +82,14 @@ class statusNotifier extends ChangeNotifier {
     statsu.startTime = null;
     this.notifyListeners();
   }
+}
 
+final gdriveProvider = ChangeNotifierProvider((ref) => gdriveNotifier(ref));
+class gdriveNotifier extends ChangeNotifier {
+  late GoogleDriveAdapter gdrive = GoogleDriveAdapter();
+  gdriveNotifier(ref){
+    gdrive.loginSilently().then((r){
+      if(r) this.notifyListeners();
+    });
+  }
 }

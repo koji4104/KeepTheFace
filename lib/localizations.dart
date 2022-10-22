@@ -54,6 +54,7 @@ class Localized {
       'audio': 'Audio',
       'photo_audio': 'Photo Audio',
       'video': 'Video',
+      'not_login': 'Not Login',
     },
     'ja': {
       'settings_title': '設定',
@@ -90,6 +91,7 @@ class Localized {
       'audio': '音声',
       'photo_audio': '写真 音声',
       'video': 'ビデオ',
+      'not_login': 'ログインしていません',
     },
   };
 
@@ -103,6 +105,8 @@ class Localized {
     } on Exception catch (e) {
       print('Localized.text() ${e.toString()}');
     }
+    if(s==null && text.contains('_desc'))
+      s = '';
     return s!=null ? s : text;
   }
 }

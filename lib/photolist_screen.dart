@@ -238,22 +238,68 @@ class PhotoListScreen extends ConsumerWidget {
     } else {
       Text msg = Text(l10n('save_files') + ' (${list.length})');
       Text btn = Text(l10n('save'), style: TextStyle(fontSize:16, color: Colors.lightBlue));
-      showDialogEx(context, msg, btn, _saveFile, list);
+      //showDialogEx(context, msg, l10n('save'), _saveFile, list);
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: msg,
+            actions: <Widget>[
+              Column(children:[
+                MyTextButton(
+                  label:l10n('cancel'),
+                  onPressed:(){ Navigator.of(context).pop(); }
+                ),
+                MyTextButton(
+                    label:l10n('save'),
+                    onPressed:(){ _saveFile(list); Navigator.of(context).pop(); }
+                ),
+                MyTextButton(
+                    label:'Google Drive',
+                    onPressed:(){ _saveFile(list); Navigator.of(context).pop(); }
+                ),
+                MyTextButton(
+                    label:'Keepに保存',
+                    onPressed:(){ _saveFile(list); Navigator.of(context).pop(); }
+                ),
+              ])
+            ],
+          );
+        }
+      );
     }
   }
   _saveFile(List<MyFile> list) async {
     try {
       for(MyFile f in list){
         if(f.isLibrary==false) {
-          //await _storage.saveLibrary(f.path);
-          await _storage.saveFileSaver(f.path);
+          if(f.path.contains('.jpg') || f.path.contains('.mp4'))
+            await _storage.saveLibrary(f.path);
+          else if(f.path.contains('.m4a'))
+            await _storage.saveFileSaver(f.path);
           await new Future.delayed(new Duration(milliseconds:100));
         }
       }
-      //readFiles();
     } on Exception catch (e) {
       print('-- _saveFile ${e.toString()}');
     }
+  }
+
+  Widget MyTextButton({required String label, required void Function()? onPressed,
+    Color? fgcol}){
+    if(fgcol==null) fgcol = Colors.white;
+    return Container(
+      width: 200,
+      padding: EdgeInsets.symmetric(vertical:0,horizontal:0),
+      child: TextButton(
+        style: TextButton.styleFrom(
+          backgroundColor: Color(0xFF606060),
+          shape: RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(40)))
+        ),
+        child: Text(label, style:TextStyle(color:fgcol), textAlign:TextAlign.center),
+        onPressed: onPressed
+      ),
+    );
   }
 
   /// delete file
@@ -263,8 +309,27 @@ class PhotoListScreen extends ConsumerWidget {
       showSnackBar('Please select');
     } else {
       Text msg = Text(l10n('delete_files') + ' (${list.length})');
-      Text btn = Text(l10n('delete'), style: TextStyle(fontSize:16, color:Colors.redAccent));
-      showDialogEx(context, msg, btn, _deleteFile, list);
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: msg,
+            actions: <Widget>[
+              Column(children:[
+              MyTextButton(
+                label: l10n('cancel'),
+                onPressed:(){ Navigator.of(context).pop(); },
+              ),
+              MyTextButton(
+                fgcol: Color(0xFFF08080),
+                label: l10n('delete'),
+                onPressed:(){ _deleteFile(list); Navigator.of(context).pop(); },
+              ),
+            ])
+            ],
+          );
+        }
+      );
     }
   }
   _deleteFile(List<MyFile> list) async {
@@ -279,34 +344,6 @@ class PhotoListScreen extends ConsumerWidget {
     } on Exception catch (e) {
       print('-- _deleteFile ${e.toString()}');
     }
-  }
-
-  /// Show dialog (OK or Cancel)
-  Future<void> showDialogEx(
-      BuildContext context,
-      Text msg,
-      Text buttonText,
-      Function func,
-      List<MyFile> list
-    ) async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: msg,
-          actions: <Widget>[
-            TextButton(
-              child: Text(l10n('cancel'), style:TextStyle(fontSize:16, color:Color(0xFFcccccc))),
-              onPressed:(){ Navigator.of(context).pop(); },
-            ),
-            TextButton(
-              child: buttonText,
-              onPressed:(){ func(list); Navigator.of(context).pop(); },
-            ),
-          ],
-        );
-      }
-    );
   }
 
   String l10n(String text){
@@ -564,6 +601,8 @@ class PreviewScreen extends ConsumerWidget {
             _videoPlayer = VideoPlayerController.file(File(data.path))
               ..initialize().then((_) {
                 _duration = _videoPlayer!.value.duration.inSeconds;
+                _width = _videoPlayer!.value.size.width.toInt();
+                _height = _videoPlayer!.value.size.height.toInt();
                 ref.read(previewScreenProvider).notifyListeners();
               });
 
@@ -636,7 +675,20 @@ class PreviewScreen extends ConsumerWidget {
     if(data.path.contains('.jpg')) {
       return (_img!=null) ? Center(child:_img) : Container();
     } else if(data.path.contains('.mp4')) {
-      return (_videoPlayer!=null) ? Center(child:VideoPlayer(_videoPlayer!)) : Container();
+      if (_videoPlayer==null) {
+        return Container();
+      } else {
+        double aspect = _videoPlayer!.value.size.aspectRatio;
+        if(aspect<=0.0)
+          return Container();
+        else
+          return Center(
+            child: AspectRatio(
+              aspectRatio: aspect,
+              child: VideoPlayer(_videoPlayer!)
+            )
+          );
+      }
     } else {
       return Container();
     }
@@ -673,6 +725,7 @@ class PreviewScreen extends ConsumerWidget {
         children: [
           getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
           getText('${(data.byte / 1024).toInt()} kb'),
+          getText('${_width} x ${_height}'),
           getText('${(_duration).toInt()} sec'),
           getText('${_orientation} deg'),
         ]

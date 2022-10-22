@@ -17,6 +17,7 @@ import 'package:file_saver/file_saver.dart';
 import 'dart:convert' show utf8;
 
 String ALBUM_NAME = "TheseDays";
+String SAVE_DIR = "appdata";
 
 class MyFile{
   String path = '';

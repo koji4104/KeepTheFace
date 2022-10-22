@@ -9,11 +9,13 @@ import 'gdrive_adapter.dart';
 import 'environment.dart';
 import 'base_settings_screen.dart';
 import 'purchase_screen.dart';
+import 'provider.dart';
 
-bool IS_PREMIUM = false;
+bool IS_PREMIUM = true;
 
 //----------------------------------------------------------
 class SettingsScreen extends BaseSettingsScreen {
+  late GoogleDriveAdapter gdriveAd;
   @override
   Future init() async {
   }
@@ -21,6 +23,8 @@ class SettingsScreen extends BaseSettingsScreen {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     baseBuild(context, ref);
+    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n("settings_title")),
@@ -43,6 +47,7 @@ class SettingsScreen extends BaseSettingsScreen {
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(8,8,8,8),
       child: Column(children: [
+        MyLabel('Take settings'),
         MyValue(data: env.take_mode),
         MyValue(data: env.camera_height),
         MyValue(data: env.photo_interval_sec),
@@ -51,18 +56,29 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.save_num),
         MyValue(data: env.autostop_sec),
 
+        MyLabel(''),
+        MyLabel('Save settings'),
+        MyListTile(
+            title:MyText('Google Drive'),
+            title2:gdriveAd.isSignedIn() ? MyText('ON') : MyText('OFF'),
+            onTap:(){
+              NavigatorPush(GoogleDriveScreen());
+            }
+        ),
+
         if(IS_PREMIUM)
         MyLabel(''),
         if(IS_PREMIUM)
-        MyLabel(l10n('premium')),
+        MyLabel('Premium'),
         if(IS_PREMIUM)
         MyListTile(
-          title:Text(l10n('premium')),
-          title2:env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg),
+          title:MyText('premium'),
+          title2:env.isTrial() ? MyText('ON') : MyText('OFF'),
           onTap:(){
             NavigatorPush(PremiumScreen());
           }
         ),
+        /*
         if(pre)
           MyListTile(
             title:Text(l10n(env.ex_storage.name),style:ts),
@@ -71,12 +87,13 @@ class SettingsScreen extends BaseSettingsScreen {
               NavigatorPush(ExStrageScreen());
             }
           ),
+         */
         if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
 
         MyLabel(''),
         MyLabel('Logs'),
         MyListTile(
-          title:Text('Logs'),
+          title:MyText('Logs'),
           onTap:(){
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -98,50 +115,6 @@ class SettingsScreen extends BaseSettingsScreen {
           NavigatorPush(RadioListScreen(data:data));
         }
     );
-  }
-}
-
-//----------------------------------------------------------
-class RadioListScreen extends BaseSettingsScreen {
-  int selVal = 0;
-  late EnvData data;
-
-  RadioListScreen({required EnvData data}){
-    this.data = data;
-    selVal = data.val;
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    baseBuild(context, ref);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n(data.name)), backgroundColor:Color(0xFF000000),),
-      body: Container(
-        margin: edge.settingsEdge,
-        child:getList()
-      ),
-    );
-  }
-
-  Widget getList() {
-    List<Widget> list = [];
-    for(int i=0; i<data.vals.length; i++){
-      list.add(
-        MyRadioListTile(
-          title: data.keys[i],
-          value: data.vals[i],
-          groupValue: selVal,
-          onChanged:(value) => _onRadioSelected(data.vals[i]),
-        )
-      );
-    }
-    list.add(MyLabel(l10n(data.name+'_desc')));
-    return Column(children:list);
-  }
-
-  _onRadioSelected(value) {
-    selVal = value;
-    ref.read(environmentProvider).saveData(data,selVal);
   }
 }
 
@@ -170,8 +143,8 @@ class PremiumScreen extends BaseSettingsScreen {
       child: Column(children:[
         MyLabel(l10n('premium_desc')),
         MyTile(
-          title:Text(l10n('trial')),
-          title2:env.isTrial() ? Text('ON',style:tsOn) : Text('OFF',style:tsNg)
+          title:MyText('trial'),
+          title2:env.isTrial() ? MyText('ON') : Text('OFF')
         ),
         MyButton(
           title: 'trial',
@@ -185,9 +158,7 @@ class PremiumScreen extends BaseSettingsScreen {
 
         MyLabel(''),
         MyLabel('Purchase'),
-        MyTile(
-          title:Text(l10n('Purchase_desc')),
-        ),
+        MyTile(title:Text(l10n('Purchase_desc'))),
         MyButton(
           title: 'Purchase',
           ok: true,
@@ -205,12 +176,11 @@ class PremiumScreen extends BaseSettingsScreen {
 }
 
 //----------------------------------------------------------
-// 外部ストレージ
-final exstragScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
-class ExStrageScreen extends BaseSettingsScreen {
+// GoogleDrive
+class GoogleDriveScreen extends BaseSettingsScreen {
   int selVal = 0;
   late EnvData data;
-  GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
+  late GoogleDriveAdapter gdriveAd;
 
   @override
   Future init() async {
@@ -221,8 +191,10 @@ class ExStrageScreen extends BaseSettingsScreen {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     baseBuild(context, ref);
+    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
+
     return Scaffold(
-      appBar: AppBar(title: Text(l10n('env.ex_storage.name')), backgroundColor:Color(0xFF000000),),
+      appBar: AppBar(title: Text(l10n('Google Drive')), backgroundColor:Color(0xFF000000),),
       body: Container(
         margin: edge.settingsEdge,
         child:getList(),
@@ -232,46 +204,28 @@ class ExStrageScreen extends BaseSettingsScreen {
 
   Widget getList() {
     return Column(children:[
-      MyRadioListTile(
-        title: env.ex_storage.keys[0],
-        value: env.ex_storage.vals[0],
-        groupValue: selVal,
-        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[0]),
-      ),
-      MyRadioListTile(
-        title: env.ex_storage.keys[1],
-        value: env.ex_storage.vals[1],
-        groupValue: selVal,
-        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[1]),
-      ),
-      MyRadioListTile(
-        title: env.ex_storage.keys[2],
-        value: env.ex_storage.vals[2],
-        groupValue: selVal,
-        onChanged: (value) => _onRadioSelected(env.ex_storage.vals[2]),
-      ),
-
-      MyLabel(''),
-      MyLabel('GoogleDrive'),
       if(gdriveAd.isSignedIn()==false)
-        MyTile(title:Text('OFF',style:tsNg),title2:Text('')),
+        MyTile(title:MyText('not_login'),title2:Text('')),
+
+      if(gdriveAd.loginerr=='')
+        MyTile(title:MyText(gdriveAd.loginerr),title2:Text('')),
 
       if(gdriveAd.isSignedIn()==true)
-        MyTile(title:Text(gdriveAd.getAccountName(),style:tsOn),title2:Text('')),
+        MyTile(title:Text(gdriveAd.getAccountName()),title2:Text('')),
 
       if(gdriveAd.isSignedIn()==false)
         MyButton(
-          title:'Login GoogleDrive',
+          title:'Login',
           onTap:() {
-            gdriveAd.loginWithGoogle().then((r){
-              if(r) redraw();
+            gdriveAd.loginWithGoogle().then((_){
+              redraw();
             });
           }
         ),
 
       if(gdriveAd.isSignedIn()==true)
         MyButton(
-          title:'Logout GoogleDrive',
+          title:'Logout',
           onTap:() {
             gdriveAd.logout().then((_){
               redraw();
