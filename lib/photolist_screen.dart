@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'provider.dart';
 import 'localizations.dart';
 import 'common.dart';
+import 'gdrive_adapter.dart';
 import 'package:video_thumbnail/video_thumbnail.dart' as video_thumbnail;
 import 'package:video_player/video_player.dart';
 import 'package:flutter_video_info/flutter_video_info.dart';
@@ -20,6 +21,7 @@ class PhotoListScreen extends ConsumerWidget {
   String title='In-app data';
   List<MyFile> fileList = [];
   List<MyCard> cardList = [];
+  List<PreviewScreen> previewList = [];
 
   int _crossAxisCount = 3;
   int _gridZoom = 0;
@@ -32,6 +34,7 @@ class PhotoListScreen extends ConsumerWidget {
   late WidgetRef _ref;
   MyEdge _edge = MyEdge(provider:photoListScreenProvider);
   MyStorage _storage = new MyStorage();
+  late GoogleDriveAdapter gdriveAd;
 
   void init(BuildContext context, WidgetRef ref) {
     if(_init) return;
@@ -54,6 +57,7 @@ class PhotoListScreen extends ConsumerWidget {
 
     bool bSelectMode = ref.watch(isSelectModeProvider);
     ref.watch(photoListScreenProvider);
+    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
 
     return Scaffold(
       appBar: AppBar(
@@ -147,10 +151,10 @@ class PhotoListScreen extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.symmetric(vertical:4, horizontal:6),
       child: GridView.count(
-          crossAxisCount: _crossAxisCount + _gridZoom,
-          children: List.generate(cardList.length, (index) {
-            return cardList[index];
-          })),
+        crossAxisCount: _crossAxisCount + _gridZoom,
+        children: List.generate(cardList.length, (index) {
+          return cardList[index];
+        })),
     );
   }
 
@@ -158,12 +162,11 @@ class PhotoListScreen extends ConsumerWidget {
   Future<bool> readFiles() async {
     try {
       fileList.clear();
+      cardList.clear();
       if (kIsWeb) {
-        for (int i = 1; i < 30; i++) {
+        for (int i = 1; i < 28; i++) {
           MyFile f = new MyFile();
-          int h = (i / 10).toInt();
-          int m = (i % 10).toInt();
-          f.date = DateTime(2022, 10, 1, h, m, 0);
+          f.date = DateTime(2022, 12, i, 0, 0, 0);
           f.path = (i%3==0)?'http://localhost:8000/test.mp4'
               :(i%3==1)?'http://localhost:8000/test.m4a'
               :'http://localhost:8000/test.jpg';
@@ -185,15 +188,15 @@ class PhotoListScreen extends ConsumerWidget {
 
         // thumb
         final Directory appdir = await getApplicationDocumentsDirectory();
-        final _thumbdir = Directory('${appdir.path}/thumb');
-        await Directory('${appdir.path}/thumb').create(recursive: true);
+        final _thumbdir = Directory('${appdir.path}/thumbs');
+        await Directory('${appdir.path}/thumbs').create(recursive: true);
         List<FileSystemEntity> _entities = _thumbdir.listSync(recursive:true, followLinks:false);
         List<String> _thumbs = [];
         for (FileSystemEntity e in _entities) {
           _thumbs.add(e.path);
         }
 
-        final String thumbDir = '${appdir.path}/thumb/';
+        final String thumbDir = '${appdir.path}/thumbs/';
         for (MyFile f in fileList) {
           if(f.path.contains('.mp4')) {
             f.thumb = thumbDir + basenameWithoutExtension(f.path) + ".jpg";
@@ -218,9 +221,16 @@ class PhotoListScreen extends ConsumerWidget {
         }
       }
 
-      for (MyFile f in fileList) {
-        cardList.add(MyCard(data:f));
+      _ref.read(fileListProvider).list = fileList;
+
+      for (int i=0; i<fileList.length; i++) {
+        cardList.add(MyCard(data:fileList[i], index:i));
       }
+
+      for (MyFile f in fileList) {
+        previewList.add(PreviewScreen(data:f));
+      }
+      _ref.read(previewListProvider).list = previewList;
 
       _ref.read(selectedListProvider).clear();
       redraw();
@@ -233,51 +243,76 @@ class PhotoListScreen extends ConsumerWidget {
   /// Save file
   _saveFileWithDialog(BuildContext context, WidgetRef ref) async {
     List<MyFile> list = ref.read(selectedListProvider).list;
+    int photo_cnt = 0;
+    int audio_cnt = 0;
+    for(MyFile f in list){
+      if (f.path.contains('.jpg') || f.path.contains('.mp4'))
+        photo_cnt++;
+      else if(f.path.contains('.m4a'))
+        audio_cnt++;
+    }
     if(list.length==0) {
       showSnackBar('Please select');
     } else {
-      Text msg = Text(l10n('save_files') + ' (${list.length})');
-      Text btn = Text(l10n('save'), style: TextStyle(fontSize:16, color: Colors.lightBlue));
-      //showDialogEx(context, msg, l10n('save'), _saveFile, list);
+      Text msg = Text('Selected ' + ' ${list.length}');
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            content: msg,
+            //content: msg,
             actions: <Widget>[
+            Container(
+            padding: EdgeInsets.symmetric(vertical:8,horizontal:4),
+            child:
               Column(children:[
+                if(photo_cnt>0)
                 MyTextButton(
-                  label:l10n('cancel'),
-                  onPressed:(){ Navigator.of(context).pop(); }
+                  label:'save_photo_app',
+                  onPressed:(){ _saveFile(list, 1); Navigator.of(_context).pop();}
+                ),
+                if(audio_cnt>0)
+                MyTextButton(
+                  label:'save_file_app',
+                  onPressed:(){ _saveFile(list, 2); Navigator.of(_context).pop(); }
+                ),
+                if(gdriveAd.isSignedIn())
+                MyTextButton(
+                  label:'Google Drive',
+                  onPressed:(){ _saveFile(list, 4); Navigator.of(_context).pop(); }
                 ),
                 MyTextButton(
-                    label:l10n('save'),
-                    onPressed:(){ _saveFile(list); Navigator.of(context).pop(); }
-                ),
-                MyTextButton(
-                    label:'Google Drive',
-                    onPressed:(){ _saveFile(list); Navigator.of(context).pop(); }
-                ),
-                MyTextButton(
-                    label:'Keepに保存',
-                    onPressed:(){ _saveFile(list); Navigator.of(context).pop(); }
+                  label:'cancel',
+                  onPressed:() { Navigator.of(_context).pop();},
                 ),
               ])
-            ],
+            )],
           );
         }
       );
     }
   }
-  _saveFile(List<MyFile> list) async {
+  _saveFile(List<MyFile> list, int mode) async {
     try {
-      for(MyFile f in list){
-        if(f.isLibrary==false) {
+      print('-- mode=${mode}');
+      if(mode==1){
+        // 写真アプリ
+        for(MyFile f in list){
           if(f.path.contains('.jpg') || f.path.contains('.mp4'))
             await _storage.saveLibrary(f.path);
-          else if(f.path.contains('.m4a'))
+          await new Future.delayed(new Duration(milliseconds:100));
+        }
+      } else if(mode==2){
+        for(MyFile f in list){
+          print('-- ${f.path}');
+          if (f.path.contains('.m4a'))
             await _storage.saveFileSaver(f.path);
           await new Future.delayed(new Duration(milliseconds:100));
+        }
+      } else if(mode==4){
+        for(MyFile f in list) {
+          if (f.path.contains('.jpg') || f.path.contains('.mp4') || f.path.contains('.m4a'))
+            await gdriveAd.uploadFile(f.path);
+         await new Future.delayed(new Duration(milliseconds:100));
         }
       }
     } on Exception catch (e) {
@@ -285,19 +320,30 @@ class PhotoListScreen extends ConsumerWidget {
     }
   }
 
-  Widget MyTextButton({required String label, required void Function()? onPressed,
-    Color? fgcol}){
-    if(fgcol==null) fgcol = Colors.white;
+  Widget MyTextButton({
+      required String label,
+      required void Function()? onPressed,
+      double? width}){
+    Color fgcol = Color(0xFFFFFFFF);
+    Color bgcol = Color(0xFF606060);
+    double fsize = 16.0;
+    if(label=='cancel'){
+      fgcol = Color(0xFFCccccc);
+      bgcol = Color(0xFF505050);
+    } else if(label=='delete'){
+      fgcol = Color(0xFFF04040);
+    }
     return Container(
-      width: 200,
-      padding: EdgeInsets.symmetric(vertical:0,horizontal:0),
+      width: width!=null ? width:300,
+      height: 40,
+      padding: EdgeInsets.symmetric(vertical:4,horizontal:4),
       child: TextButton(
         style: TextButton.styleFrom(
-          backgroundColor: Color(0xFF606060),
+          backgroundColor: bgcol,
           shape: RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(40)))
         ),
-        child: Text(label, style:TextStyle(color:fgcol), textAlign:TextAlign.center),
-        onPressed: onPressed
+        child: Text(l10n(label), style:TextStyle(color:fgcol, fontSize:fsize), textAlign:TextAlign.center),
+        onPressed:onPressed,
       ),
     );
   }
@@ -315,17 +361,16 @@ class PhotoListScreen extends ConsumerWidget {
           return AlertDialog(
             content: msg,
             actions: <Widget>[
-              Column(children:[
               MyTextButton(
-                label: l10n('cancel'),
-                onPressed:(){ Navigator.of(context).pop(); },
+                label: 'cancel',
+                width: 120,
+                onPressed:null,
               ),
               MyTextButton(
-                fgcol: Color(0xFFF08080),
-                label: l10n('delete'),
-                onPressed:(){ _deleteFile(list); Navigator.of(context).pop(); },
+                label: 'delete',
+                width: 120,
+                onPressed:(){ _deleteFile(list); },
               ),
-            ])
             ],
           );
         }
@@ -364,8 +409,10 @@ class PhotoListScreen extends ConsumerWidget {
 /// MyCard
 class MyCard extends ConsumerWidget {
   final myCardScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
-  MyCard({MyFile? data}) {
+  int index = 0;
+  MyCard({MyFile? data, int? index}) {
     if(data!=null) this.data = data;
+    if(index!=null) this.index = index;
   }
 
   MyFile data = MyFile();
@@ -379,18 +426,6 @@ class MyCard extends ConsumerWidget {
   void init(BuildContext context, WidgetRef ref) async {
     if(_init == false) {
       _init = true;
-      /*
-      if(kIsWeb) {
-        if(data.path.contains('.m4a')) {
-          _thumbWidget = Icon(
-              Icons.mic,
-              size: 48,
-              color: Color(0xFF888888));
-        } else {
-          _thumbWidget = Image.network('/lib/assets/test.jpg', fit:BoxFit.cover);
-        }
-        ref.read(myCardScreenProvider).notifyListeners();
-*/
       //if(await f.exists()==true){
         if(data.path.contains('.jpg')) {
           if(kIsWeb) {
@@ -436,14 +471,7 @@ class MyCard extends ConsumerWidget {
           ref.read(selectedListProvider).select(data) :
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => PreviewScreen(data:data),
-            )
-          );
-        },
-        onLongPress:(){
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PreviewScreen(data:data),
+              builder: (context) => previewPage(this.index),
             )
           );
         },
@@ -532,6 +560,7 @@ class MyCard extends ConsumerWidget {
   }
 }
 
+///--------------------------------------------------------
 final previewScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class PreviewScreen extends ConsumerWidget {
   PreviewScreen({MyFile? data}) {
@@ -546,7 +575,6 @@ class PreviewScreen extends ConsumerWidget {
   int _duration=0;
   int _orientation=0;
   bool _init = false;
-  Offset _offset = Offset(0,0);
   MyEdge _edge = MyEdge(provider:previewScreenProvider);
   VideoPlayerController? _videoPlayer;
   bool _isPlaying = false;
@@ -554,7 +582,6 @@ class PreviewScreen extends ConsumerWidget {
   void init(BuildContext context, WidgetRef ref) async {
     if(_init == false){
       _init = true;
-      //if(kIsWeb) return;
       try{
         if(data.path.contains('.jpg')){
           if(kIsWeb) {
@@ -628,50 +655,43 @@ class PreviewScreen extends ConsumerWidget {
     ref.watch(previewScreenProvider);
     this._ref = ref;
     _edge.getEdge(context,ref);
+    double l = MediaQuery.of(context).size.width/2 - 100;
+    double b = MediaQuery.of(context).size.height / 20;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Preview'),
-        actions: <Widget>[],
-      ),
-      body: Container(
-        margin: _edge.homebarEdge,
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onPanUpdate: (DragUpdateDetails details) {
-            if(details.delta.dy>10) {
-              if(_videoPlayer!=null) {
-                _videoPlayer!.dispose();
-              }
-              Navigator.of(context).pop();
-            }
-          },
-          child: Stack(children: <Widget>[
-            player(),
-            getInfoText(),
-            leftButton(),
-            playButton(),
-            rightButton(),
-            if(_videoPlayer!=null)
+    return Container(
+      margin: _edge.homebarEdge,
+      child:Stack(children: <Widget>[
+        player(),
+        getInfoText(),
         Positioned(
-        left:0, right:0, bottom:10,
-            child:VideoProgressIndicator(
-              _videoPlayer!,
-              allowScrubbing:true,
-              colors: new VideoProgressColors(
-                playedColor: Colors.red,
-                bufferedColor: Colors.black,
-                backgroundColor: Colors.black,
-              ),
-            )),
-          ])
+          bottom:b, left:l,
+          child: leftButton()
         ),
-    ));
+        Positioned(
+          bottom:b, left:0, right:0,
+          child: playButton()
+        ),
+        Positioned(
+          bottom:b, right:l,
+          child: rightButton()
+        ),
+        if(_videoPlayer!=null)
+          Positioned(
+          bottom:b+70, left:4, right:4,
+          child:VideoProgressIndicator(
+            _videoPlayer!,
+            allowScrubbing:true,
+            colors: new VideoProgressColors(
+              playedColor: Colors.red,
+              bufferedColor: Colors.black,
+              backgroundColor: Colors.black,
+            ),
+          )),
+      ])
+    );
   }
 
   Widget player() {
-    //if(kIsWeb) {
-    //  return Center(child:Image.network('/lib/assets/test.jpg',fit:BoxFit.contain));
     if(data.path.contains('.jpg')) {
       return (_img!=null) ? Center(child:_img) : Container();
     } else if(data.path.contains('.mp4')) {
@@ -722,7 +742,7 @@ class PreviewScreen extends ConsumerWidget {
     } else if(data.path.contains('.mp4')) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.start,
-        children: [
+        children:[
           getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
           getText('${(data.byte / 1024).toInt()} kb'),
           getText('${_width} x ${_height}'),
@@ -738,59 +758,49 @@ class PreviewScreen extends ConsumerWidget {
   Widget leftButton() {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
-    return Positioned(
-        top:0, bottom:0, left:30,
-        child: myButton(
-          icon: Icon(Icons.chevron_left),
-          onPressed:(){
-            int sec = _videoPlayer!.value.position.inSeconds - 15;
-            _videoPlayer!.seekTo(Duration(seconds:sec));
-            _ref!.read(previewScreenProvider).notifyListeners();
-          },
-        )
+    return myButton(
+      icon: Icon(Icons.replay_10),
+      onPressed:(){
+        int sec = _videoPlayer!.value.position.inSeconds - 10;
+        _videoPlayer!.seekTo(Duration(seconds:sec));
+        _ref!.read(previewScreenProvider).notifyListeners();
+      },
     );
   }
 
   Widget rightButton() {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
-    return Positioned(
-      top:0, bottom:0, right:30,
-      child: myButton(
-        icon: Icon(Icons.chevron_right),
-        onPressed:() async {
-          int sec = _videoPlayer!.value.position.inSeconds + 15;
-          _videoPlayer!.seekTo(Duration(seconds:sec));
-          _ref!.read(previewScreenProvider).notifyListeners();
-        },
-      )
+    return myButton(
+      icon: Icon(Icons.forward_10),
+      onPressed:() async {
+        int sec = _videoPlayer!.value.position.inSeconds + 10;
+        _videoPlayer!.seekTo(Duration(seconds:sec));
+        _ref!.read(previewScreenProvider).notifyListeners();
+      },
     );
   }
 
   Widget playButton() {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
-    if(_isPlaying==false) {
-      return Center(
-        child: myButton(
-          icon: Icon(Icons.play_arrow),
-          onPressed:(){
-            _videoPlayer!.play();
-            _isPlaying = true;
-            _ref!.read(previewScreenProvider).notifyListeners();
-          },
-        )
+    if(_isPlaying==false){
+      return myButton(
+        icon: Icon(Icons.play_arrow),
+        onPressed:(){
+          _videoPlayer!.play();
+          _isPlaying = true;
+          _ref!.read(previewScreenProvider).notifyListeners();
+        },
       );
     } else {
-      return Center(
-        child: myButton(
-          icon: Icon(Icons.pause),
-          onPressed:(){
-            _videoPlayer!.pause();
-            _isPlaying = false;
-            _ref!.read(previewScreenProvider).notifyListeners();
-          },
-        )
+      return myButton(
+        icon: Icon(Icons.pause),
+        onPressed:(){
+          _videoPlayer!.pause();
+          _isPlaying = false;
+          _ref!.read(previewScreenProvider).notifyListeners();
+        },
       );
     }
   }
@@ -798,9 +808,9 @@ class PreviewScreen extends ConsumerWidget {
   Widget myButton({required Icon icon, required void Function()? onPressed}) {
     return CircleAvatar(
       backgroundColor: Colors.black38,
-      radius: 38.0,
+      radius: 28.0,
       child: IconButton(
-        iconSize: 48,
+        iconSize: 40.0,
         icon: icon,
         onPressed:onPressed,
       )
@@ -816,5 +826,63 @@ class PreviewScreen extends ConsumerWidget {
         child:Text(txt,style:TextStyle(color:Colors.white, fontSize:16)),
       )
     );
+  }
+}
+
+///--------------------------------------------------------
+final previewListProvider = ChangeNotifierProvider((ref) => previewListNotifier(ref));
+class previewListNotifier extends ChangeNotifier {
+  List<PreviewScreen> list = [];
+  previewListNotifier(ref){}
+}
+class previewPage extends ConsumerWidget {
+  late PageController controller;
+  previewPage(int index){
+    controller = PageController(initialPage:index);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    List<PreviewScreen> pages = ref.watch(previewListProvider).list;
+    return Scaffold(
+      appBar: AppBar(
+      title: Text('Preview'),
+    ),
+    body: Container(child: GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onPanUpdate: (DragUpdateDetails details){
+        if(details.delta.dy>12){
+          Navigator.of(context).pop();
+        }
+      },
+      child: Stack(
+      alignment: Alignment.center,
+      children:[
+        PageView(
+          controller:controller,
+          children:pages,
+        ),
+        Positioned(
+          top:0, bottom:0, left:30,
+          child: IconButton(
+            icon: Icon(Icons.arrow_back_ios, size:30),
+            onPressed: () => controller.previousPage(
+              duration: Duration(milliseconds:300),
+              curve: Curves.easeIn,
+            ),
+          ),
+        ),
+        Positioned(
+          top:0, bottom:0, right:30,
+          child:IconButton(
+            icon: Icon(Icons.arrow_forward_ios, size:30),
+            onPressed: () => controller.nextPage(
+              duration: Duration(milliseconds:300),
+              curve: Curves.easeIn,
+            ),
+          )
+        ),
+      ]
+    ))));
   }
 }

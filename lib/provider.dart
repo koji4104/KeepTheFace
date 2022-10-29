@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'model.dart';
 import 'common.dart';
 import 'gdrive_adapter.dart';
 
@@ -28,24 +27,11 @@ class selectedListNotifier extends ChangeNotifier {
   }
 }
 
-final photoListProvider = ChangeNotifierProvider((ref) => photoListNotifier(ref));
-class photoListNotifier extends ChangeNotifier {
-  photoListNotifier(ref){}
-  int num = 0;
-  int size = 0;
+final fileListProvider = ChangeNotifierProvider((ref) => fileListNotifier(ref));
+class fileListNotifier extends ChangeNotifier {
+  List<MyFile> list = [];
+  fileListNotifier(ref){}
 }
-
-final isSaverProvider = StateProvider<bool>((ref) {
-  return false;
-});
-
-final isRunningProvider = StateProvider<bool>((ref) {
-  return false;
-});
-
-final startTimeProvider = StateProvider<DateTime?>((ref) {
-  return null;
-});
 
 final isSelectModeProvider = StateProvider<bool>((ref) {
   return false;

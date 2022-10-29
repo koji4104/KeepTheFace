@@ -103,9 +103,6 @@ class CameraScreen extends ConsumerWidget {
     this._env = ref.watch(environmentProvider).env;
     Future.delayed(Duration.zero, () => init(context,ref));
     ref.watch(cameraScreenProvider);
-
-    //this._isSaver = ref.watch(isSaverProvider);
-    //this._isRunning = ref.watch(isRunningProvider);
     this._status = _ref.watch(statusProvider).statsu;
 
     if(_status.isSaver) {
@@ -202,7 +199,6 @@ class CameraScreen extends ConsumerWidget {
 
     Size _screenSize = MediaQuery.of(context).size;
     Size _cameraSize = _controller!.value.previewSize!;
-
     double sw = _screenSize.width;
     double sh = _screenSize.height;
     double dw = sw>sh ? sw : sh;
@@ -297,12 +293,10 @@ class CameraScreen extends ConsumerWidget {
     }
 
     _photoTime = null;
-    //_startTime = DateTime.now();
     _batteryLevelStart = await _battery.batteryLevel;
     _bLogExstrageFull = true;
 
     // 先にセーバー起動
-    //_ref.read(isSaverProvider.state).state = true;
     _ref.read(statusProvider).start();
 
     await _storage.getInApp(false);
@@ -391,7 +385,6 @@ class CameraScreen extends ConsumerWidget {
               }
             }
           }
-
           _photoTime = dt;
           _takeCount++;
         } else {
@@ -402,7 +395,6 @@ class CameraScreen extends ConsumerWidget {
         XFile xfile = await _controller!.takePicture();
         String path = await getSavePath('.jpg');
         await moveFile(src:xfile.path, dst:path);
-
         if(_env.isPremium()) {
           if (_env.ex_storage.val == 1) {
              if((_storage.libraryFiles.length+_takeCount) < _env.ex_save_num.val) {
@@ -477,9 +469,6 @@ class CameraScreen extends ConsumerWidget {
     try{
       _audioTime = null;
       final path = await _record.stop();
-      //if (path != null) {
-        //await moveFile(src:path, dst:await getSavePath('.m4a'));
-      //}
     } catch (e) {
       MyLog.err('stop audio e=${e.toString()}');
     }
@@ -586,7 +575,7 @@ class CameraScreen extends ConsumerWidget {
 
   Future<String> getSavePath(String ext) async {
     final Directory appdir = await getApplicationDocumentsDirectory();
-    final String dirPath = '${appdir.path}/photo';
+    final String dirPath = '${appdir.path}/files';
     await Directory(dirPath).create(recursive: true);
     String dt = DateFormat("yyyy-MMdd-HHmmss").format(DateTime.now());
     return '${dirPath}/${dt}${ext}';
@@ -656,7 +645,6 @@ class CameraScreen extends ConsumerWidget {
               print('-- del err ${e.path}');
             }
           }
-          //cacheDir.deleteSync(recursive: true);
         }
       }
     } on Exception catch (e) {

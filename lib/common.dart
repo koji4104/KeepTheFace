@@ -41,16 +41,12 @@ class MyStorage {
     files.clear();
     totalBytes = 0;
     final Directory appdir = await getApplicationDocumentsDirectory();
-    final photodir = Directory('${appdir.path}/photo');
-    await Directory('${appdir.path}/photo').create(recursive: true);
-    List<FileSystemEntity> _files = photodir.listSync(recursive:true, followLinks:false);
+    final files_dir = Directory('${appdir.path}/files');
+    await Directory('${appdir.path}/files').create(recursive:true);
+    List<FileSystemEntity> _files = files_dir.listSync(recursive:true, followLinks:false);
     _files.sort((a,b) { return b.path.compareTo(a.path); });
 
     for (FileSystemEntity e in _files) {
-      //if (e.path.contains('.jpg') == false) {
-      //  print('-- err inapp .jpg==false');
-      //  continue;
-      //}
       MyFile f = new MyFile();
       f.path = e.path;
       if(allinfo) {
@@ -168,10 +164,11 @@ class MyStorage {
         // Supports Documents Browser
         final b = File(path).readAsBytesSync();
         String ext = "";
-        if(path.contains('.jpg')) ext = "jpg";
-        else if(path.contains('.mp4')) ext = "mp4";
-        else if(path.contains('.m4a')) ext = "m4a";
-        String res = await FileSaver.instance.saveFile(basenameWithoutExtension(path), b, ext);
+        MimeType type = MimeType.OTHER;
+        if(path.contains('.jpg')){ ext="jpg"; type=MimeType.JPEG; }
+        else if(path.contains('.mp4')){ ext="mp4"; type=MimeType.MPEG; }
+        else if(path.contains('.m4a')){ ext="m4a"; type=MimeType.AAC; }
+        String res = await FileSaver.instance.saveAs(basenameWithoutExtension(path), b, ext, type);
         print('-- saveFileSaver ${res}');
       }
     } on Exception catch (e) {
@@ -202,6 +199,8 @@ class MyStorage {
     try {
       if(gdriveAd.isSignedIn()==true){
         gdriveAd.uploadFile(path);
+      } else {
+        print('-- warn google not signed in');
       }
     } on Exception catch (e) {
       print('-- err saveGdrive=${e.toString()}');
@@ -277,12 +276,12 @@ class MyEdge {
       }
     }
 
-    EdgeInsetsGeometry leftEdge = EdgeInsets.all(0.0);
-    if (MediaQuery.of(context).size.width > 700) {
-      leftEdge = EdgeInsets.only(right: rightMargin);
+    EdgeInsetsGeometry leftrightEdge = EdgeInsets.all(0.0);
+    if (width > 700) {
+      leftrightEdge = EdgeInsets.only(left:width*10.0/100.0,right:width*10.0/100.0);
     }
     this.settingsEdge = EdgeInsets.all(margin);
-    this.settingsEdge = this.settingsEdge.add(leftEdge);
+    this.settingsEdge = this.settingsEdge.add(leftrightEdge);
     this.settingsEdge = this.settingsEdge.add(homebarEdge);
     if(_provider!=null)
       ref.read(_provider!).notifyListeners();

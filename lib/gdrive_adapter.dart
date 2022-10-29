@@ -91,6 +91,40 @@ class GoogleDriveAdapter {
     gsa = null;
   }
 
+  Future<void> getFolderId() async {
+    var client = GoogleHttpClient(await gsa!.authHeaders);
+    var drive = ga.DriveApi(client);
+    try {
+      // folder id
+      if (folderId == null) {
+        String q = "mimeType='application/vnd.google-apps.folder'";
+        q += " and name='${folderName}'";
+        q += " and trashed=False";
+        q += " and 'root' in parents";
+        ga.FileList folders = await drive.files.list(
+          q: q,
+        );
+        for (var i = 0; i < folders.files!.length; i++) {
+          if (folders.files![i].name == folderName && folders.files![i].id != null) {
+            folderId = folders.files![i].id!;
+            print('-- folderId=${folders.files![i].id} name=${folders.files![i].name}');
+          }
+        }
+        // create folder
+        if (folderId == null) {
+          final googleApisFolder = ga.File();
+          googleApisFolder.name = folderName;
+          googleApisFolder.mimeType = 'application/vnd.google-apps.folder';
+          final response = await drive.files.create(googleApisFolder);
+          folderId = response.id;
+          print('create folder');
+        }
+        print('folders.length=${folders.files!.length} folderid=${folderId}');
+      }
+    } on Exception catch (e) {
+      print('-- err _getFiles=${e.toString()}');
+    }  }
+
   Future<void> getFiles() async {
     print('-- getFiles');
     if(isSignedIn()==false) {
@@ -102,29 +136,7 @@ class GoogleDriveAdapter {
     try{
       // folder id
       if(folderId==null) {
-        String q = "mimeType='application/vnd.google-apps.folder'";
-        q += " and name='${folderName}'";
-        q += " and trashed=False";
-        q += " and 'root' in parents";
-        ga.FileList folders = await drive.files.list(
-          q:q,
-        );
-        for (var i = 0; i < folders.files!.length; i++) {
-          if (folders.files![i].name == folderName && folders.files![i].id != null ) {
-            folderId = folders.files![i].id!;
-            print('-- folderId=${folders.files![i].id} name=${folders.files![i].name}');
-          }
-        }
-        // create folder
-        if(folderId==null) {
-          final googleApisFolder = ga.File();
-          googleApisFolder.name = folderName;
-          googleApisFolder.mimeType = 'application/vnd.google-apps.folder';
-          final response = await drive.files.create(googleApisFolder);
-          folderId = response.id;
-          print('create folder');
-        }
-        print('folders.length=${folders.files!.length} folderid=${folderId}');
+        getFolderId();
       }
 
       // File list
@@ -148,8 +160,11 @@ class GoogleDriveAdapter {
       return;
     }
     if(folderId==null) {
-      print('-- not folderId');
-      return;
+      await getFolderId();
+      if(folderId==null) {
+        print('-- not folderId');
+        return;
+      }
     }
     var client = GoogleHttpClient(await gsa!.authHeaders);
     var drive = ga.DriveApi(client);
