@@ -57,14 +57,13 @@ class statusNotifier extends ChangeNotifier {
     statsu.startTime = DateTime.now();
     this.notifyListeners();
   }
-  stopflag() {
+  stop() {
     statsu.isRunning = false;
     statsu.isSaver = false;
     this.notifyListeners();
   }
-  stop() {
+  stopped() {
     statsu.isRunning = false;
-    statsu.isSaver = false;
     statsu.startTime = null;
     this.notifyListeners();
   }

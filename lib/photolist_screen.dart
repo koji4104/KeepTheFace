@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:gallery_saver/gallery_saver.dart';
 import 'package:path/path.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -270,7 +269,6 @@ class PhotoListScreen extends ConsumerWidget {
                   label:'save_photo_app',
                   onPressed:(){ _saveFile(list, 1); Navigator.of(_context).pop();}
                 ),
-                if(audio_cnt>0)
                 MyTextButton(
                   label:'save_file_app',
                   onPressed:(){ _saveFile(list, 2); Navigator.of(_context).pop(); }
@@ -324,19 +322,19 @@ class PhotoListScreen extends ConsumerWidget {
       required String label,
       required void Function()? onPressed,
       double? width}){
-    Color fgcol = Color(0xFFFFFFFF);
-    Color bgcol = Color(0xFF606060);
+    Color fgcol = Color(0xFF404040);
+    Color bgcol = Color(0xFFFFFFFF);
     double fsize = 16.0;
     if(label=='cancel'){
-      fgcol = Color(0xFFCccccc);
-      bgcol = Color(0xFF505050);
+      fgcol = Color(0xFFFFFFFF);
+      bgcol = Color(0xFF606060);
     } else if(label=='delete'){
-      fgcol = Color(0xFFF04040);
+      fgcol = Colors.redAccent;
     }
     return Container(
       width: width!=null ? width:300,
-      height: 40,
-      padding: EdgeInsets.symmetric(vertical:4,horizontal:4),
+      //height: 50,
+      padding: EdgeInsets.symmetric(vertical:6,horizontal:4),
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
@@ -354,7 +352,7 @@ class PhotoListScreen extends ConsumerWidget {
     if(list.length==0) {
       showSnackBar('Please select');
     } else {
-      Text msg = Text(l10n('delete_files') + ' (${list.length})');
+      Text msg = Text(l10n('delete_files'));
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -363,13 +361,13 @@ class PhotoListScreen extends ConsumerWidget {
             actions: <Widget>[
               MyTextButton(
                 label: 'cancel',
-                width: 120,
-                onPressed:null,
+                width: 130,
+                onPressed:(){ Navigator.of(_context).pop(); },
               ),
               MyTextButton(
                 label: 'delete',
-                width: 120,
-                onPressed:(){ _deleteFile(list); },
+                width: 130,
+                onPressed:(){ _deleteFile(list); Navigator.of(_context).pop(); },
               ),
             ],
           );

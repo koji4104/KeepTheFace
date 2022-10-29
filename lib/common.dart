@@ -18,6 +18,7 @@ import 'dart:convert' show utf8;
 
 String ALBUM_NAME = "TheseDays";
 String SAVE_DIR = "appdata";
+final bool testMode = true;
 
 class MyFile{
   String path = '';
@@ -153,10 +154,11 @@ class MyStorage {
         ///storage/emulated/0/Android/data/com.github.koji4104.thesedays/files/2022-1005-125744.mp4
         final b = File(path).readAsBytesSync();
         String ext = "";
-        if(path.contains('.jpg')) ext = "jpg";
-        else if(path.contains('.mp4')) ext = "mp4";
-        else if(path.contains('.m4a')) ext = "m4a";
-        String res = await FileSaver.instance.saveFile(basenameWithoutExtension(path), b, ext);
+        MimeType type = MimeType.OTHER;
+        if(path.contains('.jpg')){ ext="jpg"; type=MimeType.JPEG; }
+        else if(path.contains('.mp4')){ ext="mp4"; type=MimeType.MPEG; }
+        else if(path.contains('.m4a')){ ext="m4a"; type=MimeType.AAC; }
+        String res = await FileSaver.instance.saveAs(basenameWithoutExtension(path), b, ext, type);
         print('-- saveFileSaver ${res}');
 
       } else {

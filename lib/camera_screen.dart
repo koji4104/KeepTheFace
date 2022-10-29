@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:image/image.dart' as imglib;
 import 'package:wakelock/wakelock.dart';
 import 'package:record/record.dart';
+import 'package:path/path.dart';
 
 import 'package:disk_space/disk_space.dart';
 import 'package:intl/intl.dart';
@@ -23,12 +24,11 @@ import 'camera_adapter.dart';
 import 'environment.dart';
 
 bool disableCamera = kIsWeb; // true=test
-final bool _testMode = true;
 
-const Color COL_SS_TEXT = Color(0xFFbbbbbb);
+const Color COL_SS_TEXT = Color(0xFF909090);
 final cameraScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 
-class CameraScreen extends ConsumerWidget {
+class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -66,6 +66,7 @@ class CameraScreen extends ConsumerWidget {
       _bInit = true;
       _timer = Timer.periodic(Duration(seconds:1), _onTimer);
       _initCameraSync(ref);
+      WidgetsBinding.instance!.addObserver(this);
     }
   }
 
@@ -73,6 +74,7 @@ class CameraScreen extends ConsumerWidget {
   void dispose() {
     if(_controller!=null) _controller!.dispose();
     if(_timer!=null) _timer!.cancel();
+    WidgetsBinding.instance!.removeObserver(this);
   }
 
   // low 320x240 (4:3)
@@ -93,7 +95,22 @@ class CameraScreen extends ConsumerWidget {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    //setState(() { _state = state; });
+    print("stete = $state");
+    _state = state;
+    switch (state) {
+      case AppLifecycleState.inactive:
+        print('非アクティブになったときの処理');
+        break;
+      case AppLifecycleState.paused:
+        print('停止されたときの処理');
+        break;
+      case AppLifecycleState.resumed:
+        print('再開されたときの処理');
+        break;
+      case AppLifecycleState.detached:
+        print('破棄されたときの処理');
+        break;
+    }
   }
 
   @override
@@ -329,10 +346,10 @@ class CameraScreen extends ConsumerWidget {
           s += ' ${dur.inMinutes}min';
       }
       if(_batteryLevelStart-_batteryLevel>0) {
-        s += ' batt${_batteryLevelStart}->${_batteryLevel}%';
+        s += ' batt ${_batteryLevelStart}->${_batteryLevel}%';
       }
       MyLog.info(s);
-      _ref.read(statusProvider).stop();
+      _ref.read(statusProvider).stopped();
 
       if(_env.take_mode.val==1 || _env.take_mode.val==3)
         if(_controller!.value.isStreamingImages)
@@ -432,9 +449,9 @@ class CameraScreen extends ConsumerWidget {
       await _controller!.startVideoRecording();
       _videoTime = DateTime.now();
     } on CameraException catch (e) {
-      MyLog.err('${e.code} ${e.description}');
+      MyLog.err('${e.code} ${e.description} startVideo()');
     } catch (e) {
-      MyLog.err('${e.toString()}');
+      MyLog.err('${e.toString()} startVideo()');
     }
   }
 
@@ -446,7 +463,7 @@ class CameraScreen extends ConsumerWidget {
       XFile xfile = await _controller!.stopVideoRecording();
       await moveFile(src:xfile.path, dst:await getSavePath('.mp4'));
     } catch (e) {
-      await MyLog.err('${e.toString()}');
+      await MyLog.err('${e.toString()} stopVideo()');
     }
   }
 
@@ -461,7 +478,7 @@ class CameraScreen extends ConsumerWidget {
         _audioTime = DateTime.now();
       }
     } catch (e) {
-      MyLog.err('${e.toString()}');
+      MyLog.err('${e.toString()} startAudio()');
     }
   }
 
@@ -470,7 +487,7 @@ class CameraScreen extends ConsumerWidget {
       _audioTime = null;
       final path = await _record.stop();
     } catch (e) {
-      MyLog.err('stop audio e=${e.toString()}');
+      MyLog.err('${e.toString()} stopAudio()');
     }
   }
 
@@ -565,8 +582,9 @@ class CameraScreen extends ConsumerWidget {
 
     if(_status.isRunning==true && _state!=null) {
       if (_state == AppLifecycleState.inactive ||
+          _state == AppLifecycleState.paused ||
           _state == AppLifecycleState.detached) {
-        await MyLog.warn("App is stop or background");
+        await MyLog.warn("App stopped or in background");
         onStop();
         return;
       }
@@ -599,7 +617,7 @@ class CameraScreen extends ConsumerWidget {
 
       // 本体の空きが5GB必要
       int enough = 5;
-      if(_testMode)
+      if(testMode)
         enough = 0;
 
       double? totalMb = await DiskSpace.getTotalDiskSpace;
@@ -640,9 +658,9 @@ class CameraScreen extends ConsumerWidget {
           for (FileSystemEntity e in files) {
             try{
               await File(e.path).delete();
-              print('-- del ok ${e.path}');
+              print('-- del ok ${basename(e.path)}');
             } on Exception catch (err) {
-              print('-- del err ${e.path}');
+              print('-- del err ${basename(e.path)}');
             }
           }
         }
@@ -717,7 +735,7 @@ class SaverScreen extends ConsumerWidget {
     this._ref = ref;
     Future.delayed(Duration.zero, () => init(ref));
     ref.watch(saverProvider);
-    this._status = ref.read(statusProvider).statsu;
+    this._status = ref.watch(statusProvider).statsu;
 
     return Scaffold(
       extendBody: true,
@@ -743,7 +761,7 @@ class SaverScreen extends ConsumerWidget {
                 text:takingString(),
                 onPressed:(){
                   _waitTime = null;
-                  ref.read(statusProvider).stopflag();
+                  ref.read(statusProvider).stop();
                 }
               )
             )
@@ -777,17 +795,17 @@ class SaverScreen extends ConsumerWidget {
           ),
         ),
       ),
-      child: Text(text, style:TextStyle(fontSize:16, color:COL_SS_TEXT)),
+      child: Text(text, style:TextStyle(fontSize:16, color:COL_SS_TEXT), textAlign:TextAlign.center),
       onPressed: onPressed,
     );
   }
 
   String takingString() {
-    String s = '';
+    String s = '1';
     if(_timer==null) {
-      s = '';
+      s = '2';
     } else if(_status.isRunning==false) {
-      s = 'STOP\n--:--';
+      s = 'STOPPED\n--:--';
     } else if(_status.startTime!=null && _status.isRunning){
       Duration dur = DateTime.now().difference(_status.startTime!);
       s = 'STOP\n' + dur2str(dur);
