@@ -11,7 +11,7 @@ import 'base_settings_screen.dart';
 import 'purchase_screen.dart';
 import 'provider.dart';
 
-bool IS_PREMIUM = true;
+bool IS_PREMIUM = false;
 
 //----------------------------------------------------------
 class SettingsScreen extends BaseSettingsScreen {
@@ -47,7 +47,7 @@ class SettingsScreen extends BaseSettingsScreen {
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(8,8,8,8),
       child: Column(children: [
-        MyLabel('Take settings'),
+        MyLabel('Settings'),
         MyValue(data: env.take_mode),
         MyValue(data: env.camera_height),
         MyValue(data: env.photo_interval_sec),

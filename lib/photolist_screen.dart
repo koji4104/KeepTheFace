@@ -302,11 +302,13 @@ class PhotoListScreen extends ConsumerWidget {
           await new Future.delayed(new Duration(milliseconds:100));
         }
       } else if(mode==2){
+        // ファイルアプリ
+        int n = 0;
         for(MyFile f in list){
-          print('-- ${f.path}');
-          if (f.path.contains('.m4a'))
-            await _storage.saveFileSaver(f.path);
+          await _storage.saveFileSaver(f.path);
           await new Future.delayed(new Duration(milliseconds:100));
+          if(n++>=5)
+            break;
         }
       } else if(mode==4){
         for(MyFile f in list) {
@@ -327,7 +329,7 @@ class PhotoListScreen extends ConsumerWidget {
       double? fontsize}){
     Color fgcol = Color(0xFF404040);
     Color bgcol = Color(0xFFFFFFFF);
-    double fsize = fontsize!=null ? fontsize : 16.0;
+    double fsize = 16.0;
     if(label=='cancel'){
       fgcol = Color(0xFFFFFFFF);
       bgcol = Color(0xFF606060);
@@ -337,11 +339,11 @@ class PhotoListScreen extends ConsumerWidget {
     return Container(
       width: width!=null ? width:300,
       //height: 50,
-      padding: EdgeInsets.symmetric(vertical:6,horizontal:4),
+      padding: EdgeInsets.fromLTRB(2.0, 6.0, 2.0, 6.0),
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
-          shape: RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(40)))
+          shape: RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(80)))
         ),
         child: Text(l10n(label), style:TextStyle(color:fgcol, fontSize:fsize), textAlign:TextAlign.center),
         onPressed:onPressed,
