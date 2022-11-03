@@ -33,7 +33,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   List<CameraDescription> _cameras = [];
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Record _record = Record();
-
   StatusData _status = StatusData();
 
   int _takeCount = 0;
@@ -47,6 +46,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   Environment _env = Environment();
   ResolutionPreset _preset = ResolutionPreset.high; // 1280x720
   ImageFormatGroup _imageFormat = ImageFormatGroup.bgra8888;
+  int _zoom10 = 10;
 
   final Battery _battery = Battery();
   int _batteryLevel = -1;
@@ -74,7 +74,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   void dispose() {
     if(_controller!=null) _controller!.dispose();
     if(_timer!=null) _timer!.cancel();
-    WidgetsBinding.instance!.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
   }
 
   // low 320x240 (4:3)
@@ -99,16 +99,16 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     _state = state;
     switch (state) {
       case AppLifecycleState.inactive:
-        print('非アクティブになったときの処理');
+        print('AppLifecycleState.inactive');
         break;
       case AppLifecycleState.paused:
-        print('停止されたときの処理');
+        print('AppLifecycleState.paused');
         break;
       case AppLifecycleState.resumed:
-        print('再開されたときの処理');
+        print('AppLifecycleState.resumed');
         break;
       case AppLifecycleState.detached:
-        print('破棄されたときの処理');
+        print('AppLifecycleState.detached');
         break;
     }
   }
@@ -121,6 +121,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     Future.delayed(Duration.zero, () => init(context,ref));
     ref.watch(cameraScreenProvider);
     this._status = _ref.watch(statusProvider).statsu;
+    bool isOption = _ref.watch(isOptionProvider);
 
     if(_status.isSaver) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays:[]);
@@ -131,6 +132,10 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     }
     _edge.getEdge(context,ref);
 
+    if(_zoom10 != _env.camera_zoom.val){
+      print('-- zoom ${_env.camera_zoom.val}');
+      zoomCamera(_env.camera_zoom.val);
+    }
     return Scaffold(
       key: _scaffoldKey,
       extendBody: true,
@@ -157,7 +162,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
         if(_status.isSaver==false)
           MyButton(
             bottom: 30.0, right: 30.0,
-            icon: Icon(Icons.flip_camera_ios, color: Colors.white),
+            icon: Icon(Icons.autorenew, color: Colors.white),
             onPressed:() => _onCameraSwitch(ref),
           ),
 
@@ -174,6 +179,8 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
               );
             }
           ),
+        if(_status.isSaver==false)
+            optionButton(context, isOption),
 
         // Settings screen button
         if(_status.isSaver==false)
@@ -196,6 +203,77 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
         ]
       ),
     ));
+  }
+
+  Widget optionButton(BuildContext context, bool isOption) {
+    int z = _env.camera_zoom.val;
+    String s = (z/10.0).toStringAsFixed(1);
+    //double y = MediaQuery.of(context).size.height*2/3 + 8.0;
+    double y = 30.0 + 8.0 + 48.0;
+    double b = 48.0;
+    return Stack(children:<Widget>[
+      MyButton(
+          bottom:y + b, left:30.0,
+          icon: Icon(Icons.add),
+          iconSize: 30.0,
+          onPressed:() async {
+            zoomCamera(z+5);
+          }
+      ),
+      Positioned(
+          bottom:y, left:30.0,
+          child:Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Center(child:
+                Text(s,
+                textAlign:TextAlign.center,
+                style: TextStyle(fontSize:14, color: Colors.white)
+            )),
+          )
+      ),
+      MyButton(
+          select: isOption,
+          bottom:y - b, left:30.0,
+          icon: Icon(Icons.remove),
+          iconSize: 30.0,
+          onPressed:() async {
+            zoomCamera(z-5);
+          }
+      ),
+    ]);
+  }
+
+  /// ズーム
+  Future<void> zoomCamera(int zoom10) async {
+    if(this._zoom10 == zoom10)
+      return;
+
+    if(kIsWeb){
+      print('-- zoom=${zoom10}');
+      if(zoom10 > 40) zoom10 = 40;
+      if(zoom10 < 10) zoom10 = 10;
+      _ref.read(environmentProvider).saveDataNoRound(_env.camera_zoom,(zoom10).toInt());
+      return;
+    }
+    if(disableCamera || _controller == null)
+      return;
+    //double max_zoom = await _controller!.getMaxZoomLevel();
+    //double min_zoom = await _controller!.getMinZoomLevel();
+    int max_zoom = 40;
+    int min_zoom = 10;
+    if(zoom10 > max_zoom) zoom10 = max_zoom;
+    if(zoom10 < min_zoom) zoom10 = min_zoom;
+    try {
+      _controller!.setZoomLevel(zoom10/10.0);
+    } catch (e) {
+      await MyLog.err('${e.toString()}');
+    }
+    this._zoom10 = zoom10;
+    _ref.read(environmentProvider).saveDataNoRound(_env.camera_zoom,zoom10);
   }
 
   /// カメラウィジェット
@@ -291,6 +369,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     } catch (e) {
       await MyLog.err('${e.toString()}');
     }
+    _zoom10 = 10;
   }
 
   /// 開始
@@ -379,7 +458,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
           String path = await getSavePath('.jpg');
           final File file = File(path);
           await file.writeAsBytes(imglib.encodeJpg(img));
-
           if(_env.isPremium()) {
             if (_env.ex_storage.val == 1) {
               if((_storage.libraryFiles.length+_takeCount) < _env.ex_save_num.val) {
@@ -409,6 +487,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
         }
 
       } else {
+        // android
         XFile xfile = await _controller!.takePicture();
         String path = await getSavePath('.jpg');
         await moveFile(src:xfile.path, dst:path);
@@ -558,7 +637,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
       }
       if(_videoTime!=null) {
         Duration dur = DateTime.now().difference(_videoTime!);
-        if (dur.inSeconds > _env.video_interval_sec.val) {
+        if (dur.inSeconds > _env.split_interval_sec.val) {
           if (await isUnitStorageFree()) {
             await stopVideo();
             await startVideo();
@@ -569,7 +648,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
       }
       if(_audioTime!=null) {
         Duration dur = DateTime.now().difference(_audioTime!);
-        if (dur.inSeconds > _env.audio_interval_sec.val) {
+        if (dur.inSeconds > _env.split_interval_sec.val) {
           if (await isUnitStorageFree()) {
             await stopAudio();
             await startAudio();
@@ -584,7 +663,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
       if (_state == AppLifecycleState.inactive ||
           _state == AppLifecycleState.paused ||
           _state == AppLifecycleState.detached) {
-        await MyLog.warn("App stopped or in background");
+        await MyLog.warn("App stopped or background");
         onStop();
         return;
       }
@@ -674,18 +753,44 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   bool get wantKeepAlive => true;
 
   Widget MyButton({required Icon icon, required void Function()? onPressed,
-    double? left, double? top, double? right, double? bottom}) {
+    double? left, double? top, double? right, double? bottom, bool? select, double? iconSize}) {
+    bool sel = (select!=null && select==true);
+    Color fgcol = sel ? Colors.black : Colors.white;
+    Color bgcol = sel ? Colors.white : Colors.black54;
+    if(iconSize==null)
+      iconSize = 38.0;
     return Positioned(
       left:left, top:top, right:right, bottom:bottom,
       child: CircleAvatar(
-        backgroundColor: Colors.black54,
-        radius: 28.0,
+        backgroundColor: bgcol,
+        radius: iconSize * 0.75,
         child: IconButton(
           icon: icon,
-          iconSize: 38.0,
+          color: fgcol,
+          iconSize: iconSize,
           onPressed: onPressed,
         )
       )
+    );
+  }
+
+  Widget MyTextButton({
+    required String label, required void Function()? onPressed,
+    double? left, double? top, double? right, double? bottom, bool? select}){
+    bool sel = (select!=null && select==true);
+    Color fgcol = sel ? Colors.black : Colors.white;
+    Color bgcol = sel ? Colors.white : Colors.black54;
+
+    return Positioned(
+      left:left, top:top, right:right, bottom:bottom,
+      child: TextButton(
+        style: TextButton.styleFrom(
+            backgroundColor: bgcol,
+            shape: RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(4)))
+        ),
+        child: Text(label, style:TextStyle(color:fgcol, fontSize:12), textAlign:TextAlign.center),
+        onPressed:onPressed,
+      ),
     );
   }
 

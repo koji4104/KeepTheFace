@@ -51,13 +51,9 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.take_mode),
         MyValue(data: env.camera_height),
         MyValue(data: env.photo_interval_sec),
-        MyValue(data: env.audio_interval_sec),
-        MyValue(data: env.video_interval_sec),
+        MyValue(data: env.split_interval_sec),
         MyValue(data: env.save_num),
         MyValue(data: env.autostop_sec),
-
-        MyLabel(''),
-        MyLabel('Save settings'),
         MyListTile(
             title:MyText('Google Drive'),
             title2:gdriveAd.isSignedIn() ? MyText('ON') : MyText('OFF'),

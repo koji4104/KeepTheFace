@@ -83,7 +83,7 @@ class PhotoListScreen extends ConsumerWidget {
                   icon: Icon(Icons.zoom_out),
                   iconSize: 32.0,
                   onPressed:(){
-                    if(_gridZoom<2) {
+                    if(_gridZoom<1) {
                       _gridZoom++;
                       ref.read(cardWidthProvider.state).state = (_edge.width/(_crossAxisCount + _gridZoom)).toInt();
                       redraw();
@@ -96,7 +96,7 @@ class PhotoListScreen extends ConsumerWidget {
                   icon: Icon(Icons.zoom_in),
                   iconSize: 32.0,
                   onPressed:(){
-                    if(_gridZoom>-2) {
+                    if(_gridZoom>-1) {
                       _gridZoom--;
                       ref.read(cardWidthProvider.state).state = (_edge.width/(_crossAxisCount + _gridZoom)).toInt();
                       redraw();
@@ -267,10 +267,12 @@ class PhotoListScreen extends ConsumerWidget {
                 if(photo_cnt>0)
                 MyTextButton(
                   label:'save_photo_app',
+                  fontsize:14.0,
                   onPressed:(){ _saveFile(list, 1); Navigator.of(_context).pop();}
                 ),
                 MyTextButton(
                   label:'save_file_app',
+                  fontsize:14.0,
                   onPressed:(){ _saveFile(list, 2); Navigator.of(_context).pop(); }
                 ),
                 if(gdriveAd.isSignedIn())
@@ -321,10 +323,11 @@ class PhotoListScreen extends ConsumerWidget {
   Widget MyTextButton({
       required String label,
       required void Function()? onPressed,
-      double? width}){
+      double? width,
+      double? fontsize}){
     Color fgcol = Color(0xFF404040);
     Color bgcol = Color(0xFFFFFFFF);
-    double fsize = 16.0;
+    double fsize = fontsize!=null ? fontsize : 16.0;
     if(label=='cancel'){
       fgcol = Color(0xFFFFFFFF);
       bgcol = Color(0xFF606060);

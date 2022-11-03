@@ -18,7 +18,7 @@ import 'dart:convert' show utf8;
 
 String ALBUM_NAME = "TheseDays";
 String SAVE_DIR = "appdata";
-final bool testMode = true;
+final bool testMode = false;
 
 class MyFile{
   String path = '';
@@ -65,6 +65,7 @@ class MyStorage {
   // フォトライブラリ
   Future getLibrary() async {
     if(kIsWeb) return;
+    print('-- WARN getLibrary()');
     /// Android (AndroidManifest.xml)
     /// READ_EXTERNAL_STORAGE (REQUIRED)
     /// WRITE_EXTERNAL_STORAGE

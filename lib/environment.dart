@@ -56,17 +56,11 @@ class Environment {
     keys:['30 sec','1 min','2 min','5 min','10 min'],
     name:'photo_interval_sec',
   );
-  EnvData video_interval_sec = EnvData(
+  EnvData split_interval_sec = EnvData(
     val:60,
     vals:[60,300,600],
     keys:['1 min','5 min','10 min'],
-    name:'video_interval_sec',
-  );
-  EnvData audio_interval_sec = EnvData(
-    val:60,
-    vals:[60,300,600],
-    keys:['1 min','5 min','10 min'],
-    name:'audio_interval_sec',
+    name:'split_interval_sec',
   );
 
   /// 自動停止
@@ -108,7 +102,13 @@ class Environment {
         : ['352x288','640x480','1280x720','1920x1080'],
     name:'camera_height',
   );
-
+  // Zoom x10
+  EnvData camera_zoom = EnvData(
+    val:10,
+    vals:[10,20,30,40],
+    keys:['1.0','2.0','3.0','4.0'],
+    name:'camera_zoom',
+  );
   // 0=back, 1=Front(Face)
   EnvData camera_pos = EnvData(
     val:0,
@@ -185,13 +185,13 @@ class Environment {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       _loadSub(prefs, take_mode);
       _loadSub(prefs, photo_interval_sec);
-      _loadSub(prefs, audio_interval_sec);
-      _loadSub(prefs, video_interval_sec);
+      _loadSub(prefs, split_interval_sec);
       _loadSub(prefs, save_num);
       _loadSub(prefs, ex_storage);
       _loadSub(prefs, ex_save_num);
       _loadSub(prefs, autostop_sec);
       _loadSub(prefs, camera_height);
+      _loadSub(prefs, camera_zoom);
       _loadSub(prefs, camera_pos);
       trial_date = prefs.getString('trial_date') ?? '';
     } on Exception catch (e) {
@@ -240,18 +240,27 @@ class environmentNotifier extends ChangeNotifier {
     getData(data).key = data.keys[0];
   }
 
+  Future saveDataNoRound(EnvData data, int newVal) async {
+    if(data.val == newVal)
+      return;
+    data.val = newVal;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(data.name, data.val);
+    this.notifyListeners();
+  }
+
   EnvData getData(EnvData data){
     EnvData ret = env.take_mode;
     switch(data.name){
       case 'take_mode': ret = env.take_mode; break;
       case 'photo_interval_sec': ret = env.photo_interval_sec; break;
-      case 'audio_interval_sec': ret = env.audio_interval_sec; break;
-      case 'video_interval_sec': ret = env.video_interval_sec; break;
+      case 'split_interval_sec': ret = env.split_interval_sec; break;
       case 'autostop_sec': ret = env.autostop_sec; break;
       case 'save_num': ret = env.save_num; break;
       case 'ex_save_num': ret = env.ex_save_num; break;
       case 'ex_storage': ret = env.ex_storage; break;
       case 'camera_height': ret = env.camera_height; break;
+      case 'camera_zoom': ret = env.camera_zoom; break;
       case 'camera_pos': ret = env.camera_pos; break;
     }
     return ret;

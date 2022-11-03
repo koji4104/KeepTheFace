@@ -37,6 +37,10 @@ final isSelectModeProvider = StateProvider<bool>((ref) {
   return false;
 });
 
+final isOptionProvider = StateProvider<bool>((ref) {
+  return false;
+});
+
 final cardWidthProvider = StateProvider<int>((ref) {
   return 200;
 });
