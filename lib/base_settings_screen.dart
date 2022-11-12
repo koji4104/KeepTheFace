@@ -134,6 +134,33 @@ class BaseSettingsScreen extends ConsumerWidget {
     );
   }
 
+  Widget MyTextButton({
+    required String label,
+    required void Function()? onPressed,
+    double? width}){
+    Color fgcol = Color(0xFF404040);
+    Color bgcol = Color(0xFFFFFFFF);
+    double fsize = 16.0;
+    if(label=='cancel'){
+      fgcol = Color(0xFFFFFFFF);
+      bgcol = Color(0xFF606060);
+    } else if(label=='delete'){
+      fgcol = Colors.redAccent;
+    }
+    return Container(
+      width: width!=null ? width:300,
+      padding: EdgeInsets.fromLTRB(2.0, 6.0, 2.0, 6.0),
+      child: TextButton(
+        style: TextButton.styleFrom(
+            backgroundColor: bgcol,
+            shape: RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(80)))
+        ),
+        child: Text(l10n(label), style:TextStyle(color:fgcol, fontSize:fsize), textAlign:TextAlign.center),
+        onPressed:onPressed,
+      ),
+    );
+  }
+
   Widget MyRadioListTile(
       { required String title,
         required int value,

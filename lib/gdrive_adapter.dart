@@ -6,8 +6,7 @@ import 'package:http/io_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:googleapis/drive/v3.dart' as ga;
 import 'package:path/path.dart';
-
-String ALBUM_NAME = "TheseDays";
+import 'constants.dart';
 
 class GoogleHttpClient extends IOClient {
   Map<String, String> _headers;
@@ -29,9 +28,10 @@ class GoogleDriveAdapter {
   final storage = new FlutterSecureStorage();
   GoogleSignInAccount? gsa;
   bool isSignedIn(){ return gsa!=null; }
+  bool isInitialized = false;
   String loginerr = '';
 
-  /// displayName(email) or email
+  /// displayName
   String getAccountName(){
     String r = 'None';
     if(gsa!=null){
@@ -63,11 +63,13 @@ class GoogleDriveAdapter {
       print('-- err loginSilently() ${e.toString()}');
       loginerr = e.toString();
     }
+    isInitialized = true;
     print('-- loginSilently() is ${gsa!=null}');
     return gsa!=null;
   }
 
   // New account or Existing account
+  // com.google.android.gms.common.api.ApiException: 10 is finger print
   Future<bool> loginWithGoogle() async {
     print('-- loginWithGoogle()');
     loginerr = '';

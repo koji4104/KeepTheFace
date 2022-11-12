@@ -10,10 +10,9 @@ import 'environment.dart';
 import 'base_settings_screen.dart';
 import 'purchase_screen.dart';
 import 'provider.dart';
+import 'constants.dart';
 
-bool IS_PREMIUM = false;
-
-//----------------------------------------------------------
+/// Settings
 class SettingsScreen extends BaseSettingsScreen {
   late GoogleDriveAdapter gdriveAd;
   @override
@@ -41,9 +40,13 @@ class SettingsScreen extends BaseSettingsScreen {
   }
 
   Widget getList(BuildContext context) {
-    TextStyle ts = TextStyle(fontSize:16, color:Colors.white);
     bool pre = env.isPremium();
-    int ex = env.ex_storage.val; // 0=none 1=library 2=Google
+    int ex = env.ex_storage.val; // 0=none 1=Google
+    String gd = '--';
+    if(gdriveAd.isInitialized==false) gd='--';
+    else if(gdriveAd.isSignedIn()) gd='ON';
+    else if(gdriveAd.isSignedIn()==false) gd='OFF';
+
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(8,8,8,8),
       child: Column(children: [
@@ -56,10 +59,8 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.autostop_sec),
         MyListTile(
             title:MyText('Google Drive'),
-            title2:gdriveAd.isSignedIn() ? MyText('ON') : MyText('OFF'),
-            onTap:(){
-              NavigatorPush(GoogleDriveScreen());
-            }
+            title2:MyText(gd),
+            onTap:() => NavigatorPush(GoogleDriveScreen()),
         ),
 
         if(IS_PREMIUM)
@@ -68,11 +69,9 @@ class SettingsScreen extends BaseSettingsScreen {
         MyLabel('Premium'),
         if(IS_PREMIUM)
         MyListTile(
-          title:MyText('premium'),
-          title2:env.isTrial() ? MyText('ON') : MyText('OFF'),
-          onTap:(){
-            NavigatorPush(PremiumScreen());
-          }
+            title:MyText('premium'),
+            title2:env.isTrial() ? MyText('ON') : MyText('OFF'),
+            onTap:() => NavigatorPush(PremiumScreen()),
         ),
         /*
         if(pre)
@@ -83,8 +82,8 @@ class SettingsScreen extends BaseSettingsScreen {
               NavigatorPush(ExStrageScreen());
             }
           ),
-         */
         if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
+        */
 
         MyLabel(''),
         MyLabel('Logs'),
@@ -114,8 +113,7 @@ class SettingsScreen extends BaseSettingsScreen {
   }
 }
 
-//----------------------------------------------------------
-// プレミアム
+/// Premium
 class PremiumScreen extends BaseSettingsScreen {
   @override
   Future init() async {
@@ -123,7 +121,7 @@ class PremiumScreen extends BaseSettingsScreen {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    baseBuild(context, ref);
+    baseBuild(context,ref);
     return  Scaffold(
       appBar: AppBar(title:Text(l10n('premium')), backgroundColor:Color(0xFF000000),),
       body: Container(
@@ -171,8 +169,7 @@ class PremiumScreen extends BaseSettingsScreen {
   }
 }
 
-//----------------------------------------------------------
-// GoogleDrive
+/// GoogleDrive
 class GoogleDriveScreen extends BaseSettingsScreen {
   int selVal = 0;
   late EnvData data;
@@ -188,7 +185,6 @@ class GoogleDriveScreen extends BaseSettingsScreen {
   Widget build(BuildContext context, WidgetRef ref) {
     baseBuild(context, ref);
     this.gdriveAd = ref.watch(gdriveProvider).gdrive;
-
     return Scaffold(
       appBar: AppBar(title: Text(l10n('Google Drive')), backgroundColor:Color(0xFF000000),),
       body: Container(
@@ -199,40 +195,43 @@ class GoogleDriveScreen extends BaseSettingsScreen {
   }
 
   Widget getList() {
-    return Column(children:[
-      if(gdriveAd.isSignedIn()==false)
-        MyTile(title:MyText('not_login'),title2:Text('')),
-
-      if(gdriveAd.loginerr=='')
-        MyTile(title:MyText(gdriveAd.loginerr),title2:Text('')),
-
-      if(gdriveAd.isSignedIn()==true)
-        MyTile(title:Text(gdriveAd.getAccountName()),title2:Text('')),
-
-      if(gdriveAd.isSignedIn()==false)
-        MyButton(
-          title:'Login',
-          onTap:() {
-            gdriveAd.loginWithGoogle().then((_){
-              redraw();
-            });
-          }
+    if (gdriveAd.isInitialized == false) {
+      return Center(
+        child: SizedBox(
+          width:32,height:32,
+          child: CircularProgressIndicator(),
         ),
+      );
+    } else {
+      return Column(children: [
+        if(gdriveAd.isSignedIn() == false)
+          MyTile(title: MyText('not_login')),
+        if(gdriveAd.isSignedIn())
+          MyTile(title: Text(gdriveAd.getAccountName())),
 
-      if(gdriveAd.isSignedIn()==true)
-        MyButton(
-          title:'Logout',
-          onTap:() {
-            gdriveAd.logout().then((_){
-              redraw();
-            });
-          }
-        ),
-    ]);
-  }
+        if(gdriveAd.isSignedIn() == false)
+          MyTextButton(
+              label: 'Login',
+              onPressed: () {
+                gdriveAd.loginWithGoogle().then((_) {
+                  redraw();
+                });
+              }
+          ),
+        if(gdriveAd.isSignedIn())
+          MyTextButton(
+              label: 'Logout',
+              onPressed: () {
+                gdriveAd.logout().then((_) {
+                  redraw();
+                });
+              }
+          ),
 
-  _onRadioSelected(value) {
-    selVal = value;
-    ref.read(environmentProvider).saveData(env.ex_storage,selVal);
+        if(gdriveAd.loginerr == '')
+          MyTile(title: MyText(gdriveAd.loginerr), title2: Text('')),
+
+      ]);
+    };
   }
 }

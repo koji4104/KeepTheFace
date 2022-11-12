@@ -78,7 +78,7 @@ class gdriveNotifier extends ChangeNotifier {
   late GoogleDriveAdapter gdrive = GoogleDriveAdapter();
   gdriveNotifier(ref){
     gdrive.loginSilently().then((r){
-      if(r) this.notifyListeners();
+      this.notifyListeners();
     });
   }
 }

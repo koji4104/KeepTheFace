@@ -157,7 +157,6 @@ class PhotoListScreen extends ConsumerWidget {
     );
   }
 
-  // /data/user/0/com.github.koji4104/app_flutter/photo/2022-0417-170926.mp4
   Future<bool> readFiles() async {
     try {
       fileList.clear();
@@ -267,12 +266,10 @@ class PhotoListScreen extends ConsumerWidget {
                 if(photo_cnt>0)
                 MyTextButton(
                   label:'save_photo_app',
-                  fontsize:14.0,
                   onPressed:(){ _saveFile(list, 1); Navigator.of(_context).pop();}
                 ),
                 MyTextButton(
                   label:'save_file_app',
-                  fontsize:14.0,
                   onPressed:(){ _saveFile(list, 2); Navigator.of(_context).pop(); }
                 ),
                 if(gdriveAd.isSignedIn())
@@ -325,8 +322,7 @@ class PhotoListScreen extends ConsumerWidget {
   Widget MyTextButton({
       required String label,
       required void Function()? onPressed,
-      double? width,
-      double? fontsize}){
+      double? width}){
     Color fgcol = Color(0xFF404040);
     Color bgcol = Color(0xFFFFFFFF);
     double fsize = 16.0;
@@ -338,7 +334,6 @@ class PhotoListScreen extends ConsumerWidget {
     }
     return Container(
       width: width!=null ? width:300,
-      //height: 50,
       padding: EdgeInsets.fromLTRB(2.0, 6.0, 2.0, 6.0),
       child: TextButton(
         style: TextButton.styleFrom(

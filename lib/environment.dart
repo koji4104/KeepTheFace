@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'dart:io';
+import 'constants.dart';
 
 class EnvData {
   int val;
@@ -40,7 +41,8 @@ class EnvData {
 
 /// Environment
 class Environment {
-  // 1photo 2audio 3photo+audio 4video
+
+  /// 1photo 2audio 3photo+audio 4video
   EnvData take_mode = EnvData(
     val:1,
     vals:[1,2,3,4],
@@ -51,31 +53,47 @@ class Environment {
   /// 間隔
   EnvData photo_interval_sec = EnvData(
     val:60,
-    vals:[30,60,120,300,600],
-    keys:['30 sec','1 min','2 min','5 min','10 min'],
+    vals:[30,60,120,300,600,900],
+    keys:['30 sec','1 min','2 min','5 min','10 min','15 min'],
     name:'photo_interval_sec',
   );
+
+  /// 分割
   EnvData split_interval_sec = EnvData(
-    val:60,
-    vals:[60,300,600],
-    keys:['1 min','5 min','10 min'],
+    val:300,
+    vals:IS_TEST?
+         [30,300,600]:
+         [300,600],
+    keys:IS_TEST?
+         ['30 sec','5 min','10 min']:
+         ['5 min','10 min'],
     name:'split_interval_sec',
   );
 
   /// 自動停止
   EnvData autostop_sec = EnvData(
-    val:3600,
-    vals:[120, 3600,7200,14400,21600,43200,86400],
-    keys:['2 min','1 hour','2 hour','4 hour','6 hour','12 hour','24 hour'],
+    val:7200,
+    vals:IS_TEST?
+         [0,120,3600,7200,14400,21600,43200,86400]:
+         [0,1800,3600,7200,14400,21600,43200,86400],
+    keys:IS_TEST?
+         ['Nonstop','2 min','1 hour','2 hour','4 hour','6 hour','12 hour','24 hour']:
+         ['Nonstop','30 min','1 hour','2 hour','4 hour','6 hour','12 hour','24 hour'],
     name:'autostop_sec',
   );
 
+  /// Num of Save
   EnvData save_num = EnvData(
     val:100,
-    vals:[100,500],
-    keys:['100','500'],
+    vals:IS_TEST?
+         [20,500,1000]:
+         [100,500,1000],
+    keys:IS_TEST?
+         ['20','500','1000']:
+         ['100','500','1000'],
     name:'save_num',
   );
+
   EnvData ex_save_num = EnvData(
     val:100,
     vals:[100,500],
@@ -83,11 +101,11 @@ class Environment {
     name:'ex_save_num',
   );
 
-  /// 外部ストレージ 0=None 1=PhotoLibrary
+  /// 外部ストレージ 0=None 1=GoogleDrive
   EnvData ex_storage = EnvData(
     val:0,
     vals:[0,1,2],
-    keys:['None','PhotoLibrary','GoogleDrive'],
+    keys:['None','GoogleDrive'],
     name:'ex_storage',
   );
 
@@ -101,6 +119,7 @@ class Environment {
         : ['352x288','640x480','1280x720','1920x1080'],
     name:'camera_height',
   );
+
   // Zoom x10
   EnvData camera_zoom = EnvData(
     val:10,
@@ -108,6 +127,7 @@ class Environment {
     keys:['1.0','2.0','3.0','4.0'],
     name:'camera_zoom',
   );
+
   // 0=back, 1=Front(Face)
   EnvData camera_pos = EnvData(
     val:0,
@@ -118,7 +138,6 @@ class Environment {
 
   String trial_date = '';
   Future<bool> startTrial() async {
-    //if(kIsWeb)  return false;
     trial_date = DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
     final prefs = await SharedPreferences.getInstance();
     bool r = await prefs.setString('trial_date', trial_date);
@@ -174,7 +193,8 @@ class Environment {
   }
 
   bool isPremium() {
-    return isTrial();
+    return false;
+    //return isTrial();
   }
 
   Future load() async {
@@ -202,7 +222,6 @@ class Environment {
   }
 
   Future save(EnvData data) async {
-    //if(kIsWeb) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(data.name, data.val);
   }

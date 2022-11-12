@@ -22,6 +22,7 @@ import 'log_screen.dart';
 import 'common.dart';
 import 'camera_adapter.dart';
 import 'environment.dart';
+import 'constants.dart';
 
 bool disableCamera = kIsWeb; // true=test
 
@@ -55,7 +56,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   bool _bInit = false;
   late WidgetRef _ref;
   late BuildContext _context;
-  AppLifecycleState? _state;
 
   MyEdge _edge = MyEdge(provider:cameraScreenProvider);
   MyStorage _storage = new MyStorage();
@@ -66,7 +66,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
       _bInit = true;
       _timer = Timer.periodic(Duration(seconds:1), _onTimer);
       _initCameraSync(ref);
-      WidgetsBinding.instance!.addObserver(this);
+      WidgetsBinding.instance.addObserver(this);
     }
   }
 
@@ -95,21 +95,19 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    print("stete = $state");
-    _state = state;
     switch (state) {
-      case AppLifecycleState.inactive:
-        print('AppLifecycleState.inactive');
-        break;
-      case AppLifecycleState.paused:
-        print('AppLifecycleState.paused');
-        break;
-      case AppLifecycleState.resumed:
-        print('AppLifecycleState.resumed');
-        break;
-      case AppLifecycleState.detached:
-        print('AppLifecycleState.detached');
-        break;
+      case AppLifecycleState.inactive: print('-- inactive'); break;
+      case AppLifecycleState.paused: print('-- paused'); break;
+      case AppLifecycleState.resumed: print('-- resumed'); break;
+      case AppLifecycleState.detached: print('-- detached'); break;
+    }
+    if(_status.isRunning==true && state!=null) {
+      if (state == AppLifecycleState.inactive ||
+          state == AppLifecycleState.paused ||
+          state == AppLifecycleState.detached) {
+        MyLog.warn("App stopped or background");
+        onStop();
+      }
     }
   }
 
@@ -159,9 +157,9 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
           ),
 
         // Camera Switch button
-        if(_status.isSaver==false)
+        if(_status.isSaver==false && _env.take_mode.val!=2)
           MyButton(
-            bottom: 30.0, right: 30.0,
+            bottom: 40.0, right: 30.0,
             icon: Icon(Icons.autorenew, color: Colors.white),
             onPressed:() => _onCameraSwitch(ref),
           ),
@@ -179,10 +177,12 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
               );
             }
           ),
-        if(_status.isSaver==false)
+
+        // Zoom button
+        if(_status.isSaver==false && _env.take_mode.val!=2)
             optionButton(context, isOption),
 
-        // Settings screen button
+        // Settings button
         if(_status.isSaver==false)
           MyButton(
             top: 50.0, left: 30.0,
@@ -208,8 +208,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   Widget optionButton(BuildContext context, bool isOption) {
     int z = _env.camera_zoom.val;
     String s = (z/10.0).toStringAsFixed(1);
-    //double y = MediaQuery.of(context).size.height*2/3 + 8.0;
-    double y = 30.0 + 8.0 + 48.0;
+    double y = 40.0 + 8.0 + 48.0;
     double b = 48.0;
     return Stack(children:<Widget>[
       MyButton(
@@ -261,8 +260,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     }
     if(disableCamera || _controller == null)
       return;
-    //double max_zoom = await _controller!.getMaxZoomLevel();
-    //double min_zoom = await _controller!.getMinZoomLevel();
     int max_zoom = 40;
     int min_zoom = 10;
     if(zoom10 > max_zoom) zoom10 = max_zoom;
@@ -301,7 +298,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     double _aspect = sw>sh ? _controller!.value.aspectRatio : 1/_controller!.value.aspectRatio;
 
     // 16:10 (Up-down black) or 17:9 (Left-right black)
-    //double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
+    // e.g. double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
     double _scale = dw/dh < _cameraSize.width/_cameraSize.height ? dh/dw * _cameraSize.width/_cameraSize.height : dw/dh * _cameraSize.height/_cameraSize.width;
 
     print('-- screen=${sw.toInt()}x${sh.toInt()}'
@@ -398,8 +395,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     await _storage.getInApp(false);
     if(_env.isPremium()) {
       if(_env.ex_storage.val==1)
-        await _storage.getLibrary();
-      else if(_env.ex_storage.val==2)
         await _storage.getGdrive();
     }
     _takeCount = 0;
@@ -460,16 +455,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
           await file.writeAsBytes(imglib.encodeJpg(img));
           if(_env.isPremium()) {
             if (_env.ex_storage.val == 1) {
-              if((_storage.libraryFiles.length+_takeCount) < _env.ex_save_num.val) {
-                _storage.saveLibrary(path);
-              } else {
-                if(_bLogExstrageFull) {
-                  MyLog.warn('Photolibrary is full');
-                  _bLogExstrageFull = false;
-                }
-              }
-
-            } else if (_env.ex_storage.val == 2) {
               if((_storage.gdriveFiles.length+_takeCount) < _env.ex_save_num.val) {
                 _storage.saveGdrive(path);
               } else {
@@ -493,16 +478,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
         await moveFile(src:xfile.path, dst:path);
         if(_env.isPremium()) {
           if (_env.ex_storage.val == 1) {
-             if((_storage.libraryFiles.length+_takeCount) < _env.ex_save_num.val) {
-               _storage.saveLibrary(path);
-             } else {
-               if(_bLogExstrageFull) {
-                 MyLog.warn('Photolibrary is full');
-                 _bLogExstrageFull = false;
-               }
-             }
-
-          } else if (_env.ex_storage.val == 2) {
             if((_storage.gdriveFiles.length+_takeCount) < _env.ex_save_num.val) {
               _storage.saveGdrive(path);
             } else {
@@ -570,8 +545,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     }
   }
 
-  //src=/var/mobile/Containers/Data/Application/F168A64A-F632-469D-8CD6-390371BE4FAF/Documents/camera/videos/REC_E8ED36E1-3966-43A1-AB34-AA8AD34CEA08.mp4
-  //dst=/var/mobile/Containers/Data/Application/F168A64A-F632-469D-8CD6-390371BE4FAF/Documents/photo/2022-0430-210906.mp4
   Future<File> moveFile({required String src, required String dst}) async {
     File srcfile = File(src);
     try {
@@ -607,7 +580,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     if(_status.isRunning==true && _status.startTime!=null) {
       Duration dur = DateTime.now().difference(_status.startTime!);
       if (_env.autostop_sec.val > 0 && dur.inSeconds>_env.autostop_sec.val) {
-        await MyLog.info("Autostop");
+        await MyLog.info("Autostop by settings");
         onStop();
         return;
       }
@@ -658,16 +631,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
         }
       }
     }
-
-    if(_status.isRunning==true && _state!=null) {
-      if (_state == AppLifecycleState.inactive ||
-          _state == AppLifecycleState.paused ||
-          _state == AppLifecycleState.detached) {
-        await MyLog.warn("App stopped or background");
-        onStop();
-        return;
-      }
-    }
   } // _onTimer
 
   Future<String> getSavePath(String ext) async {
@@ -696,7 +659,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
 
       // 本体の空きが5GB必要
       int enough = 5;
-      if(testMode)
+      if(kIsWeb)
         enough = 0;
 
       double? totalMb = await DiskSpace.getTotalDiskSpace;
@@ -708,9 +671,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
         return false;
       }
 
-      if(_env.ex_storage.val>0){
-        _storage.getLibrary();
-      }
     } on Exception catch (e) {
       print('-- checkDiskFree() Exception ' + e.toString());
     }
