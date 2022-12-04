@@ -41,6 +41,7 @@ dependencies:
   extension_google_sign_in_as_googleapis_auth: ^2.0.4
   flutter_secure_storage: ^5.0.2
   in_app_purchase: ^3.0.6
+  flutter_advanced_segment: ^3.0.1
 
 dev_dependencies:
   flutter_test:

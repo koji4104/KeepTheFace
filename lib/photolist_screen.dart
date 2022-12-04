@@ -6,15 +6,15 @@ import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'provider.dart';
-import 'localizations.dart';
 import 'common.dart';
 import 'gdrive_adapter.dart';
 import 'package:video_thumbnail/video_thumbnail.dart' as video_thumbnail;
 import 'package:video_player/video_player.dart';
 import 'package:flutter_video_info/flutter_video_info.dart';
+import 'base_screen.dart';
+import 'widgets.dart';
 
-final photoListScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
-class PhotoListScreen extends ConsumerWidget {
+class PhotoListScreen extends BaseScreen {
   PhotoListScreen(){}
 
   String title='In-app data';
@@ -26,36 +26,20 @@ class PhotoListScreen extends ConsumerWidget {
   int _gridZoom = 0;
   int _photocount = 0;
   int _sizemb = 0;
-
-  bool _init = false;
   int selectedIndex = 0;
-  late BuildContext _context;
-  late WidgetRef _ref;
-  MyEdge _edge = MyEdge(provider:photoListScreenProvider);
+
   MyStorage _storage = new MyStorage();
   late GoogleDriveAdapter gdriveAd;
 
-  void init(BuildContext context, WidgetRef ref) {
-    if(_init) return;
+  @override
+  Future init() async {
     readFiles();
-    // 392x829
-    double w = MediaQuery.of(context).size.width;
-    if(w>800)
-      _crossAxisCount = 5;
-    else if(w>600)
-      _crossAxisCount = 4;
-    _init = true;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Future.delayed(Duration.zero, () => init(context,ref));
-    this._context = context;
-    this._ref = ref;
-    _edge.getEdge(context,ref);
-
+    subBuild(context, ref);
     bool bSelectMode = ref.watch(isSelectModeProvider);
-    ref.watch(photoListScreenProvider);
     this.gdriveAd = ref.watch(gdriveProvider).gdrive;
 
     return Scaffold(
@@ -70,7 +54,7 @@ class PhotoListScreen extends ConsumerWidget {
         ],
       ),
       body: Container(
-        margin: _edge.homebarEdge,
+        margin: edge.homebarEdge,
         child: Stack(children: <Widget>[
           Positioned(
             top:0, left:0, right:0, height:50,
@@ -85,7 +69,7 @@ class PhotoListScreen extends ConsumerWidget {
                   onPressed:(){
                     if(_gridZoom<1) {
                       _gridZoom++;
-                      ref.read(cardWidthProvider.state).state = (_edge.width/(_crossAxisCount + _gridZoom)).toInt();
+                      ref.read(cardWidthProvider.state).state = (edge.width/(_crossAxisCount + _gridZoom)).toInt();
                       redraw();
                     }
                   },
@@ -98,7 +82,7 @@ class PhotoListScreen extends ConsumerWidget {
                   onPressed:(){
                     if(_gridZoom>-1) {
                       _gridZoom--;
-                      ref.read(cardWidthProvider.state).state = (_edge.width/(_crossAxisCount + _gridZoom)).toInt();
+                      ref.read(cardWidthProvider.state).state = (edge.width/(_crossAxisCount + _gridZoom)).toInt();
                       redraw();
                     }
                   },
@@ -110,8 +94,8 @@ class PhotoListScreen extends ConsumerWidget {
                     Icon(Icons.check_circle),
                   iconSize: 32.0,
                   onPressed:(){
-                    _ref.read(isSelectModeProvider.state).state = !bSelectMode;
-                    _ref.read(selectedListProvider).clear();
+                    ref.read(isSelectModeProvider.state).state = !bSelectMode;
+                    ref.read(selectedListProvider).clear();
                     redraw();
                   },
                 ),
@@ -144,8 +128,21 @@ class PhotoListScreen extends ConsumerWidget {
     );
   }
 
+  @override
+  void subBuild(BuildContext context, WidgetRef ref) {
+    super.subBuild(context, ref);
+    // 392x829
+    double w = MediaQuery.of(context).size.width;
+    if(w>800)
+      _crossAxisCount = 5;
+    else if(w>600)
+      _crossAxisCount = 4;
+    else
+      _crossAxisCount = 3;
+  }
+
   Widget getList(BuildContext context, WidgetRef ref) {
-    if(_init==false)
+    if(bInit==false)
       return Container();
     return Container(
       padding: EdgeInsets.symmetric(vertical:4, horizontal:6),
@@ -219,7 +216,7 @@ class PhotoListScreen extends ConsumerWidget {
         }
       }
 
-      _ref.read(fileListProvider).list = fileList;
+      ref.read(fileListProvider).list = fileList;
 
       for (int i=0; i<fileList.length; i++) {
         cardList.add(MyCard(data:fileList[i], index:i));
@@ -228,9 +225,9 @@ class PhotoListScreen extends ConsumerWidget {
       for (MyFile f in fileList) {
         previewList.add(PreviewScreen(data:f));
       }
-      _ref.read(previewListProvider).list = previewList;
+      ref.read(previewListProvider).list = previewList;
 
-      _ref.read(selectedListProvider).clear();
+      ref.read(selectedListProvider).clear();
       redraw();
     } on Exception catch (e) {
       print('-- readFiles() e=' + e.toString());
@@ -240,51 +237,67 @@ class PhotoListScreen extends ConsumerWidget {
 
   /// Save file
   _saveFileWithDialog(BuildContext context, WidgetRef ref) async {
-    List<MyFile> list = ref.read(selectedListProvider).list;
+    List<MyFile> list = ref
+        .read(selectedListProvider)
+        .list;
     int photo_cnt = 0;
-    int audio_cnt = 0;
-    for(MyFile f in list){
+    int files_cnt = 0;
+    for (MyFile f in list) {
+      files_cnt++;
       if (f.path.contains('.jpg') || f.path.contains('.mp4'))
         photo_cnt++;
-      else if(f.path.contains('.m4a'))
-        audio_cnt++;
     }
-    if(list.length==0) {
+    if (list.length == 0) {
       showSnackBar('Please select');
     } else {
       Text msg = Text('Selected ' + ' ${list.length}');
       showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            //content: msg,
-            actions: <Widget>[
-            Container(
-            padding: EdgeInsets.symmetric(vertical:8,horizontal:4),
-            child:
-              Column(children:[
-                if(photo_cnt>0)
-                MyTextButton(
-                  label:'save_photo_app',
-                  onPressed:(){ _saveFile(list, 1); Navigator.of(_context).pop();}
-                ),
-                MyTextButton(
-                  label:'save_file_app',
-                  onPressed:(){ _saveFile(list, 2); Navigator.of(_context).pop(); }
-                ),
-                if(gdriveAd.isSignedIn())
-                MyTextButton(
-                  label:'Google Drive',
-                  onPressed:(){ _saveFile(list, 4); Navigator.of(_context).pop(); }
-                ),
-                MyTextButton(
-                  label:'cancel',
-                  onPressed:() { Navigator.of(_context).pop();},
-                ),
-              ])
-            )],
-          );
-        }
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              actions: <Widget>[
+                Container(
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child:
+                    Column(children: [
+                      if(photo_cnt > 0)
+                        MyTextButton(
+                            title: l10n('save_photo_app'),
+                            onPressed: () {
+                              _saveFile(list, 1);
+                              Navigator.of(context).pop();
+                            }
+                        ),
+                      MyTextButton(
+                          title: l10n('save_file_app'),
+                          onPressed: files_cnt > 5 ?
+                              () {
+                            showSnackBar('Files ${files_cnt}');
+                          } : () {
+                            _saveFile(list, 2);
+                            Navigator.of(context).pop();
+                          }
+                      ),
+                      if(gdriveAd.isSignedIn())
+                        MyTextButton(
+                            title: l10n('Google Drive'),
+                            onPressed: () {
+                              _saveFile(list, 4);
+                              Navigator.of(context).pop();
+                            }
+                        ),
+                      MyTextButton(
+                        title: l10n('cancel'),
+                        cancelStyle: true,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ])
+                )
+              ],
+            );
+          }
       );
     }
   }
@@ -319,59 +332,41 @@ class PhotoListScreen extends ConsumerWidget {
     }
   }
 
-  Widget MyTextButton({
-      required String label,
-      required void Function()? onPressed,
-      double? width}){
-    Color fgcol = Color(0xFF404040);
-    Color bgcol = Color(0xFFFFFFFF);
-    double fsize = 16.0;
-    if(label=='cancel'){
-      fgcol = Color(0xFFFFFFFF);
-      bgcol = Color(0xFF606060);
-    } else if(label=='delete'){
-      fgcol = Colors.redAccent;
-    }
-    return Container(
-      width: width!=null ? width:300,
-      padding: EdgeInsets.fromLTRB(2.0, 6.0, 2.0, 6.0),
-      child: TextButton(
-        style: TextButton.styleFrom(
-          backgroundColor: bgcol,
-          shape: RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(80)))
-        ),
-        child: Text(l10n(label), style:TextStyle(color:fgcol, fontSize:fsize), textAlign:TextAlign.center),
-        onPressed:onPressed,
-      ),
-    );
-  }
-
   /// delete file
   _deleteFileWithDialog(BuildContext context, WidgetRef ref) async {
-    List<MyFile> list = ref.read(selectedListProvider).list;
-    if(list.length==0) {
+    List<MyFile> list = ref
+        .read(selectedListProvider)
+        .list;
+    if (list.length == 0) {
       showSnackBar('Please select');
     } else {
       Text msg = Text(l10n('delete_files'));
       showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            content: msg,
-            actions: <Widget>[
-              MyTextButton(
-                label: 'cancel',
-                width: 130,
-                onPressed:(){ Navigator.of(_context).pop(); },
-              ),
-              MyTextButton(
-                label: 'delete',
-                width: 130,
-                onPressed:(){ _deleteFile(list); Navigator.of(_context).pop(); },
-              ),
-            ],
-          );
-        }
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              content: msg,
+              actions: <Widget>[
+                MyTextButton(
+                  title: l10n('cancel'),
+                  cancelStyle: true,
+                  width: 130,
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                MyTextButton(
+                  title: l10n('delete'),
+                  deleteStyle: true,
+                  width: 130,
+                  onPressed: () {
+                    _deleteFile(list);
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          }
       );
     }
   }
@@ -388,22 +383,8 @@ class PhotoListScreen extends ConsumerWidget {
       print('-- _deleteFile ${e.toString()}');
     }
   }
-
-  String l10n(String text){
-    return Localized.of(_context).text(text);
-  }
-
-  void showSnackBar(String msg) {
-    final snackBar = SnackBar(content:Text(msg));
-    ScaffoldMessenger.of(_context).showSnackBar(snackBar);
-  }
-
-  redraw(){
-    _ref.read(photoListScreenProvider).notifyListeners();
-  }
 }
 
-///--------------------------------------------------------
 /// MyCard
 class MyCard extends ConsumerWidget {
   final myCardScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
@@ -558,7 +539,6 @@ class MyCard extends ConsumerWidget {
   }
 }
 
-///--------------------------------------------------------
 final previewScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 class PreviewScreen extends ConsumerWidget {
   PreviewScreen({MyFile? data}) {
@@ -756,7 +736,7 @@ class PreviewScreen extends ConsumerWidget {
   Widget leftButton() {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
-    return myButton(
+    return MyIconButton(
       icon: Icon(Icons.replay_10),
       onPressed:(){
         int sec = _videoPlayer!.value.position.inSeconds - 10;
@@ -769,7 +749,7 @@ class PreviewScreen extends ConsumerWidget {
   Widget rightButton() {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
-    return myButton(
+    return MyIconButton(
       icon: Icon(Icons.forward_10),
       onPressed:() async {
         int sec = _videoPlayer!.value.position.inSeconds + 10;
@@ -783,7 +763,7 @@ class PreviewScreen extends ConsumerWidget {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
     if(_isPlaying==false){
-      return myButton(
+      return MyIconButton(
         icon: Icon(Icons.play_arrow),
         onPressed:(){
           _videoPlayer!.play();
@@ -792,7 +772,7 @@ class PreviewScreen extends ConsumerWidget {
         },
       );
     } else {
-      return myButton(
+      return MyIconButton(
         icon: Icon(Icons.pause),
         onPressed:(){
           _videoPlayer!.pause();
@@ -801,18 +781,6 @@ class PreviewScreen extends ConsumerWidget {
         },
       );
     }
-  }
-
-  Widget myButton({required Icon icon, required void Function()? onPressed}) {
-    return CircleAvatar(
-      backgroundColor: Colors.black38,
-      radius: 28.0,
-      child: IconButton(
-        iconSize: 40.0,
-        icon: icon,
-        onPressed:onPressed,
-      )
-    );
   }
 
   Widget getText(String txt){

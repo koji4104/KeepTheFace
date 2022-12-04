@@ -37,10 +37,6 @@ final isSelectModeProvider = StateProvider<bool>((ref) {
   return false;
 });
 
-final isOptionProvider = StateProvider<bool>((ref) {
-  return false;
-});
-
 final cardWidthProvider = StateProvider<int>((ref) {
   return 200;
 });
@@ -75,7 +71,7 @@ class statusNotifier extends ChangeNotifier {
 
 final gdriveProvider = ChangeNotifierProvider((ref) => gdriveNotifier(ref));
 class gdriveNotifier extends ChangeNotifier {
-  late GoogleDriveAdapter gdrive = GoogleDriveAdapter();
+  GoogleDriveAdapter gdrive = GoogleDriveAdapter();
   gdriveNotifier(ref){
     gdrive.loginSilently().then((r){
       this.notifyListeners();

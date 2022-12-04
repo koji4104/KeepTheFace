@@ -55,6 +55,8 @@ class Localized {
       'photo_audio': 'Photo Audio',
       'video': 'Video',
       'not_login': 'Not Login',
+      'login':'Login',
+      'logout':'Logout',
     },
     'ja': {
       'settings_title': '設定',
@@ -93,6 +95,8 @@ class Localized {
       'photo_audio':'写真 音声',
       'video':'ビデオ',
       'not_login':'ログインしていません',
+      'login':'ログイン',
+      'logout':'ログアウト',
     },
   };
 

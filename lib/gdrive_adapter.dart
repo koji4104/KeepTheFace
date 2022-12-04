@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:googleapis/drive/v3.dart' as ga;
 import 'package:path/path.dart';
 import 'constants.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class GoogleHttpClient extends IOClient {
   Map<String, String> _headers;
@@ -25,6 +26,7 @@ class GoogleDriveAdapter {
   GoogleSignIn googleSignIn = GoogleSignIn(
     scopes:[ga.DriveApi.driveScope]
   );
+
   final storage = new FlutterSecureStorage();
   GoogleSignInAccount? gsa;
   bool isSignedIn(){ return gsa!=null; }

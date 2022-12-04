@@ -23,6 +23,7 @@ import 'common.dart';
 import 'camera_adapter.dart';
 import 'environment.dart';
 import 'constants.dart';
+import 'widgets.dart';
 
 bool disableCamera = kIsWeb; // true=test
 
@@ -119,7 +120,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     Future.delayed(Duration.zero, () => init(context,ref));
     ref.watch(cameraScreenProvider);
     this._status = _ref.watch(statusProvider).statsu;
-    bool isOption = _ref.watch(isOptionProvider);
 
     if(_status.isSaver) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays:[]);
@@ -158,7 +158,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
 
         // Camera Switch button
         if(_status.isSaver==false && _env.take_mode.val!=2)
-          MyButton(
+          MyIconButton(
             bottom: 40.0, right: 30.0,
             icon: Icon(Icons.autorenew, color: Colors.white),
             onPressed:() => _onCameraSwitch(ref),
@@ -166,7 +166,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
 
         // PhotoList screen button
         if(_status.isSaver==false)
-          MyButton(
+          MyIconButton(
             top:50.0, right:30.0,
             icon: Icon(Icons.folder, color: Colors.white),
             onPressed:() async {
@@ -180,11 +180,11 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
 
         // Zoom button
         if(_status.isSaver==false && _env.take_mode.val!=2)
-            optionButton(context, isOption),
+            optionButton(context),
 
         // Settings button
         if(_status.isSaver==false)
-          MyButton(
+          MyIconButton(
             top: 50.0, left: 30.0,
             icon: Icon(Icons.settings, color:Colors.white),
             onPressed:() async {
@@ -205,13 +205,13 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     ));
   }
 
-  Widget optionButton(BuildContext context, bool isOption) {
+  Widget optionButton(BuildContext context) {
     int z = _env.camera_zoom.val;
     String s = (z/10.0).toStringAsFixed(1);
     double y = 40.0 + 8.0 + 48.0;
     double b = 48.0;
     return Stack(children:<Widget>[
-      MyButton(
+      MyIconButton(
           bottom:y + b, left:30.0,
           icon: Icon(Icons.add),
           iconSize: 30.0,
@@ -234,8 +234,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
             )),
           )
       ),
-      MyButton(
-          select: isOption,
+      MyIconButton(
           bottom:y - b, left:30.0,
           icon: Icon(Icons.remove),
           iconSize: 30.0,
@@ -256,6 +255,7 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
       if(zoom10 > 40) zoom10 = 40;
       if(zoom10 < 10) zoom10 = 10;
       _ref.read(environmentProvider).saveDataNoRound(_env.camera_zoom,(zoom10).toInt());
+      this._zoom10 = zoom10;
       return;
     }
     if(disableCamera || _controller == null)
@@ -305,6 +305,19 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
       ' camera=${_cameraSize.width.toInt()}x${_cameraSize.height.toInt()}'
       ' aspect=${_aspect.toStringAsFixed(2)}'
       ' scale=${_scale.toStringAsFixed(2)}');
+
+    if(IS_TEST){
+      print('-- IS_TEST');
+      return Center(
+        child: Transform.scale(
+          scale: _scale,
+          child: AspectRatio(
+              aspectRatio: _aspect,
+              child: Image.network('/lib/assets/sample.png', fit:BoxFit.cover)
+          ),
+        ),
+      );
+    }
 
     return Center(
       child: Transform.scale(
@@ -414,26 +427,26 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
     print('-- onStop');
     try {
       String s = 'Stop';
-      if(_status.startTime!=null) {
+      if (_status.startTime != null) {
         Duration dur = DateTime.now().difference(_status.startTime!);
-        if(dur.inMinutes>0)
+        if (dur.inMinutes > 0)
           s += ' ${dur.inMinutes}min';
       }
-      if(_batteryLevelStart-_batteryLevel>0) {
+      if (_batteryLevelStart - _batteryLevel > 0) {
         s += ' batt ${_batteryLevelStart}->${_batteryLevel}%';
       }
       MyLog.info(s);
       _ref.read(statusProvider).stopped();
 
-      if(_env.take_mode.val==1 || _env.take_mode.val==3)
-        if(_controller!.value.isStreamingImages)
+      if (_env.take_mode.val == 1 || _env.take_mode.val == 3)
+        if (_controller!.value.isStreamingImages)
           await _controller!.stopImageStream();
-      if(_env.take_mode.val==2 || _env.take_mode.val==3)
+      if (_env.take_mode.val == 2 || _env.take_mode.val == 3)
         await stopAudio();
-      if(_env.take_mode.val==4)
+      if (_env.take_mode.val == 4)
         await stopVideo();
 
-      await Future.delayed(Duration(milliseconds:100));
+      await Future.delayed(Duration(milliseconds: 100));
       await _deleteCacheDir();
     } on Exception catch (e) {
       print('-- onStop() Exception ' + e.toString());
@@ -453,12 +466,12 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
           String path = await getSavePath('.jpg');
           final File file = File(path);
           await file.writeAsBytes(imglib.encodeJpg(img));
-          if(_env.isPremium()) {
+          if (_env.isPremium()) {
             if (_env.ex_storage.val == 1) {
-              if((_storage.gdriveFiles.length+_takeCount) < _env.ex_save_num.val) {
+              if ((_storage.gdriveFiles.length + _takeCount) < _env.ex_save_num.val) {
                 _storage.saveGdrive(path);
               } else {
-                if(_bLogExstrageFull) {
+                if (_bLogExstrageFull) {
                   MyLog.warn('GoogleDrive is full');
                   _bLogExstrageFull = false;
                 }
@@ -470,18 +483,17 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
         } else {
           print('-- photoShooting img=null');
         }
-
       } else {
         // android
         XFile xfile = await _controller!.takePicture();
         String path = await getSavePath('.jpg');
-        await moveFile(src:xfile.path, dst:path);
-        if(_env.isPremium()) {
+        await moveFile(src: xfile.path, dst: path);
+        if (_env.isPremium()) {
           if (_env.ex_storage.val == 1) {
-            if((_storage.gdriveFiles.length+_takeCount) < _env.ex_save_num.val) {
+            if ((_storage.gdriveFiles.length + _takeCount) < _env.ex_save_num.val) {
               _storage.saveGdrive(path);
             } else {
-              if(_bLogExstrageFull) {
+              if (_bLogExstrageFull) {
                 MyLog.warn('GoogleDrive is full');
                 _bLogExstrageFull = false;
               }
@@ -548,11 +560,11 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   Future<File> moveFile({required String src, required String dst}) async {
     File srcfile = File(src);
     try {
-      for(var i=1; i<=5; i++) {
+      for (var i = 1; i <= 5; i++) {
         if (await srcfile.exists()) {
           return await srcfile.rename(dst);
         } else {
-          await Future.delayed(Duration(milliseconds:400));
+          await Future.delayed(Duration(milliseconds: 400));
         }
       }
       MyLog.warn('move file not exists src=${src}');
@@ -687,7 +699,6 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   }
 
   /// キャッシュ削除
-  /// data/user/0/com.github.koji4104/cache/CAP628722182744800763.mp4
   Future<void> _deleteCacheDir() async {
     try{
       final cacheDir = await getTemporaryDirectory();
@@ -712,67 +723,25 @@ class CameraScreen extends ConsumerWidget with WidgetsBindingObserver {
   @override
   bool get wantKeepAlive => true;
 
-  Widget MyButton({required Icon icon, required void Function()? onPressed,
-    double? left, double? top, double? right, double? bottom, bool? select, double? iconSize}) {
-    bool sel = (select!=null && select==true);
-    Color fgcol = sel ? Colors.black : Colors.white;
-    Color bgcol = sel ? Colors.white : Colors.black54;
-    if(iconSize==null)
-      iconSize = 38.0;
-    return Positioned(
-      left:left, top:top, right:right, bottom:bottom,
-      child: CircleAvatar(
-        backgroundColor: bgcol,
-        radius: iconSize * 0.75,
-        child: IconButton(
-          icon: icon,
-          color: fgcol,
-          iconSize: iconSize,
-          onPressed: onPressed,
-        )
-      )
-    );
-  }
-
-  Widget MyTextButton({
-    required String label, required void Function()? onPressed,
-    double? left, double? top, double? right, double? bottom, bool? select}){
-    bool sel = (select!=null && select==true);
-    Color fgcol = sel ? Colors.black : Colors.white;
-    Color bgcol = sel ? Colors.white : Colors.black54;
-
-    return Positioned(
-      left:left, top:top, right:right, bottom:bottom,
-      child: TextButton(
-        style: TextButton.styleFrom(
-            backgroundColor: bgcol,
-            shape: RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(4)))
-        ),
-        child: Text(label, style:TextStyle(color:fgcol, fontSize:12), textAlign:TextAlign.center),
-        onPressed:onPressed,
-      ),
-    );
-  }
-
   Widget RecordButton({required void Function()? onPressed}) {
     return Center(
-      child: Container(
-        width:160, height:160,
-        child:TextButton(
-          style: TextButton.styleFrom(
-            backgroundColor: Colors.black26,
-            shape: const CircleBorder(
-              side: BorderSide(
-                color: Colors.white,
-                width: 1,
-                style: BorderStyle.solid,
+        child: Container(
+            width: 160, height: 160,
+            child: TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.black26,
+                shape: const CircleBorder(
+                  side: BorderSide(
+                    color: Colors.white,
+                    width: 1,
+                    style: BorderStyle.solid,
+                  ),
+                ),
               ),
-            ),
-          ),
-          child:Text('START', style:TextStyle(fontSize:16, color:Colors.white)),
-          onPressed: onPressed,
+              child: Text('START', style: TextStyle(fontSize: 16, color: Colors.white)),
+              onPressed: onPressed,
+            )
         )
-      )
     );
   }
 }
