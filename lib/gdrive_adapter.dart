@@ -71,7 +71,7 @@ class GoogleDriveAdapter {
   }
 
   // New account or Existing account
-  // com.google.android.gms.common.api.ApiException: 10 is finger print
+  // com.google.android.gms.common.api.ApiException: 10 -> finger print
   Future<bool> loginWithGoogle() async {
     print('-- loginWithGoogle()');
     loginerr = '';
@@ -140,7 +140,7 @@ class GoogleDriveAdapter {
     try{
       // folder id
       if(folderId==null) {
-        getFolderId();
+        await getFolderId();
       }
 
       // File list

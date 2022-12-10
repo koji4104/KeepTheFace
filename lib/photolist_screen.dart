@@ -96,7 +96,6 @@ class PhotoListScreen extends BaseScreen {
                   onPressed:(){
                     ref.read(isSelectModeProvider.state).state = !bSelectMode;
                     ref.read(selectedListProvider).clear();
-                    redraw();
                   },
                 ),
                 SizedBox(width:16),

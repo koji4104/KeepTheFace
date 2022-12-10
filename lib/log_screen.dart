@@ -44,16 +44,16 @@ final logListProvider = StateProvider<List<MyLogData>>((ref) {
 class MyLog {
   static String _fname = "app.log";
   
-  static info(String msg) async {
+  static Future info(String msg) async {
     await MyLog.write('info', 'app', msg);
   }
-  static warn(String msg) async {
+  static Future warn(String msg) async {
     await MyLog.write('warn', 'app', msg);
   }
-  static err(String msg) async {
+  static Future err(String msg) async {
     await MyLog.write('err', 'app', msg);
   }
-  static write(String level, String event, String msg) async {
+  static Future write(String level, String event, String msg) async {
     print('-- ${level} ${msg}');
     if(kIsWeb)
       return ;

@@ -74,6 +74,7 @@ class SettingsScreen extends BaseSettingsScreen {
       MyValue(data: env.photo_interval_sec),
       MyValue(data: env.split_interval_sec),
       MyValue(data: env.save_num),
+      MyValue(data: env.saver_mode),
       MyValue(data: env.autostop_sec),
       MyListTile(
           title: MyText('Google Drive'),
@@ -228,9 +229,7 @@ class GoogleDriveScreen extends BaseSettingsScreen {
               width: 200,
               title: l10n('login'),
               onPressed: () {
-                gdriveAd!.loginWithGoogle().then((_) {
-                  redraw();
-                });
+                ref.watch(gdriveProvider).loginWithGoogle();
               }
           ),
         if(gdriveAd!.isSignedIn())
@@ -238,9 +237,7 @@ class GoogleDriveScreen extends BaseSettingsScreen {
               width: 220,
               title: l10n('logout'),
               onPressed: () {
-                gdriveAd!.logout().then((_) {
-                  redraw();
-                });
+                ref.watch(gdriveProvider).logout();
               }
           ),
         if(gdriveAd!.loginerr != '')

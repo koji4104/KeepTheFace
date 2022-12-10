@@ -21,19 +21,15 @@ class EnvData {
     set(val);
   }
 
-  // 選択肢と同じものがなければひとつ大きいいものになる
-  set(int? newval) {
-    if (newval==null)
+  set(int? v) {
+    if (v == null || vals.length == 0 || keys.length == 0)
       return;
-    if (vals.length > 0) {
-      val = vals[0];
-      for (var i=0; i<vals.length; i++) {
-        if (newval <= vals[i]) {
-          val = vals[i];
-          if(keys.length>=i)
-            key = keys[i];
-          break;
-        }
+    val = vals[0];
+    for (var i = 0; i < vals.length; i++) {
+      if (v <= vals[i]) {
+        val = vals[i];
+        key = keys[i];
+        break;
       }
     }
   }
@@ -60,7 +56,7 @@ class Environment {
 
   /// 分割
   EnvData split_interval_sec = EnvData(
-    val:300,
+    val:600,
     vals:IS_TEST?
          [30,300,600]:
          [300,600],
@@ -68,6 +64,14 @@ class Environment {
          ['30 sec','5 min','10 min']:
          ['5 min','10 min'],
     name:'split_interval_sec',
+  );
+
+  /// スクリーンセーバー 0=なし 1=あり 2=5秒
+  EnvData saver_mode = EnvData(
+    val:1,
+    vals:[1,2],
+    keys:['ON','Black'],
+    name:'saver_mode',
   );
 
   /// 自動停止
@@ -146,10 +150,10 @@ class Environment {
   }
 
   // 開始からの時間
-  int? trialHour(){
+  int? trialHour() {
     int? h = null;
     print('-- trial_date = ' + trial_date);
-    if(trial_date.length<8) return h;
+    if (trial_date.length < 8) return h;
     try {
       DateTime tri = DateTime.parse(trial_date);
       Duration dur = DateTime.now().difference(tri);
@@ -196,29 +200,6 @@ class Environment {
     //return isTrial();
   }
 
-  Future load() async {
-    print('-- load()');
-    try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      _loadSub(prefs, take_mode);
-      _loadSub(prefs, photo_interval_sec);
-      _loadSub(prefs, split_interval_sec);
-      _loadSub(prefs, save_num);
-      _loadSub(prefs, ex_storage);
-      _loadSub(prefs, ex_save_num);
-      _loadSub(prefs, autostop_sec);
-      _loadSub(prefs, camera_height);
-      _loadSub(prefs, camera_zoom);
-      _loadSub(prefs, camera_pos);
-      trial_date = prefs.getString('trial_date') ?? '';
-    } on Exception catch (e) {
-      print('-- load() e=' + e.toString());
-    }
-  }
-  _loadSub(SharedPreferences prefs, EnvData data) {
-    data.set(prefs.getInt(data.name) ?? data.val);
-  }
-
   Future save(EnvData data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(data.name, data.val);
@@ -230,9 +211,33 @@ class environmentNotifier extends ChangeNotifier {
   Environment env = Environment();
 
   environmentNotifier(ref){
-    env.load().then((_){
+    load().then((_){
       this.notifyListeners();
     });
+  }
+
+  Future load() async {
+    print('-- load()');
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      _loadSub(prefs, env.take_mode);
+      _loadSub(prefs, env.photo_interval_sec);
+      _loadSub(prefs, env.split_interval_sec);
+      _loadSub(prefs, env.save_num);
+      _loadSub(prefs, env.ex_storage);
+      _loadSub(prefs, env.ex_save_num);
+      _loadSub(prefs, env.saver_mode);
+      _loadSub(prefs, env.autostop_sec);
+      _loadSub(prefs, env.camera_height);
+      _loadSub(prefs, env.camera_zoom);
+      _loadSub(prefs, env.camera_pos);
+      env.trial_date = prefs.getString('trial_date') ?? '';
+    } on Exception catch (e) {
+      print('-- load() e=' + e.toString());
+    }
+  }
+  _loadSub(SharedPreferences prefs, EnvData data) {
+    data.set(prefs.getInt(data.name) ?? data.val);
   }
 
   Future saveData(EnvData data, int newVal) async {

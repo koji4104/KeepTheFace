@@ -41,30 +41,36 @@ final cardWidthProvider = StateProvider<int>((ref) {
   return 200;
 });
 
-class StatusData {
+final stopButtonTextProvider = StateProvider<String>((ref) {
+  return '';
+});
+
+class StateData {
   bool isRunning = false;
   bool isSaver = false;
   DateTime? startTime;
 }
 
-final statusProvider = ChangeNotifierProvider((ref) => statusNotifier(ref));
-class statusNotifier extends ChangeNotifier {
-  StatusData statsu = StatusData();
-  statusNotifier(ref){}
+final stateProvider = ChangeNotifierProvider((ref) => stateNotifier(ref));
+class stateNotifier extends ChangeNotifier {
+  StateData state = StateData();
+  stateNotifier(ref){}
   start() {
-    statsu.isRunning = true;
-    statsu.isSaver = true;
-    statsu.startTime = DateTime.now();
+    print('-- stateNotifier start');
+    state.isRunning = true;
+    state.isSaver = true;
+    state.startTime = DateTime.now();
     this.notifyListeners();
   }
   stop() {
-    statsu.isRunning = false;
-    statsu.isSaver = false;
+    print('-- stateNotifier stop');
+    state.isRunning = false;
+    state.isSaver = false;
     this.notifyListeners();
   }
   stopped() {
-    statsu.isRunning = false;
-    statsu.startTime = null;
+    state.isRunning = false;
+    state.startTime = null;
     this.notifyListeners();
   }
 }
@@ -74,6 +80,16 @@ class gdriveNotifier extends ChangeNotifier {
   GoogleDriveAdapter gdrive = GoogleDriveAdapter();
   gdriveNotifier(ref){
     gdrive.loginSilently().then((r){
+      this.notifyListeners();
+    });
+  }
+  Future loginWithGoogle() async {
+    gdrive.loginWithGoogle().then((_) {
+      this.notifyListeners();
+    });
+  }
+  Future logout() async {
+    gdrive.logout().then((_) {
       this.notifyListeners();
     });
   }
