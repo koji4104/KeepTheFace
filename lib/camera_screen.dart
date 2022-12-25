@@ -319,7 +319,9 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
           scale: _scale,
           child: AspectRatio(
               aspectRatio: _aspect,
-              child: Image.network('/lib/assets/sample.png', fit:BoxFit.cover)
+              child: kIsWeb ?
+              Image.network('/lib/assets/sample.png', fit:BoxFit.cover) :
+              Image(image: AssetImage('lib/assets/sample.png')),
           ),
         ),
       );

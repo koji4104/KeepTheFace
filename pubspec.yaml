@@ -52,3 +52,4 @@ flutter:
   uses-material-design: true
   assets:
     - lib/assets/test.jpg
+    - lib/assets/sample.png
