@@ -279,7 +279,7 @@ class PhotoListScreen extends BaseScreen {
                       ),
                       if(gdriveAd.isSignedIn())
                         MyTextButton(
-                            title: l10n('Google Drive'),
+                            title: l10n('save_gdrive'),
                             onPressed: () {
                               _saveFile(list, 4);
                               Navigator.of(context).pop();
@@ -557,11 +557,11 @@ class PreviewScreen extends ConsumerWidget {
   bool _isPlaying = false;
 
   void init(BuildContext context, WidgetRef ref) async {
-    if(_init == false){
+    if (_init == false) {
       _init = true;
-      try{
-        if(data.path.contains('.jpg')){
-          if(kIsWeb) {
+      try {
+        if (data.path.contains('.jpg')) {
+          if (kIsWeb) {
             _img = Image.network('/lib/assets/test.jpg', fit: BoxFit.contain);
             ref.read(previewScreenProvider).notifyListeners();
           } else {
@@ -576,15 +576,13 @@ class PreviewScreen extends ConsumerWidget {
               ),
             );
           }
-
-        } else if(data.path.contains('.m4a')) {
-          if(kIsWeb) {
+        } else if (data.path.contains('.m4a')) {
+          if (kIsWeb) {
             _videoPlayer = VideoPlayerController.network(data.path)
               ..initialize().then((_) {
                 _duration = _videoPlayer!.value.duration.inSeconds;
                 ref.read(previewScreenProvider).notifyListeners();
               });
-
           } else {
             _videoPlayer = VideoPlayerController.file(File(data.path))
               ..initialize().then((_) {
@@ -592,15 +590,13 @@ class PreviewScreen extends ConsumerWidget {
                 ref.read(previewScreenProvider).notifyListeners();
               });
           }
-
-        } else if(data.path.contains('.mp4')) {
-          if(kIsWeb){
+        } else if (data.path.contains('.mp4')) {
+          if (kIsWeb) {
             _videoPlayer = VideoPlayerController.network(data.path)
               ..initialize().then((_) {
                 _duration = _videoPlayer!.value.duration.inSeconds;
                 ref.read(previewScreenProvider).notifyListeners();
               });
-
           } else {
             _videoPlayer = VideoPlayerController.file(File(data.path))
               ..initialize().then((_) {
@@ -612,13 +608,13 @@ class PreviewScreen extends ConsumerWidget {
 
             final videoInfo = FlutterVideoInfo();
             var a = await videoInfo.getVideoInfo(data.path).then((value) {
-              if(value!=null) {
-                _orientation = value.orientation!=null ? value.orientation! : 0;
+              if (value != null) {
+                _orientation =
+                value.orientation != null ? value.orientation! : 0;
                 ref.read(previewScreenProvider).notifyListeners();
               }
             });
           }
-
         }
       } on Exception catch (e) {
         print('-- PreviewScreen.init ${e.toString()}');
@@ -627,63 +623,61 @@ class PreviewScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref){
-    Future.delayed(Duration.zero, () => init(context,ref));
+  Widget build(BuildContext context, WidgetRef ref) {
+    Future.delayed(Duration.zero, () => init(context, ref));
     ref.watch(previewScreenProvider);
     this._ref = ref;
-    _edge.getEdge(context,ref);
-    double l = MediaQuery.of(context).size.width/2 - 100;
-    double b = MediaQuery.of(context).size.height / 20;
+    _edge.getEdge(context, ref);
+    double l = MediaQuery
+        .of(context)
+        .size
+        .width / 2 - 120;
+    double b = MediaQuery
+        .of(context)
+        .size
+        .height / 20;
+    print('PreviewScreen l=${l.toInt()} b=${b.toInt()}');
 
     return Container(
-      margin: _edge.homebarEdge,
-      child:Stack(children: <Widget>[
-        player(),
-        getInfoText(),
-        Positioned(
-          bottom:b, left:l,
-          child: leftButton()
-        ),
-        Positioned(
-          bottom:b, left:0, right:0,
-          child: playButton()
-        ),
-        Positioned(
-          bottom:b, right:l,
-          child: rightButton()
-        ),
-        if(_videoPlayer!=null)
-          Positioned(
-          bottom:b+70, left:4, right:4,
-          child:VideoProgressIndicator(
-            _videoPlayer!,
-            allowScrubbing:true,
-            colors: new VideoProgressColors(
-              playedColor: Colors.red,
-              bufferedColor: Colors.black,
-              backgroundColor: Colors.black,
-            ),
-          )),
-      ])
+        margin: _edge.homebarEdge,
+        child: Stack(children: <Widget>[
+          player(),
+          getInfoText(),
+          leftButton(bottom: b, left: l),
+          playButton(bottom: b, left: 0, right: 0),
+          rightButton(bottom: b, right: l),
+          if(_videoPlayer != null)
+            Positioned(
+                bottom: b + 70, left: 4, right: 4,
+                child: VideoProgressIndicator(
+                  _videoPlayer!,
+                  allowScrubbing: true,
+                  colors: new VideoProgressColors(
+                    playedColor: Colors.red,
+                    bufferedColor: Colors.black,
+                    backgroundColor: Colors.black,
+                  ),
+                )),
+        ])
     );
   }
 
   Widget player() {
-    if(data.path.contains('.jpg')) {
-      return (_img!=null) ? Center(child:_img) : Container();
-    } else if(data.path.contains('.mp4')) {
-      if (_videoPlayer==null) {
+    if (data.path.contains('.jpg')) {
+      return (_img != null) ? Center(child: _img) : Container();
+    } else if (data.path.contains('.mp4')) {
+      if (_videoPlayer == null) {
         return Container();
       } else {
         double aspect = _videoPlayer!.value.size.aspectRatio;
-        if(aspect<=0.0)
+        if (aspect <= 0.0)
           return Container();
         else
           return Center(
-            child: AspectRatio(
-              aspectRatio: aspect,
-              child: VideoPlayer(_videoPlayer!)
-            )
+              child: AspectRatio(
+                  aspectRatio: aspect,
+                  child: VideoPlayer(_videoPlayer!)
+              )
           );
       }
     } else {
@@ -732,10 +726,11 @@ class PreviewScreen extends ConsumerWidget {
     }
   }
 
-  Widget leftButton() {
+  Widget leftButton({double? left, double? top, double? right, double? bottom}) {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
     return MyIconButton(
+      left:left, top:top, right:right, bottom:bottom,
       icon: Icon(Icons.replay_10),
       onPressed:(){
         int sec = _videoPlayer!.value.position.inSeconds - 10;
@@ -745,10 +740,11 @@ class PreviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget rightButton() {
+  Widget rightButton({double? left, double? top, double? right, double? bottom}) {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
     return MyIconButton(
+      left:left, top:top, right:right, bottom:bottom,
       icon: Icon(Icons.forward_10),
       onPressed:() async {
         int sec = _videoPlayer!.value.position.inSeconds + 10;
@@ -758,11 +754,12 @@ class PreviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget playButton() {
+  Widget playButton({double? left, double? top, double? right, double? bottom}) {
     if(data.path.contains('.jpg') || _videoPlayer==null)
       return Container();
     if(_isPlaying==false){
       return MyIconButton(
+        left:left, top:top, right:right, bottom:bottom,
         icon: Icon(Icons.play_arrow),
         onPressed:(){
           _videoPlayer!.play();
@@ -772,6 +769,7 @@ class PreviewScreen extends ConsumerWidget {
       );
     } else {
       return MyIconButton(
+        left:left, top:top, right:right, bottom:bottom,
         icon: Icon(Icons.pause),
         onPressed:(){
           _videoPlayer!.pause();
@@ -782,14 +780,14 @@ class PreviewScreen extends ConsumerWidget {
     }
   }
 
-  Widget getText(String txt){
+  Widget getText(String txt) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical:2, horizontal:2),
-      width: 200,
-      color: Colors.black54,
-      child: Align(alignment:Alignment.centerLeft,
-        child:Text(txt,style:TextStyle(color:Colors.white, fontSize:16)),
-      )
+        padding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+        width: 200,
+        color: Colors.black54,
+        child: Align(alignment: Alignment.centerLeft,
+          child: Text(txt, style: TextStyle(color: Colors.white, fontSize: 16)),
+        )
     );
   }
 }
