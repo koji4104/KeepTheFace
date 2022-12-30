@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'dart:io';
-import 'constants.dart';
+import '/constants.dart';
 
 class EnvData {
   int val;
@@ -278,6 +278,7 @@ class environmentNotifier extends ChangeNotifier {
       case 'split_interval_sec': ret = env.split_interval_sec; break;
       case 'autostop_sec': ret = env.autostop_sec; break;
       case 'save_num': ret = env.save_num; break;
+      case 'saver_mode': ret = env.saver_mode; break;
       case 'ex_save_num': ret = env.ex_save_num; break;
       case 'ex_storage': ret = env.ex_storage; break;
       case 'camera_height': ret = env.camera_height; break;

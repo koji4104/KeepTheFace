@@ -126,8 +126,9 @@ class GoogleDriveAdapter {
         print('folders.length=${folders.files!.length} folderid=${folderId}');
       }
     } on Exception catch (e) {
-      print('-- err _getFiles=${e.toString()}');
-    }  }
+      print('-- err getFolderId() e=${e.toString()}');
+    }
+  }
 
   Future<void> getFiles() async {
     print('-- getFiles');
@@ -158,7 +159,7 @@ class GoogleDriveAdapter {
   }
 
   Future<void> uploadFile(String path) async {
-    print('-- GoogleDriveAdapter.uploadFile');
+    print('-- GoogleDriveAdapter.uploadFile()');
     if(isSignedIn()==false) {
       print('-- not SignedIn');
       return;

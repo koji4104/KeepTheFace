@@ -5,9 +5,11 @@ import 'package:path/path.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'provider.dart';
-import 'common.dart';
-import 'gdrive_adapter.dart';
+import '/controllers/provider.dart';
+import '/controllers/photolist_controller.dart';
+import '/models/photolist.dart';
+import '/common.dart';
+import '/gdrive_adapter.dart';
 import 'package:video_thumbnail/video_thumbnail.dart' as video_thumbnail;
 import 'package:video_player/video_player.dart';
 import 'package:flutter_video_info/flutter_video_info.dart';
@@ -39,7 +41,7 @@ class PhotoListScreen extends BaseScreen {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     subBuild(context, ref);
-    bool bSelectMode = ref.watch(isSelectModeProvider);
+    bool bSelectMode = ref.watch(photolistProvider).data.isSelectMode;
     this.gdriveAd = ref.watch(gdriveProvider).gdrive;
 
     return Scaffold(
@@ -69,7 +71,7 @@ class PhotoListScreen extends BaseScreen {
                   onPressed:(){
                     if(_gridZoom<1) {
                       _gridZoom++;
-                      ref.read(cardWidthProvider.state).state = (edge.width/(_crossAxisCount + _gridZoom)).toInt();
+                      ref.read(photolistProvider).data.cardWidth = (edge.width/(_crossAxisCount + _gridZoom)).toInt();
                       redraw();
                     }
                   },
@@ -82,7 +84,7 @@ class PhotoListScreen extends BaseScreen {
                   onPressed:(){
                     if(_gridZoom>-1) {
                       _gridZoom--;
-                      ref.read(cardWidthProvider.state).state = (edge.width/(_crossAxisCount + _gridZoom)).toInt();
+                      ref.read(photolistProvider).data.cardWidth = (edge.width/(_crossAxisCount + _gridZoom)).toInt();
                       redraw();
                     }
                   },
@@ -94,7 +96,8 @@ class PhotoListScreen extends BaseScreen {
                     Icon(Icons.check_circle),
                   iconSize: 32.0,
                   onPressed:(){
-                    ref.read(isSelectModeProvider.state).state = !bSelectMode;
+                    ref.read(photolistProvider).data.isSelectMode = !bSelectMode;
+                    ref.read(photolistProvider).notifyListeners();
                     ref.read(selectedListProvider).clear();
                   },
                 ),
@@ -215,7 +218,7 @@ class PhotoListScreen extends BaseScreen {
         }
       }
 
-      ref.read(fileListProvider).list = fileList;
+      ref.read(photolistProvider).data.files = fileList;
 
       for (int i=0; i<fileList.length; i++) {
         cardList.add(MyCard(data:fileList[i], index:i));
@@ -435,8 +438,8 @@ class MyCard extends ConsumerWidget {
     ref.watch(myCardScreenProvider);
     this._ref = ref;
     Future.delayed(Duration.zero, () => init(context,ref));
-    bool bSelectMode = ref.watch(isSelectModeProvider);
-    _width = ref.watch(cardWidthProvider);
+    bool bSelectMode = ref.watch(photolistProvider).data.isSelectMode;
+    _width = ref.watch(photolistProvider).data.cardWidth;
 
     return Container(
       width: 100.0, height: 100.0,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 bool IS_PREMIUM = false;
 String ALBUM_NAME = "TheseDays";
-bool IS_TEST = true;
+bool IS_TEST = false;
 
 // Text Style
 Color btnOn = Colors.white;

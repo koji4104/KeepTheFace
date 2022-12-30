@@ -16,13 +16,13 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'provider.dart';
+import '/controllers/camera_controller.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'log_screen.dart';
-import 'common.dart';
+import '/common.dart';
 import 'camera_adapter.dart';
-import 'environment.dart';
-import 'constants.dart';
+import '/controllers/environment.dart';
+import '/constants.dart';
 import 'widgets.dart';
 import 'base_screen.dart';
 

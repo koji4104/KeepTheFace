@@ -1,4 +1,4 @@
-package com.example.thesedays
+package com.github.koji4104.thesedays
 
 import io.flutter.embedding.android.FlutterActivity
 

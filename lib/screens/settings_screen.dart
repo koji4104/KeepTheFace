@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'localizations.dart';
+import '/localizations.dart';
 import 'log_screen.dart';
-import 'common.dart';
-import 'gdrive_adapter.dart';
-import 'environment.dart';
+import '/common.dart';
+import '/gdrive_adapter.dart';
+import '/controllers/environment.dart';
 import 'base_screen.dart';
 import 'purchase_screen.dart';
-import 'provider.dart';
-import 'constants.dart';
+import '/controllers/provider.dart';
+import '/constants.dart';
 import 'widgets.dart';
 
 /// Settings
@@ -101,18 +101,6 @@ class SettingsScreen extends BaseSettingsScreen {
           title2: env.isTrial() ? MyText('ON') : MyText('OFF'),
           onPressed: () => NavigatorPush(PremiumScreen()),
         ),
-      /*
-        if(pre)
-          MyListTile(
-            title:Text(l10n(env.ex_storage.name),style:ts),
-            title2:Text(l10n(env.ex_storage.key),style:ts),
-            onPressed:(){
-              NavigatorPush(ExStrageScreen());
-            }
-          ),
-        if(ex==1 || ex==2) MyValue(data: env.ex_save_num),
-        */
-
       MyLabel(''),
       MyListTile(
           title: MyText('Logs'),
