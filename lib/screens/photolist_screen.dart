@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:thesedays/constants.dart';
 import '/controllers/provider.dart';
 import '/controllers/photolist_controller.dart';
 import '/models/photolist.dart';
@@ -144,15 +145,15 @@ class PhotoListScreen extends BaseScreen {
   }
 
   Widget getList(BuildContext context, WidgetRef ref) {
-    if(bInit==false)
+    if (bInit == false)
       return Container();
     return Container(
-      padding: EdgeInsets.symmetric(vertical:4, horizontal:6),
+      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
       child: GridView.count(
-        crossAxisCount: _crossAxisCount + _gridZoom,
-        children: List.generate(cardList.length, (index) {
-          return cardList[index];
-        })),
+          crossAxisCount: _crossAxisCount + _gridZoom,
+          children: List.generate(cardList.length, (index) {
+            return cardList[index];
+          })),
     );
   }
 
@@ -160,7 +161,7 @@ class PhotoListScreen extends BaseScreen {
     try {
       fileList.clear();
       cardList.clear();
-      if (kIsWeb) {
+      if (kIsWeb || IS_TEST) {
         for (int i = 1; i < 28; i++) {
           MyFile f = new MyFile();
           f.date = DateTime(2022, 12, i, 0, 0, 0);

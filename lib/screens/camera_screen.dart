@@ -56,6 +56,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   @override
   Future init() async {
+    print('-- CameraScreen.init()');
     _timer = Timer.periodic(Duration(seconds: 1), _onTimer);
     _initCameraSync(ref);
     WidgetsBinding.instance.addObserver(this);
@@ -111,6 +112,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
     if (kIsWeb == false) {
       if (_state.isSaver) {
+        print('-- _state.isSaver = true');
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
         Wakelock.enable();
       } else {
@@ -142,7 +144,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
             // STOP
             if (_state.isSaver == true)
-              if (env.saver_mode.val == 1 || (env.saver_mode.val == 2 && _waitTime != null))
+              if (env.saver_mode.val == 1 ||
+                  (env.saver_mode.val == 2 && _waitTime != null))
                 stopButton(
                     onPressed: () {
                       _waitTime = null;
@@ -150,7 +153,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
                     }
                 ),
 
-            if((_state.isSaver == false && env.saver_mode.val != 0) && env.take_mode.val != 2)
+            if((_state.isSaver == false && env.saver_mode.val != 0) &&
+                env.take_mode.val != 2)
               _cameraWidget(context),
 
             // START
@@ -281,11 +285,37 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
-    if(disableCamera) {
+    if(disableCamera && IS_TEST==false) {
       return Positioned(
         left:0, top:0, right:0, bottom:0,
         child: Container(color: Color(0xFF222244)));
     }
+
+    if(IS_TEST){
+      print('-- _cameraWidget() IS_TEST');
+      double sw = edge.width;
+      double sh = edge.height;
+      double dw = sw>sh ? sw : sh;
+      double dh = sw>sh ? sh : sw;
+      double _aspect = sw/sh;
+
+      // 16:10 (Up-down black) or 17:9 (Left-right black)
+      // e.g. double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
+      double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
+
+      return Center(
+        child: Transform.scale(
+          scale: _scale,
+          child: AspectRatio(
+            aspectRatio: _aspect,
+            child: kIsWeb ?
+            Image.network('/lib/assets/sample.png', fit:BoxFit.cover) :
+            Image(image: AssetImage('lib/assets/sample.png')),
+          ),
+        ),
+      );
+    }
+
     if (_controller == null || _controller!.value.previewSize == null) {
       return Center(
         child: SizedBox(
@@ -312,21 +342,6 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       ' aspect=${_aspect.toStringAsFixed(2)}'
       ' scale=${_scale.toStringAsFixed(2)}');
 
-    if(IS_TEST){
-      print('-- IS_TEST');
-      return Center(
-        child: Transform.scale(
-          scale: _scale,
-          child: AspectRatio(
-              aspectRatio: _aspect,
-              child: kIsWeb ?
-              Image.network('/lib/assets/sample.png', fit:BoxFit.cover) :
-              Image(image: AssetImage('lib/assets/sample.png')),
-          ),
-        ),
-      );
-    }
-
     return Center(
       child: Transform.scale(
         scale: _scale,
@@ -340,7 +355,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// カメラ初期化
   Future<void> _initCameraSync(WidgetRef ref) async {
-    if (disableCamera)
+    if (disableCamera || IS_TEST)
       return;
     print('-- _initCameraSync');
     _cameras = await availableCameras();
@@ -440,7 +455,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         if (dur.inMinutes > 0)
           s += ' ${dur.inMinutes}min';
       }
-      if (_batteryLevelStart - _batteryLevel > 0) {
+      if (_batteryLevel > 0 && _batteryLevelStart - _batteryLevel > 0) {
         s += ' batt ${_batteryLevelStart}->${_batteryLevel}%';
       }
       MyLog.info(s);
@@ -587,9 +602,10 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// タイマー
   void _onTimer(Timer timer) async {
-    if (this._batteryLevel < 0)
+    if (this._batteryLevel < 0) {
+      this._batteryLevel = 0;
       this._batteryLevel = await _battery.batteryLevel;
-
+    }
     // 停止ボタンを押したとき
     if (_state.isRunning == false && _state.startTime != null) {
       onStop();
