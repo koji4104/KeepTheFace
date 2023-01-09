@@ -285,33 +285,22 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
-    if(disableCamera && IS_TEST==false) {
+    if (disableCamera && IS_TEST == false) {
       return Positioned(
-        left:0, top:0, right:0, bottom:0,
-        child: Container(color: Color(0xFF222244)));
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          child: Container(color: Color(0xFF222244)));
     }
 
-    if(IS_TEST){
-      print('-- _cameraWidget() IS_TEST');
-      double sw = edge.width;
-      double sh = edge.height;
-      double dw = sw>sh ? sw : sh;
-      double dh = sw>sh ? sh : sw;
-      double _aspect = sw/sh;
-
-      // 16:10 (Up-down black) or 17:9 (Left-right black)
-      // e.g. double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
-      double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
-
+    if (IS_TEST) {
       return Center(
         child: Transform.scale(
-          scale: _scale,
-          child: AspectRatio(
-            aspectRatio: _aspect,
-            child: kIsWeb ?
-            Image.network('/lib/assets/sample.png', fit:BoxFit.cover) :
-            Image(image: AssetImage('lib/assets/sample.png')),
-          ),
+          scale: 4.1,
+          child: kIsWeb ?
+          Image.network('/lib/assets/sample.png', fit: BoxFit.cover) :
+          Image(image: AssetImage('lib/assets/sample.png')),
         ),
       );
     }
@@ -319,28 +308,33 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     if (_controller == null || _controller!.value.previewSize == null) {
       return Center(
         child: SizedBox(
-          width:32, height:32,
+          width: 32, height: 32,
           child: CircularProgressIndicator(),
         ),
       );
     }
 
-    Size _screenSize = MediaQuery.of(context).size;
+    Size _screenSize = MediaQuery
+        .of(context)
+        .size;
     Size _cameraSize = _controller!.value.previewSize!;
     double sw = _screenSize.width;
     double sh = _screenSize.height;
-    double dw = sw>sh ? sw : sh;
-    double dh = sw>sh ? sh : sw;
-    double _aspect = sw>sh ? _controller!.value.aspectRatio : 1/_controller!.value.aspectRatio;
+    double dw = sw > sh ? sw : sh;
+    double dh = sw > sh ? sh : sw;
+    double _aspect = sw > sh ? _controller!.value.aspectRatio : 1 /
+        _controller!.value.aspectRatio;
 
     // 16:10 (Up-down black) or 17:9 (Left-right black)
     // e.g. double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
-    double _scale = dw/dh < _cameraSize.width/_cameraSize.height ? dh/dw * _cameraSize.width/_cameraSize.height : dw/dh * _cameraSize.height/_cameraSize.width;
+    double _scale = dw / dh < _cameraSize.width / _cameraSize.height ? dh / dw *
+        _cameraSize.width / _cameraSize.height : dw / dh * _cameraSize.height /
+        _cameraSize.width;
 
     print('-- screen=${sw.toInt()}x${sh.toInt()}'
-      ' camera=${_cameraSize.width.toInt()}x${_cameraSize.height.toInt()}'
-      ' aspect=${_aspect.toStringAsFixed(2)}'
-      ' scale=${_scale.toStringAsFixed(2)}');
+        ' camera=${_cameraSize.width.toInt()}x${_cameraSize.height.toInt()}'
+        ' aspect=${_aspect.toStringAsFixed(2)}'
+        ' scale=${_scale.toStringAsFixed(2)}');
 
     return Center(
       child: Transform.scale(

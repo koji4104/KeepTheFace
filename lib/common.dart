@@ -287,6 +287,5 @@ class MyEdge {
     this.settingsEdge = this.settingsEdge.add(homebarEdge);
     if(_provider!=null)
       ref.read(_provider!).notifyListeners();
-    print('-- getEdge() end');
   }
 }
