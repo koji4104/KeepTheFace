@@ -64,8 +64,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    if(_controller!=null) _controller!.dispose();
-    if(_timer!=null) _timer!.cancel();
+    if (_controller != null) _controller!.dispose();
+    if (_timer != null) _timer!.cancel();
     WidgetsBinding.instance.removeObserver(this);
   }
 
@@ -77,23 +77,35 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   ResolutionPreset getPreset() {
     ResolutionPreset p = ResolutionPreset.high;
     int h = env.camera_height.val;
-    if(h>=2160) p = ResolutionPreset.ultraHigh;
-    else if(h>=1080) p = ResolutionPreset.veryHigh;
-    else if(h>=720) p = ResolutionPreset.high;
-    else if(h>=480) p = ResolutionPreset.medium;
-    else if(h>=240) p = ResolutionPreset.low;
+    if (h >= 2160)
+      p = ResolutionPreset.ultraHigh;
+    else if (h >= 1080)
+      p = ResolutionPreset.veryHigh;
+    else if (h >= 720)
+      p = ResolutionPreset.high;
+    else if (h >= 480)
+      p = ResolutionPreset.medium;
+    else if (h >= 240) p = ResolutionPreset.low;
     return p;
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
-      case AppLifecycleState.inactive: print('-- inactive'); break;
-      case AppLifecycleState.paused: print('-- paused'); break;
-      case AppLifecycleState.resumed: print('-- resumed'); break;
-      case AppLifecycleState.detached: print('-- detached'); break;
+      case AppLifecycleState.inactive:
+        print('-- inactive');
+        break;
+      case AppLifecycleState.paused:
+        print('-- paused');
+        break;
+      case AppLifecycleState.resumed:
+        print('-- resumed');
+        break;
+      case AppLifecycleState.detached:
+        print('-- detached');
+        break;
     }
-    if(_state.isRunning==true && state!=null) {
+    if (_state.isRunning == true && state != null) {
       if (state == AppLifecycleState.inactive ||
           state == AppLifecycleState.paused ||
           state == AppLifecycleState.detached) {
@@ -106,9 +118,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     subBuild(context, ref);
-    this._state = ref
-        .watch(stateProvider)
-        .state;
+    this._state = ref.watch(stateProvider).state;
 
     if (kIsWeb == false) {
       if (_state.isSaver) {
@@ -132,7 +142,6 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         body: Container(
           margin: edge.homebarEdge,
           child: Stack(children: <Widget>[
-
             // screen saver
             if (_state.isSaver == true)
               blackScreen(
@@ -144,18 +153,13 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
             // STOP
             if (_state.isSaver == true)
-              if (env.saver_mode.val == 1 ||
-                  (env.saver_mode.val == 2 && _waitTime != null))
-                stopButton(
-                    onPressed: () {
-                      _waitTime = null;
-                      ref.read(stateProvider).stop();
-                    }
-                ),
+              if (env.saver_mode.val == 1 || (env.saver_mode.val == 2 && _waitTime != null))
+                stopButton(onPressed: () {
+                  _waitTime = null;
+                  ref.read(stateProvider).stop();
+                }),
 
-            if((_state.isSaver == false && env.saver_mode.val != 0) &&
-                env.take_mode.val != 2)
-              _cameraWidget(context),
+            if ((_state.isSaver == false && env.saver_mode.val != 0) && env.take_mode.val != 2) _cameraWidget(context),
 
             // START
             if (_state.isSaver == false)
@@ -167,140 +171,126 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
 
             // Camera Switch button
-            if(_state.isSaver == false && env.take_mode.val != 2)
+            if (_state.isSaver == false && env.take_mode.val != 2)
               MyIconButton(
-                bottom: 40.0, right: 30.0,
+                bottom: 40.0,
+                right: 30.0,
                 icon: Icon(Icons.autorenew, color: Colors.white),
                 onPressed: () => _onCameraSwitch(ref),
               ),
 
             // PhotoList screen button
-            if(_state.isSaver == false)
+            if (_state.isSaver == false)
               MyIconButton(
-                  top: 50.0, right: 30.0,
+                  top: 50.0,
+                  right: 30.0,
                   icon: Icon(Icons.folder, color: Colors.white),
                   onPressed: () async {
-                    await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => PhotoListScreen(),
-                        )
-                    );
-                  }
-              ),
+                    await Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => PhotoListScreen(),
+                    ));
+                  }),
 
             // Zoom button
-            if(_state.isSaver == false && env.take_mode.val != 2)
-              optionButton(context),
+            if (_state.isSaver == false && env.take_mode.val != 2) optionButton(context),
 
             // Settings button
-            if(_state.isSaver == false)
+            if (_state.isSaver == false)
               MyIconButton(
-                  top: 50.0, left: 30.0,
+                  top: 50.0,
+                  left: 30.0,
                   icon: Icon(Icons.settings, color: Colors.white),
                   onPressed: () async {
-                    await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => SettingsScreen(),
-                        )
-                    );
+                    await Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => SettingsScreen(),
+                    ));
                     if (_preset != getPreset()) {
                       print('-- change camera ${env.camera_height.val}');
                       _preset = getPreset();
                       _initCameraSync(ref);
                     }
-                  }
-              ),
+                  }),
           ]),
-        )
-    );
+        ));
   }
 
   Widget optionButton(BuildContext context) {
     int z = env.camera_zoom.val;
-    String s = (z/10.0).toStringAsFixed(1);
+    String s = (z / 10.0).toStringAsFixed(1);
     double y = 40.0 + 8.0 + 48.0;
     double b = 48.0;
-    return Stack(children:<Widget>[
+    return Stack(children: <Widget>[
       MyIconButton(
-          bottom:y + b, left:30.0,
+          bottom: y + b,
+          left: 30.0,
           icon: Icon(Icons.add),
           iconSize: 30.0,
-          onPressed:() async {
-            zoomCamera(z+5);
-          }
-      ),
+          onPressed: () async {
+            zoomCamera(z + 5);
+          }),
       Positioned(
-          bottom:y, left:30.0,
-          child:Container(
-            width: 44, height: 44,
+          bottom: y,
+          left: 30.0,
+          child: Container(
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: Colors.black54,
               borderRadius: BorderRadius.circular(30),
             ),
-            child: Center(child:
-                Text(s,
-                textAlign:TextAlign.center,
-                style: TextStyle(fontSize:14, color: Colors.white)
-            )),
-          )
-      ),
+            child: Center(
+                child: Text(s, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.white))),
+          )),
       MyIconButton(
-          bottom:y - b, left:30.0,
+          bottom: y - b,
+          left: 30.0,
           icon: Icon(Icons.remove),
           iconSize: 30.0,
-          onPressed:() async {
-            zoomCamera(z-5);
-          }
-      ),
+          onPressed: () async {
+            zoomCamera(z - 5);
+          }),
     ]);
   }
 
   /// ズーム
   Future<void> zoomCamera(int zoom10) async {
-    if(this._zoom10 == zoom10)
-      return;
+    if (this._zoom10 == zoom10) return;
 
-    if(kIsWeb){
+    if (kIsWeb) {
       print('-- zoom=${zoom10}');
-      if(zoom10 > 40) zoom10 = 40;
-      if(zoom10 < 10) zoom10 = 10;
-      ref.read(environmentProvider).saveDataNoRound(env.camera_zoom,(zoom10).toInt());
+      if (zoom10 > 40) zoom10 = 40;
+      if (zoom10 < 10) zoom10 = 10;
+      ref.read(environmentProvider).saveDataNoRound(env.camera_zoom, (zoom10).toInt());
       this._zoom10 = zoom10;
       return;
     }
-    if(disableCamera || _controller == null)
-      return;
+    if (disableCamera || _controller == null) return;
     int max_zoom = 40;
     int min_zoom = 10;
-    if(zoom10 > max_zoom) zoom10 = max_zoom;
-    if(zoom10 < min_zoom) zoom10 = min_zoom;
+    if (zoom10 > max_zoom) zoom10 = max_zoom;
+    if (zoom10 < min_zoom) zoom10 = min_zoom;
     try {
-      _controller!.setZoomLevel(zoom10/10.0);
+      _controller!.setZoomLevel(zoom10 / 10.0);
     } catch (e) {
       await MyLog.err('${e.toString()}');
     }
     this._zoom10 = zoom10;
-    ref.read(environmentProvider).saveDataNoRound(env.camera_zoom,zoom10);
+    ref.read(environmentProvider).saveDataNoRound(env.camera_zoom, zoom10);
   }
 
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
     if (disableCamera && IS_TEST == false) {
-      return Positioned(
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(color: Color(0xFF222244)));
+      return Positioned(left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF222244)));
     }
 
     if (IS_TEST) {
       return Center(
         child: Transform.scale(
           scale: 4.1,
-          child: kIsWeb ?
-          Image.network('/lib/assets/sample.png', fit: BoxFit.cover) :
-          Image(image: AssetImage('lib/assets/sample.png')),
+          child: kIsWeb
+              ? Image.network('/lib/assets/sample.png', fit: BoxFit.cover)
+              : Image(image: AssetImage('lib/assets/sample.png')),
         ),
       );
     }
@@ -308,28 +298,26 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     if (_controller == null || _controller!.value.previewSize == null) {
       return Center(
         child: SizedBox(
-          width: 32, height: 32,
+          width: 32,
+          height: 32,
           child: CircularProgressIndicator(),
         ),
       );
     }
 
-    Size _screenSize = MediaQuery
-        .of(context)
-        .size;
+    Size _screenSize = MediaQuery.of(context).size;
     Size _cameraSize = _controller!.value.previewSize!;
     double sw = _screenSize.width;
     double sh = _screenSize.height;
     double dw = sw > sh ? sw : sh;
     double dh = sw > sh ? sh : sw;
-    double _aspect = sw > sh ? _controller!.value.aspectRatio : 1 /
-        _controller!.value.aspectRatio;
+    double _aspect = sw > sh ? _controller!.value.aspectRatio : 1 / _controller!.value.aspectRatio;
 
     // 16:10 (Up-down black) or 17:9 (Left-right black)
     // e.g. double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
-    double _scale = dw / dh < _cameraSize.width / _cameraSize.height ? dh / dw *
-        _cameraSize.width / _cameraSize.height : dw / dh * _cameraSize.height /
-        _cameraSize.width;
+    double _scale = dw / dh < _cameraSize.width / _cameraSize.height
+        ? dh / dw * _cameraSize.width / _cameraSize.height
+        : dw / dh * _cameraSize.height / _cameraSize.width;
 
     print('-- screen=${sw.toInt()}x${sh.toInt()}'
         ' camera=${_cameraSize.width.toInt()}x${_cameraSize.height.toInt()}'
@@ -349,8 +337,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// カメラ初期化
   Future<void> _initCameraSync(WidgetRef ref) async {
-    if (disableCamera || IS_TEST)
-      return;
+    if (disableCamera || IS_TEST) return;
     print('-- _initCameraSync');
     _cameras = await availableCameras();
     int pos = env.camera_pos.val;
@@ -361,12 +348,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     if (_cameras.length == 1) {
       pos = 0;
     }
-    _controller = CameraController(
-        _cameras[pos],
-        _preset,
-        imageFormatGroup: _imageFormat,
-        enableAudio: false
-    );
+    _controller = CameraController(_cameras[pos], _preset, imageFormatGroup: _imageFormat, enableAudio: false);
 
     _controller!.initialize().then((_) {
       redraw();
@@ -375,20 +357,14 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// スイッチ
   Future<void> _onCameraSwitch(WidgetRef ref) async {
-    if (disableCamera || _cameras.length < 2)
-      return;
+    if (disableCamera || _cameras.length < 2) return;
 
     int pos = env.camera_pos.val == 0 ? 1 : 0;
     env.camera_pos.set(pos);
     env.save(env.camera_pos);
 
     await _controller!.dispose();
-    _controller = CameraController(
-        _cameras[pos],
-        _preset,
-        imageFormatGroup: _imageFormat,
-        enableAudio: false
-    );
+    _controller = CameraController(_cameras[pos], _preset, imageFormatGroup: _imageFormat, enableAudio: false);
     try {
       _controller!.initialize().then((_) {
         redraw();
@@ -401,16 +377,16 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// START
   Future<bool> onStart() async {
-    if(kIsWeb) {
+    if (kIsWeb) {
       ref.read(stateProvider).start();
     }
 
-    if (_controller!.value.isInitialized==false) {
+    if (_controller!.value.isInitialized == false) {
       print('-- err _controller!.value.isInitialized==false');
       return false;
     }
 
-    if (isUnitStorageFree()==false) {
+    if (isUnitStorageFree() == false) {
       print('-- err isUnitStorageFree');
       return false;
     }
@@ -423,17 +399,13 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     ref.read(stateProvider).start();
 
     await _storage.getInApp(false);
-    if(env.isPremium()) {
-      if(env.ex_storage.val==1)
-        await _storage.getGdrive();
+    if (env.isPremium()) {
+      if (env.ex_storage.val == 1) await _storage.getGdrive();
     }
     _takeCount = 0;
-    if(env.take_mode.val==1 || env.take_mode.val==3)
-      takePhoto();
-    if(env.take_mode.val==2 || env.take_mode.val==3)
-      startAudio();
-    if(env.take_mode.val==4)
-      startVideo();
+    if (env.take_mode.val == 1 || env.take_mode.val == 3) takePhoto();
+    if (env.take_mode.val == 2 || env.take_mode.val == 3) startAudio();
+    if (env.take_mode.val == 4) startVideo();
 
     await MyLog.info("Start");
     return true;
@@ -446,8 +418,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       String s = 'Stop';
       if (_state.startTime != null) {
         Duration dur = DateTime.now().difference(_state.startTime!);
-        if (dur.inMinutes > 0)
-          s += ' ${dur.inMinutes}min';
+        if (dur.inMinutes > 0) s += ' ${dur.inMinutes}min';
       }
       if (_batteryLevel > 0 && _batteryLevelStart - _batteryLevel > 0) {
         s += ' batt ${_batteryLevelStart}->${_batteryLevel}%';
@@ -455,13 +426,10 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       MyLog.info(s);
       ref.read(stateProvider).stopped();
 
-      if (env.take_mode.val == 1 || env.take_mode.val == 3)
-        if (_controller!.value.isStreamingImages)
-          await _controller!.stopImageStream();
-      if (env.take_mode.val == 2 || env.take_mode.val == 3)
-        await stopAudio();
-      if (env.take_mode.val == 4)
-        await stopVideo();
+      if (env.take_mode.val == 1 || env.take_mode.val == 3) if (_controller!.value.isStreamingImages)
+        await _controller!.stopImageStream();
+      if (env.take_mode.val == 2 || env.take_mode.val == 3) await stopAudio();
+      if (env.take_mode.val == 4) await stopVideo();
 
       await Future.delayed(Duration(milliseconds: 100));
       await _deleteCacheDir();
@@ -527,7 +495,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   Future<void> startVideo() async {
     print("-- startVideo");
-    if(kIsWeb) return;
+    if (kIsWeb) return;
     try {
       await _controller!.startVideoRecording();
       _videoTime = DateTime.now();
@@ -540,11 +508,11 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   Future<void> stopVideo() async {
     print("-- stopVideo");
-    if(kIsWeb) return;
+    if (kIsWeb) return;
     try {
       _videoTime = null;
       XFile xfile = await _controller!.stopVideoRecording();
-      await moveFile(src:xfile.path, dst:await getSavePath('.mp4'));
+      await moveFile(src: xfile.path, dst: await getSavePath('.mp4'));
     } catch (e) {
       await MyLog.err('${e.toString()} stopVideo()');
     }
@@ -552,12 +520,10 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   Future<void> startAudio() async {
     print("-- startAudio");
-    try{
+    try {
       if (await _record.hasPermission()) {
         String path = await getSavePath('.m4a');
-        await _record.start(
-          path:path
-        );
+        await _record.start(path: path);
         _audioTime = DateTime.now();
       }
     } catch (e) {
@@ -566,7 +532,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Future<void> stopAudio() async {
-    try{
+    try {
       _audioTime = null;
       final path = await _record.stop();
     } catch (e) {
@@ -611,10 +577,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       if (env.saver_mode.val == 1) {
         ref.read(stopButtonTextProvider.state).state = takingString();
       } else if (env.saver_mode.val == 2 && _waitTime != null) {
-        if (DateTime
-            .now()
-            .difference(_waitTime!)
-            .inSeconds > 5) {
+        if (DateTime.now().difference(_waitTime!).inSeconds > 5) {
           _waitTime = null;
         }
         ref.read(stopButtonTextProvider.state).state = takingString();
@@ -632,9 +595,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     }
 
     // バッテリーチェック（1分毎）
-    if (_state.isRunning == true && DateTime
-        .now()
-        .second == 0) {
+    if (_state.isRunning == true && DateTime.now().second == 0) {
       this._batteryLevel = await _battery.batteryLevel;
       if (this._batteryLevel < 10) {
         await MyLog.warn("Low battery");
@@ -690,15 +651,13 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// 本体ストレージの空き容量
   Future<bool> isUnitStorageFree() async {
-    if(kIsWeb)
-      return true;
+    if (kIsWeb) return true;
     try {
       // アプリ内で上限を超えた古いものを削除
       if (env.save_num.val < await _storage.files.length) {
         await _storage.getInApp(false);
-        for(int i=0; i<100; i++) {
-          if ((env.save_num.val) < _storage.files.length)
-            break;
+        for (int i = 0; i < 100; i++) {
+          if ((env.save_num.val) < _storage.files.length) break;
           await File(_storage.files.last.path).delete();
           _storage.files.removeLast();
         }
@@ -706,18 +665,16 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
       // 本体の空きが5GB必要
       int enough = 5;
-      if(kIsWeb)
-        enough = 0;
+      if (kIsWeb) enough = 0;
 
       double? totalMb = await DiskSpace.getTotalDiskSpace;
       double? freeMb = await DiskSpace.getFreeDiskSpace;
-      int totalGb = totalMb!=null ? (totalMb / 1024.0).toInt() : 0;
-      int freeGb = freeMb!=null ? (freeMb / 1024.0).toInt() : 0;
-      if(freeGb < enough) {
+      int totalGb = totalMb != null ? (totalMb / 1024.0).toInt() : 0;
+      int freeGb = freeMb != null ? (freeMb / 1024.0).toInt() : 0;
+      if (freeGb < enough) {
         await MyLog.warn("Not enough free space ${freeGb}/${totalGb} GB");
         return false;
       }
-
     } on Exception catch (e) {
       print('-- checkDiskFree() Exception ' + e.toString());
     }
@@ -755,49 +712,49 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   Widget recordButton({required void Function()? onPressed}) {
     return Center(
-        child: Container(
-            width: 160, height: 160,
-            child: TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.black26,
-                shape: const CircleBorder(
-                  side: BorderSide(
-                    color: Colors.white,
-                    width: 1,
-                    style: BorderStyle.solid,
-                  ),
-                ),
+      child: Container(
+        width: 160,
+        height: 160,
+        child: TextButton(
+          style: TextButton.styleFrom(
+            backgroundColor: Colors.black26,
+            shape: const CircleBorder(
+              side: BorderSide(
+                color: Colors.white,
+                width: 1,
+                style: BorderStyle.solid,
               ),
-              child: Text('START', style: TextStyle(fontSize: 16, color: Colors.white)),
-              onPressed: onPressed,
-            )
-        )
+            ),
+          ),
+          child: Text('START', style: TextStyle(fontSize: 16, color: Colors.white)),
+          onPressed: onPressed,
+        ),
+      ),
     );
   }
 
   Widget stopButton({required void Function()? onPressed}) {
     String text = ref.watch(stopButtonTextProvider);
-    double d = ((DateTime
-        .now()
-        .second / 10) % 2).toInt() * 4.0;
+    double d = ((DateTime.now().second / 10) % 2).toInt() * 4.0;
     return Center(
-        child: Container(
-            width: 160 + d, height: 160 + d,
-            child: TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.black26,
-                shape: const CircleBorder(
-                  side: BorderSide(
-                    color: COL_SS_TEXT,
-                    width: 1,
-                    style: BorderStyle.solid,
-                  ),
-                ),
+      child: Container(
+        width: 160 + d,
+        height: 160 + d,
+        child: TextButton(
+          style: TextButton.styleFrom(
+            backgroundColor: Colors.black26,
+            shape: const CircleBorder(
+              side: BorderSide(
+                color: COL_SS_TEXT,
+                width: 1,
+                style: BorderStyle.solid,
               ),
-              child: Text(text, style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
-              onPressed: onPressed,
-            )
-        )
+            ),
+          ),
+          child: Text(text, style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
+          onPressed: onPressed,
+        ),
+      ),
     );
   }
 
@@ -817,8 +774,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   /// 01:00:00
   String dur2str(Duration dur) {
     String s = "";
-    if (dur.inHours > 0)
-      s += dur.inHours.toString() + ':';
+    if (dur.inHours > 0) s += dur.inHours.toString() + ':';
     s += dur.inMinutes.remainder(60).toString().padLeft(2, '0') + ':';
     s += dur.inSeconds.remainder(60).toString().padLeft(2, '0');
     return s;
@@ -826,15 +782,15 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   Widget blackScreen({required void Function()? onPressed}) {
     return Positioned(
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        child: TextButton(
-          child: Text(''),
-          style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
-          onPressed: onPressed,
-        )
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: TextButton(
+        child: Text(''),
+        style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
+        onPressed: onPressed,
+      ),
     );
   }
 }

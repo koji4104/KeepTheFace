@@ -18,43 +18,37 @@ class SettingsScreen extends BaseSettingsScreen {
   late GoogleDriveAdapter gdriveAd;
 
   @override
-  Future init() async {
-  }
+  Future init() async {}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     subBuild(context, ref);
-    this.gdriveAd = ref
-        .watch(gdriveProvider)
-        .gdrive;
+    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
     return Scaffold(
         appBar: AppBar(
           title: Text(l10n("settings_title")),
           backgroundColor: Color(0xFF000000),
           actions: <Widget>[],
         ),
-        body:
-        (is2screen())
+        body: (is2screen())
             ? SingleChildScrollView(
-            padding: EdgeInsets.all(8),
-            child: Stack(children: [
-              Container(
-                margin: leftMargin(),
-                child: getList(),
-              ),
-              Container(
-                margin: rightMargin(),
-                child: rightScreen != null ? rightScreen!.getList() : null,
-              )
-            ]))
+                padding: EdgeInsets.all(8),
+                child: Stack(children: [
+                  Container(
+                    margin: leftMargin(),
+                    child: getList(),
+                  ),
+                  Container(
+                    margin: rightMargin(),
+                    child: rightScreen != null ? rightScreen!.getList() : null,
+                  )
+                ]))
             : SingleChildScrollView(
-            padding: EdgeInsets.all(8),
-            child: Container(
-              margin: edge.settingsEdge,
-              child: getList(),
-            )
-        )
-    );
+                padding: EdgeInsets.all(8),
+                child: Container(
+                  margin: edge.settingsEdge,
+                  child: getList(),
+                )));
   }
 
   @override
@@ -88,14 +82,10 @@ class SettingsScreen extends BaseSettingsScreen {
             } else {
               NavigatorPush(GoogleDriveScreen());
             }
-          }
-      ),
-
-      if(IS_PREMIUM)
-        MyLabel(''),
-      if(IS_PREMIUM)
-        MyLabel('Premium'),
-      if(IS_PREMIUM)
+          }),
+      if (IS_PREMIUM) MyLabel(''),
+      if (IS_PREMIUM) MyLabel('Premium'),
+      if (IS_PREMIUM)
         MyListTile(
           title: MyText('premium'),
           title2: env.isTrial() ? MyText('ON') : MyText('OFF'),
@@ -105,13 +95,10 @@ class SettingsScreen extends BaseSettingsScreen {
       MyListTile(
           title: MyText('Logs'),
           onPressed: () {
-            Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => LogScreen(),
-                )
-            );
-          }
-      ),
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => LogScreen(),
+            ));
+          }),
     ]);
   }
 }
@@ -123,49 +110,43 @@ class PremiumScreen extends BaseSettingsScreen {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    subBuild(context,ref);
-    return  Scaffold(
-      appBar: AppBar(title:Text(l10n('premium')), backgroundColor:Color(0xFF000000),),
+    subBuild(context, ref);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n('premium')),
+        backgroundColor: Color(0xFF000000),
+      ),
       body: Container(
         margin: edge.settingsEdge,
-        child:getList(),
+        child: getList(),
       ),
     );
   }
 
   Widget getList() {
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(8,8,8,8),
-      child: Column(children:[
-        MyLabel(l10n('premium_desc')),
-        MyListTile(
-          title:MyText('trial'),
-          title2:env.isTrial() ? MyText('ON') : Text('OFF')
-        ),
-        MyTextButton(
-          title: 'trial',
-          onPressed:() async {
-            ref.read(environmentProvider).startTrial();
-            redraw();
-          }
-        ),
-        MyLabel(l10n('trial_desc')),
-
-        MyLabel(''),
-        MyLabel('Purchase'),
-        MyListTile(title:Text(l10n('Purchase_desc'))),
-        MyTextButton(
-          title: 'Purchase',
-            onPressed:(){
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => MyPurchase(),
-              )
-            );
-          }
-        ),
-      ])
-    );
+        padding: EdgeInsets.fromLTRB(8, 8, 8, 8),
+        child: Column(children: [
+          MyLabel(l10n('premium_desc')),
+          MyListTile(title: MyText('trial'), title2: env.isTrial() ? MyText('ON') : Text('OFF')),
+          MyTextButton(
+              title: 'trial',
+              onPressed: () async {
+                ref.read(environmentProvider).startTrial();
+                redraw();
+              }),
+          MyLabel(l10n('trial_desc')),
+          MyLabel(''),
+          MyLabel('Purchase'),
+          MyListTile(title: Text(l10n('Purchase_desc'))),
+          MyTextButton(
+              title: 'Purchase',
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => MyPurchase(),
+                ));
+              }),
+        ]));
   }
 }
 
@@ -174,14 +155,16 @@ class GoogleDriveScreen extends BaseSettingsScreen {
   GoogleDriveAdapter? gdriveAd;
 
   @override
-  Future init() async {
-  }
+  Future init() async {}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     subBuild(context, ref);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n('Google Drive')), backgroundColor: Color(0xFF000000),),
+      appBar: AppBar(
+        title: Text(l10n('Google Drive')),
+        backgroundColor: Color(0xFF000000),
+      ),
       body: Container(
         margin: edge.settingsEdge,
         child: getList(),
@@ -200,44 +183,42 @@ class GoogleDriveScreen extends BaseSettingsScreen {
     if (gdriveAd == null || gdriveAd!.isInitialized == false) {
       return Center(
         child: SizedBox(
-          width: 32, height: 32,
+          width: 32,
+          height: 32,
           child: CircularProgressIndicator(),
         ),
       );
     } else {
       return Column(children: [
         MyLabel(''),
-        if(gdriveAd!.isSignedIn() == false)
-          MyGoogleTile(title: l10n('not_login')),
-        if(gdriveAd!.isSignedIn())
-          MyGoogleTile(title: gdriveAd!.getAccountName()),
+        if (gdriveAd!.isSignedIn() == false) MyGoogleTile(title: l10n('not_login')),
+        if (gdriveAd!.isSignedIn()) MyGoogleTile(title: gdriveAd!.getAccountName()),
         MyLabel(''),
-        if(gdriveAd!.isSignedIn() == false)
+        if (gdriveAd!.isSignedIn() == false)
           MyTextButton(
-              width: 200,
-              title: l10n('login'),
-              onPressed: () {
-                ref.watch(gdriveProvider).loginWithGoogle();
-              }
+            width: 220,
+            title: l10n('login'),
+            onPressed: () {
+              ref.watch(gdriveProvider).loginWithGoogle();
+            },
           ),
-        if(gdriveAd!.isSignedIn())
+        if (gdriveAd!.isSignedIn())
           MyTextButton(
-              width: 220,
-              title: l10n('logout'),
-              onPressed: () {
-                ref.watch(gdriveProvider).logout();
-              }
+            width: 220,
+            title: l10n('logout'),
+            onPressed: () {
+              ref.watch(gdriveProvider).logout();
+            },
           ),
-        if(gdriveAd!.loginerr != '')
-          MyListTile(title: MyText(gdriveAd!.loginerr), title2: Text('')),
+        if (gdriveAd!.loginerr != '') MyListTile(title: MyText(gdriveAd!.loginerr), title2: Text('')),
       ]);
-    };
+    }
   }
 
   Widget MyGoogleTile({required String title}) {
     return Container(
-      width: 220,
-      padding: EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+      width: 210,
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
       decoration: BoxDecoration(
         color: tileColor,
         borderRadius: BorderRadius.circular(3),

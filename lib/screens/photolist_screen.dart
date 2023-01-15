@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:thesedays/constants.dart';
 import '/controllers/provider.dart';
 import '/controllers/photolist_controller.dart';
-import '/models/photolist.dart';
 import '/common.dart';
 import '/gdrive_adapter.dart';
 import 'package:video_thumbnail/video_thumbnail.dart' as video_thumbnail;
@@ -18,9 +17,9 @@ import 'base_screen.dart';
 import 'widgets.dart';
 
 class PhotoListScreen extends BaseScreen {
-  PhotoListScreen(){}
+  PhotoListScreen() {}
 
-  String title='In-app data';
+  String title = 'In-app data';
   List<MyFile> fileList = [];
   List<MyCard> cardList = [];
   List<PreviewScreen> previewList = [];
@@ -46,89 +45,87 @@ class PhotoListScreen extends BaseScreen {
     this.gdriveAd = ref.watch(gdriveProvider).gdrive;
 
     return Scaffold(
-      appBar: AppBar(
-        title:Row(children:[
-          Text(l10n("photolist_title")),
-          Expanded(child: SizedBox(width:1)),
-          Text(_photocount.toString() +' pcs '+_sizemb.toString() + ' mb',style:TextStyle(fontSize:13)),
-        ]),
-        backgroundColor:Color(0xFF000000),
-        actions: <Widget>[
-        ],
-      ),
-      body: Container(
-        margin: edge.homebarEdge,
-        child: Stack(children: <Widget>[
-          Positioned(
-            top:0, left:0, right:0, height:50,
-            child: Container(
-              color: Color(0xFF444444),
-              child: Row(children: [
-                SizedBox(width: 20),
-                // ズームイン
-                IconButton(
-                  icon: Icon(Icons.zoom_out),
-                  iconSize: 32.0,
-                  onPressed:(){
-                    if(_gridZoom<1) {
-                      _gridZoom++;
-                      ref.read(photolistProvider).data.cardWidth = (edge.width/(_crossAxisCount + _gridZoom)).toInt();
-                      redraw();
-                    }
-                  },
-                ),
-                SizedBox(width:16),
-                // ズームアウト
-                IconButton(
-                  icon: Icon(Icons.zoom_in),
-                  iconSize: 32.0,
-                  onPressed:(){
-                    if(_gridZoom>-1) {
-                      _gridZoom--;
-                      ref.read(photolistProvider).data.cardWidth = (edge.width/(_crossAxisCount + _gridZoom)).toInt();
-                      redraw();
-                    }
-                  },
-                ),
-                SizedBox(width:16),
-                IconButton(
-                  icon: bSelectMode==false ?
-                    Icon(Icons.check_circle_outline) :
-                    Icon(Icons.check_circle),
-                  iconSize: 32.0,
-                  onPressed:(){
-                    ref.read(photolistProvider).data.isSelectMode = !bSelectMode;
-                    ref.read(photolistProvider).notifyListeners();
-                    ref.read(selectedListProvider).clear();
-                  },
-                ),
-                SizedBox(width:16),
-                // 保存
-                if(bSelectMode)
-                IconButton(
-                  icon: Icon(Icons.save),
-                  iconSize: 32.0,
-                  onPressed: () => _saveFileWithDialog(context,ref),
-                ),
-                SizedBox(width:16),
-                // 削除
-                if(bSelectMode)
-                IconButton(
-                  icon: Icon(Icons.delete),
-                  iconSize: 32.0,
-                  onPressed: () => _deleteFileWithDialog(context,ref),
-                ),
-                SizedBox(width: 20),
-              ]
-            )
-          )),
-          Container(
-            margin: EdgeInsets.only(top:52),
-            child:getList(context,ref),
-          ),
-        ])
-      )
-    );
+        appBar: AppBar(
+          title: Row(children: [
+            Text(l10n("photolist_title")),
+            Expanded(child: SizedBox(width: 1)),
+            Text(_photocount.toString() + ' pcs ' + _sizemb.toString() + ' mb', style: TextStyle(fontSize: 13)),
+          ]),
+          backgroundColor: Color(0xFF000000),
+          actions: <Widget>[],
+        ),
+        body: Container(
+            margin: edge.homebarEdge,
+            child: Stack(children: <Widget>[
+              Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 50,
+                  child: Container(
+                      color: Color(0xFF444444),
+                      child: Row(children: [
+                        SizedBox(width: 20),
+                        // ズームイン
+                        IconButton(
+                          icon: Icon(Icons.zoom_out),
+                          iconSize: 32.0,
+                          onPressed: () {
+                            if (_gridZoom < 1) {
+                              _gridZoom++;
+                              ref.read(photolistProvider).data.cardWidth =
+                                  (edge.width / (_crossAxisCount + _gridZoom)).toInt();
+                              redraw();
+                            }
+                          },
+                        ),
+                        SizedBox(width: 16),
+                        // ズームアウト
+                        IconButton(
+                          icon: Icon(Icons.zoom_in),
+                          iconSize: 32.0,
+                          onPressed: () {
+                            if (_gridZoom > -1) {
+                              _gridZoom--;
+                              ref.read(photolistProvider).data.cardWidth =
+                                  (edge.width / (_crossAxisCount + _gridZoom)).toInt();
+                              redraw();
+                            }
+                          },
+                        ),
+                        SizedBox(width: 16),
+                        IconButton(
+                          icon: bSelectMode == false ? Icon(Icons.check_circle_outline) : Icon(Icons.check_circle),
+                          iconSize: 32.0,
+                          onPressed: () {
+                            ref.read(photolistProvider).data.isSelectMode = !bSelectMode;
+                            ref.read(photolistProvider).notifyListeners();
+                            ref.read(selectedListProvider).clear();
+                          },
+                        ),
+                        SizedBox(width: 16),
+                        // 保存
+                        if (bSelectMode)
+                          IconButton(
+                            icon: Icon(Icons.save),
+                            iconSize: 32.0,
+                            onPressed: () => _saveFileWithDialog(context, ref),
+                          ),
+                        SizedBox(width: 16),
+                        // 削除
+                        if (bSelectMode)
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            iconSize: 32.0,
+                            onPressed: () => _deleteFileWithDialog(context, ref),
+                          ),
+                        SizedBox(width: 20),
+                      ]))),
+              Container(
+                margin: EdgeInsets.only(top: 52),
+                child: getList(context, ref),
+              ),
+            ])));
   }
 
   @override
@@ -136,17 +133,16 @@ class PhotoListScreen extends BaseScreen {
     super.subBuild(context, ref);
     // 392x829
     double w = MediaQuery.of(context).size.width;
-    if(w>800)
+    if (w > 800)
       _crossAxisCount = 5;
-    else if(w>600)
+    else if (w > 600)
       _crossAxisCount = 4;
     else
       _crossAxisCount = 3;
   }
 
   Widget getList(BuildContext context, WidgetRef ref) {
-    if (bInit == false)
-      return Container();
+    if (bInit == false) return Container();
     return Container(
       padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
       child: GridView.count(
@@ -165,30 +161,30 @@ class PhotoListScreen extends BaseScreen {
         for (int i = 1; i < 28; i++) {
           MyFile f = new MyFile();
           f.date = DateTime(2022, 12, i, 0, 0, 0);
-          f.path = (i%3==0)?'http://localhost:8000/test.mp4'
-              :(i%3==1)?'http://localhost:8000/test.m4a'
-              :'http://localhost:8000/test.jpg';
+          f.path = (i % 3 == 0)
+              ? 'http://localhost:8000/test.mp4'
+              : (i % 3 == 1)
+                  ? 'http://localhost:8000/test.m4a'
+                  : 'http://localhost:8000/test.jpg';
           f.thumb = 'http://localhost:8000/test.jpg';
-          f.byte = 2*1024*1024;
+          f.byte = 2 * 1024 * 1024;
           fileList.add(f);
         }
         _photocount = fileList.length;
         _sizemb = 1;
-
       } else {
         // アプリ内データ
         await _storage.getInApp(true);
         fileList = _storage.files;
         _photocount = fileList.length;
-        _sizemb = (_storage.totalBytes/1024/1024).toInt();
-        if(_storage.totalBytes>0 && _sizemb==0)
-          _sizemb = 1;
+        _sizemb = (_storage.totalBytes / 1024 / 1024).toInt();
+        if (_storage.totalBytes > 0 && _sizemb == 0) _sizemb = 1;
 
         // thumb
         final Directory appdir = await getApplicationDocumentsDirectory();
         final _thumbdir = Directory('${appdir.path}/thumbs');
         await Directory('${appdir.path}/thumbs').create(recursive: true);
-        List<FileSystemEntity> _entities = _thumbdir.listSync(recursive:true, followLinks:false);
+        List<FileSystemEntity> _entities = _thumbdir.listSync(recursive: true, followLinks: false);
         List<String> _thumbs = [];
         for (FileSystemEntity e in _entities) {
           _thumbs.add(e.path);
@@ -196,7 +192,7 @@ class PhotoListScreen extends BaseScreen {
 
         final String thumbDir = '${appdir.path}/thumbs/';
         for (MyFile f in fileList) {
-          if(f.path.contains('.mp4')) {
+          if (f.path.contains('.mp4')) {
             f.thumb = thumbDir + basenameWithoutExtension(f.path) + ".jpg";
             if (await File(f.thumb).exists() == false) {
               String? s = await video_thumbnail.VideoThumbnail.thumbnailFile(
@@ -207,8 +203,7 @@ class PhotoListScreen extends BaseScreen {
                   quality: 70);
               f.thumb = (s != null) ? s : "";
             }
-            if (_thumbs.indexOf(f.thumb) >= 0)
-              _thumbs.removeAt(_thumbs.indexOf(f.thumb));
+            if (_thumbs.indexOf(f.thumb) >= 0) _thumbs.removeAt(_thumbs.indexOf(f.thumb));
           }
         }
         // delete unused thumbnail
@@ -221,12 +216,12 @@ class PhotoListScreen extends BaseScreen {
 
       ref.read(photolistProvider).data.files = fileList;
 
-      for (int i=0; i<fileList.length; i++) {
-        cardList.add(MyCard(data:fileList[i], index:i));
+      for (int i = 0; i < fileList.length; i++) {
+        cardList.add(MyCard(data: fileList[i], index: i));
       }
 
       for (MyFile f in fileList) {
-        previewList.add(PreviewScreen(data:f));
+        previewList.add(PreviewScreen(data: f));
       }
       ref.read(previewListProvider).list = previewList;
 
@@ -240,15 +235,12 @@ class PhotoListScreen extends BaseScreen {
 
   /// Save file
   _saveFileWithDialog(BuildContext context, WidgetRef ref) async {
-    List<MyFile> list = ref
-        .read(selectedListProvider)
-        .list;
+    List<MyFile> list = ref.read(selectedListProvider).list;
     int photo_cnt = 0;
     int files_cnt = 0;
     for (MyFile f in list) {
       files_cnt++;
-      if (f.path.contains('.jpg') || f.path.contains('.mp4'))
-        photo_cnt++;
+      if (f.path.contains('.jpg') || f.path.contains('.mp4')) photo_cnt++;
     }
     if (list.length == 0) {
       showSnackBar('Please select');
@@ -261,34 +253,31 @@ class PhotoListScreen extends BaseScreen {
               actions: <Widget>[
                 Container(
                     padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                    child:
-                    Column(children: [
-                      if(photo_cnt > 0)
+                    child: Column(children: [
+                      if (photo_cnt > 0)
                         MyTextButton(
                             title: l10n('save_photo_app'),
                             onPressed: () {
                               _saveFile(list, 1);
                               Navigator.of(context).pop();
-                            }
-                        ),
+                            }),
                       MyTextButton(
                           title: l10n('save_file_app'),
-                          onPressed: files_cnt > 5 ?
-                              () {
-                            showSnackBar('Files ${files_cnt}');
-                          } : () {
-                            _saveFile(list, 2);
-                            Navigator.of(context).pop();
-                          }
-                      ),
-                      if(gdriveAd.isSignedIn())
+                          onPressed: files_cnt > 5
+                              ? () {
+                                  showSnackBar('Files ${files_cnt}');
+                                }
+                              : () {
+                                  _saveFile(list, 2);
+                                  Navigator.of(context).pop();
+                                }),
+                      if (gdriveAd.isSignedIn())
                         MyTextButton(
                             title: l10n('save_gdrive'),
                             onPressed: () {
                               _saveFile(list, 4);
                               Navigator.of(context).pop();
-                            }
-                        ),
+                            }),
                       MyTextButton(
                         title: l10n('cancel'),
                         cancelStyle: true,
@@ -296,38 +285,35 @@ class PhotoListScreen extends BaseScreen {
                           Navigator.of(context).pop();
                         },
                       ),
-                    ])
-                )
+                    ]))
               ],
             );
-          }
-      );
+          });
     }
   }
+
   _saveFile(List<MyFile> list, int mode) async {
     try {
       print('-- mode=${mode}');
-      if(mode==1){
+      if (mode == 1) {
         // 写真アプリ
-        for(MyFile f in list){
-          if(f.path.contains('.jpg') || f.path.contains('.mp4'))
-            await _storage.saveLibrary(f.path);
-          await new Future.delayed(new Duration(milliseconds:100));
+        for (MyFile f in list) {
+          if (f.path.contains('.jpg') || f.path.contains('.mp4')) await _storage.saveLibrary(f.path);
+          await new Future.delayed(new Duration(milliseconds: 100));
         }
-      } else if(mode==2){
+      } else if (mode == 2) {
         // ファイルアプリ
         int n = 0;
-        for(MyFile f in list){
+        for (MyFile f in list) {
           await _storage.saveFileSaver(f.path);
-          await new Future.delayed(new Duration(milliseconds:100));
-          if(n++>=5)
-            break;
+          await new Future.delayed(new Duration(milliseconds: 100));
+          if (n++ >= 5) break;
         }
-      } else if(mode==4){
-        for(MyFile f in list) {
+      } else if (mode == 4) {
+        for (MyFile f in list) {
           if (f.path.contains('.jpg') || f.path.contains('.mp4') || f.path.contains('.m4a'))
             await gdriveAd.uploadFile(f.path);
-         await new Future.delayed(new Duration(milliseconds:100));
+          await new Future.delayed(new Duration(milliseconds: 100));
         }
       }
     } on Exception catch (e) {
@@ -337,9 +323,7 @@ class PhotoListScreen extends BaseScreen {
 
   /// delete file
   _deleteFileWithDialog(BuildContext context, WidgetRef ref) async {
-    List<MyFile> list = ref
-        .read(selectedListProvider)
-        .list;
+    List<MyFile> list = ref.read(selectedListProvider).list;
     if (list.length == 0) {
       showSnackBar('Please select');
     } else {
@@ -369,18 +353,18 @@ class PhotoListScreen extends BaseScreen {
                 ),
               ],
             );
-          }
-      );
+          });
     }
   }
+
   _deleteFile(List<MyFile> list) async {
     try {
-      for(MyFile f in list){
+      for (MyFile f in list) {
         await File(f.path).delete();
-        if(await File(f.thumb).exists())
-          await File(f.thumb).delete();
-        await new Future.delayed(new Duration(milliseconds:100));
-      };
+        if (await File(f.thumb).exists()) await File(f.thumb).delete();
+        await new Future.delayed(new Duration(milliseconds: 100));
+      }
+      ;
       readFiles();
     } on Exception catch (e) {
       print('-- _deleteFile ${e.toString()}');
@@ -393,8 +377,8 @@ class MyCard extends ConsumerWidget {
   final myCardScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
   int index = 0;
   MyCard({MyFile? data, int? index}) {
-    if(data!=null) this.data = data;
-    if(index!=null) this.index = index;
+    if (data != null) this.data = data;
+    if (index != null) this.index = index;
   }
 
   MyFile data = MyFile();
@@ -402,114 +386,105 @@ class MyCard extends ConsumerWidget {
   WidgetRef? _ref;
   int _width = 200;
 
-  Widget? _thumbWidget ;
+  Widget? _thumbWidget;
 
   bool _init = false;
   void init(BuildContext context, WidgetRef ref) async {
-    if(_init == false) {
+    if (_init == false) {
       _init = true;
       //if(await f.exists()==true){
-        if(data.path.contains('.jpg')) {
-          if(kIsWeb) {
-            _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
-          } else if(await File(data.path).exists()==true) {
-            _thumbWidget = Image.file(File(data.path), fit: BoxFit.cover);
-          }
-        } else if(data.path.contains('.m4a')) {
-          _thumbWidget = Icon(
-              Icons.volume_mute ,
-              size: 48,
-              color: Color(0xFF666666));
-
-        } else if(data.path.contains('.mp4')) {
-          if(kIsWeb) {
-            _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
-          }  else if(await File(data.thumb).exists()==true) {
-            _thumbWidget = Image.file(File(data.thumb), fit: BoxFit.cover);
-          }
+      if (data.path.contains('.jpg')) {
+        if (kIsWeb) {
+          _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
+        } else if (await File(data.path).exists() == true) {
+          _thumbWidget = Image.file(File(data.path), fit: BoxFit.cover);
         }
-        ref.read(myCardScreenProvider).notifyListeners();
+      } else if (data.path.contains('.m4a')) {
+        _thumbWidget = Icon(Icons.volume_mute, size: 48, color: Color(0xFF666666));
+      } else if (data.path.contains('.mp4')) {
+        if (kIsWeb) {
+          _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
+        } else if (await File(data.thumb).exists() == true) {
+          _thumbWidget = Image.file(File(data.thumb), fit: BoxFit.cover);
+        }
+      }
+      ref.read(myCardScreenProvider).notifyListeners();
       //}
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref){
+  Widget build(BuildContext context, WidgetRef ref) {
     _selected = ref.watch(selectedListProvider).contains(data);
     ref.watch(myCardScreenProvider);
     this._ref = ref;
-    Future.delayed(Duration.zero, () => init(context,ref));
+    Future.delayed(Duration.zero, () => init(context, ref));
     bool bSelectMode = ref.watch(photolistProvider).data.isSelectMode;
     _width = ref.watch(photolistProvider).data.cardWidth;
 
     return Container(
-      width: 100.0, height: 100.0,
+      width: 100.0,
+      height: 100.0,
       margin: EdgeInsets.all(2),
       padding: EdgeInsets.all(0),
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onTap:(){
-          bSelectMode ?
-          ref.read(selectedListProvider).select(data) :
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => previewPage(this.index),
-            )
-          );
+        onTap: () {
+          bSelectMode
+              ? ref.read(selectedListProvider).select(data)
+              : Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => previewPage(this.index),
+                ));
         },
         child: getWidget(ref),
       ),
     );
   }
 
-  Widget getWidget(WidgetRef ref){
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        // サムネイル
-        getThumbnail(),
+  Widget getWidget(WidgetRef ref) {
+    return Stack(fit: StackFit.expand, children: <Widget>[
+      // サムネイル
+      getThumbnail(),
 
-        // 日付
-        getDateText(),
+      // 日付
+      getDateText(),
 
-        // 保存済アイコン
-        if(data.isLibrary)
-          Positioned(
-            right:4.0, top:4.0,
-            child: CircleAvatar(
-              radius: 20.0,
-              backgroundColor: Colors.black54,
-              child: Icon(
-                Icons.save,
-                size: 24,
-                color: Color(0xFFFFFFFF)
-              )
-            )
-          ),
-
-        // 選択状態
+      // 保存済アイコン
+      if (data.isLibrary)
         Positioned(
-          right:6.0, bottom:6.0,
-          child: CircleAvatar(
-            backgroundColor: _selected ? Color(0xFF303030) : Color(0x00000000),
-            radius: _width<100 ? 12.0+4.0 : _width>200 ? 24.0+4.0 : 18.0+4.0,
-            child: Icon(
-              _selected ? Icons.check : null,
-              size: _width<100 ? 24.0 : _width>200 ? 48.0 : 36.0,
-              color: Colors.white
-            )
-          )
-        ),
+            right: 4.0,
+            top: 4.0,
+            child: CircleAvatar(
+                radius: 20.0,
+                backgroundColor: Colors.black54,
+                child: Icon(Icons.save, size: 24, color: Color(0xFFFFFFFF)))),
 
-      ]
-    );
+      // 選択状態
+      Positioned(
+          right: 6.0,
+          bottom: 6.0,
+          child: CircleAvatar(
+              backgroundColor: _selected ? Color(0xFF303030) : Color(0x00000000),
+              radius: _width < 100
+                  ? 12.0 + 4.0
+                  : _width > 200
+                      ? 24.0 + 4.0
+                      : 18.0 + 4.0,
+              child: Icon(_selected ? Icons.check : null,
+                  size: _width < 100
+                      ? 24.0
+                      : _width > 200
+                          ? 48.0
+                          : 36.0,
+                  color: Colors.white))),
+    ]);
   }
 
   String sec2strtime(int sec) {
     String s = "";
-    s += (sec/3600).toInt().toString() + ':';
-    s += (sec.remainder(3600)/60).toInt().toString().padLeft(2,'0') + ':';
-    s += sec.remainder(60).toString().padLeft(2,'0');
+    s += (sec / 3600).toInt().toString() + ':';
+    s += (sec.remainder(3600) / 60).toInt().toString().padLeft(2, '0') + ':';
+    s += sec.remainder(60).toString().padLeft(2, '0');
     return s;
   }
 
@@ -517,46 +492,50 @@ class MyCard extends ConsumerWidget {
     if (_thumbWidget == null) {
       return Center(
           child: SizedBox(
-            width: 32, height: 32,
-            child: CircularProgressIndicator(),
-          ));
+        width: 32,
+        height: 32,
+        child: CircularProgressIndicator(),
+      ));
     } else {
       return _thumbWidget!;
     }
   }
 
-  Widget getDateText(){
+  Widget getDateText() {
     double fsize = 14;
     String s = DateFormat("MM/dd HH:mm").format(data.date);
-    if(_width<100){
+    if (_width < 100) {
       fsize = 14;
       s = DateFormat("MM/dd").format(data.date);
-    } else if(_width>200){
+    } else if (_width > 200) {
       fsize = 14;
       s = DateFormat("yyyy/MM/dd HH:mm").format(data.date);
     }
     return Container(
-      child: Text(' ' + s + ' ',
-        style: TextStyle(fontSize:fsize, color:Colors.white, backgroundColor:Colors.black38),
-      ),);
+      child: Text(
+        ' ' + s + ' ',
+        style: TextStyle(fontSize: fsize, color: Colors.white, backgroundColor: Colors.black38),
+      ),
+    );
   }
 }
 
 final previewScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
+
 class PreviewScreen extends ConsumerWidget {
   PreviewScreen({MyFile? data}) {
-    if(data!=null) this.data = data;
+    if (data != null) this.data = data;
   }
 
   MyFile data = MyFile();
   WidgetRef? _ref;
   Image? _img;
-  int _width=0;
-  int _height=0;
-  int _duration=0;
-  int _orientation=0;
+  int _width = 0;
+  int _height = 0;
+  int _duration = 0;
+  int _orientation = 0;
   bool _init = false;
-  MyEdge _edge = MyEdge(provider:previewScreenProvider);
+  MyEdge _edge = MyEdge(provider: previewScreenProvider);
   VideoPlayerController? _videoPlayer;
   bool _isPlaying = false;
 
@@ -571,12 +550,13 @@ class PreviewScreen extends ConsumerWidget {
           } else {
             _img = Image.file(File(data.path), fit: BoxFit.contain);
             _img!.image.resolve(ImageConfiguration.empty).addListener(
-              ImageStreamListener((ImageInfo info, bool b) {
-                print('width=${info.image.width}');
-                _width = info.image.width.toInt();
-                _height = info.image.height.toInt();
-                ref.read(previewScreenProvider).notifyListeners();
-              },
+              ImageStreamListener(
+                (ImageInfo info, bool b) {
+                  print('width=${info.image.width}');
+                  _width = info.image.width.toInt();
+                  _height = info.image.height.toInt();
+                  ref.read(previewScreenProvider).notifyListeners();
+                },
               ),
             );
           }
@@ -613,8 +593,7 @@ class PreviewScreen extends ConsumerWidget {
             final videoInfo = FlutterVideoInfo();
             var a = await videoInfo.getVideoInfo(data.path).then((value) {
               if (value != null) {
-                _orientation =
-                value.orientation != null ? value.orientation! : 0;
+                _orientation = value.orientation != null ? value.orientation! : 0;
                 ref.read(previewScreenProvider).notifyListeners();
               }
             });
@@ -632,14 +611,8 @@ class PreviewScreen extends ConsumerWidget {
     ref.watch(previewScreenProvider);
     this._ref = ref;
     _edge.getEdge(context, ref);
-    double l = MediaQuery
-        .of(context)
-        .size
-        .width / 2 - 120;
-    double b = MediaQuery
-        .of(context)
-        .size
-        .height / 20;
+    double l = MediaQuery.of(context).size.width / 2 - 120;
+    double b = MediaQuery.of(context).size.height / 20;
     print('PreviewScreen l=${l.toInt()} b=${b.toInt()}');
 
     return Container(
@@ -650,9 +623,11 @@ class PreviewScreen extends ConsumerWidget {
           leftButton(bottom: b, left: l),
           playButton(bottom: b, left: 0, right: 0),
           rightButton(bottom: b, right: l),
-          if(_videoPlayer != null)
+          if (_videoPlayer != null)
             Positioned(
-                bottom: b + 70, left: 4, right: 4,
+                bottom: b + 70,
+                left: 4,
+                right: 4,
                 child: VideoProgressIndicator(
                   _videoPlayer!,
                   allowScrubbing: true,
@@ -662,8 +637,7 @@ class PreviewScreen extends ConsumerWidget {
                     backgroundColor: Colors.black,
                   ),
                 )),
-        ])
-    );
+        ]));
   }
 
   Widget player() {
@@ -677,95 +651,85 @@ class PreviewScreen extends ConsumerWidget {
         if (aspect <= 0.0)
           return Container();
         else
-          return Center(
-              child: AspectRatio(
-                  aspectRatio: aspect,
-                  child: VideoPlayer(_videoPlayer!)
-              )
-          );
+          return Center(child: AspectRatio(aspectRatio: aspect, child: VideoPlayer(_videoPlayer!)));
       }
     } else {
       return Container();
     }
   }
 
-  Widget getInfoText(){
-    if(data.path.contains('.jpg')) {
+  Widget getInfoText() {
+    if (data.path.contains('.jpg')) {
       if (_img == null) {
         return Container();
       } else {
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
-            getText('${(data.byte / 1024).toInt()} kb'),
-            getText('${_width} x ${_height}'),
-          ]
-        );
-      }
-
-    } else if(data.path.contains('.m4a')) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
-          getText('${(data.byte / 1024).toInt()} kb'),
-          getText('${_duration} sec'),
-        ]
-      );
-
-    } else if(data.path.contains('.mp4')) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children:[
+        return Column(mainAxisAlignment: MainAxisAlignment.start, children: [
           getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
           getText('${(data.byte / 1024).toInt()} kb'),
           getText('${_width} x ${_height}'),
-          getText('${(_duration).toInt()} sec'),
-          getText('${_orientation} deg'),
-        ]
-      );
+        ]);
+      }
+    } else if (data.path.contains('.m4a')) {
+      return Column(mainAxisAlignment: MainAxisAlignment.start, children: [
+        getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
+        getText('${(data.byte / 1024).toInt()} kb'),
+        getText('${_duration} sec'),
+      ]);
+    } else if (data.path.contains('.mp4')) {
+      return Column(mainAxisAlignment: MainAxisAlignment.start, children: [
+        getText(DateFormat("yyyy-MM-dd HH:mm:ss").format(data.date)),
+        getText('${(data.byte / 1024).toInt()} kb'),
+        getText('${_width} x ${_height}'),
+        getText('${(_duration).toInt()} sec'),
+        getText('${_orientation} deg'),
+      ]);
     } else {
       return Container();
     }
   }
 
   Widget leftButton({double? left, double? top, double? right, double? bottom}) {
-    if(data.path.contains('.jpg') || _videoPlayer==null)
-      return Container();
+    if (data.path.contains('.jpg') || _videoPlayer == null) return Container();
     return MyIconButton(
-      left:left, top:top, right:right, bottom:bottom,
+      left: left,
+      top: top,
+      right: right,
+      bottom: bottom,
       icon: Icon(Icons.replay_10),
-      onPressed:(){
+      onPressed: () {
         int sec = _videoPlayer!.value.position.inSeconds - 10;
-        _videoPlayer!.seekTo(Duration(seconds:sec));
+        _videoPlayer!.seekTo(Duration(seconds: sec));
         _ref!.read(previewScreenProvider).notifyListeners();
       },
     );
   }
 
   Widget rightButton({double? left, double? top, double? right, double? bottom}) {
-    if(data.path.contains('.jpg') || _videoPlayer==null)
-      return Container();
+    if (data.path.contains('.jpg') || _videoPlayer == null) return Container();
     return MyIconButton(
-      left:left, top:top, right:right, bottom:bottom,
+      left: left,
+      top: top,
+      right: right,
+      bottom: bottom,
       icon: Icon(Icons.forward_10),
-      onPressed:() async {
+      onPressed: () async {
         int sec = _videoPlayer!.value.position.inSeconds + 10;
-        _videoPlayer!.seekTo(Duration(seconds:sec));
+        _videoPlayer!.seekTo(Duration(seconds: sec));
         _ref!.read(previewScreenProvider).notifyListeners();
       },
     );
   }
 
   Widget playButton({double? left, double? top, double? right, double? bottom}) {
-    if(data.path.contains('.jpg') || _videoPlayer==null)
-      return Container();
-    if(_isPlaying==false){
+    if (data.path.contains('.jpg') || _videoPlayer == null) return Container();
+    if (_isPlaying == false) {
       return MyIconButton(
-        left:left, top:top, right:right, bottom:bottom,
+        left: left,
+        top: top,
+        right: right,
+        bottom: bottom,
         icon: Icon(Icons.play_arrow),
-        onPressed:(){
+        onPressed: () {
           _videoPlayer!.play();
           _isPlaying = true;
           _ref!.read(previewScreenProvider).notifyListeners();
@@ -773,9 +737,12 @@ class PreviewScreen extends ConsumerWidget {
       );
     } else {
       return MyIconButton(
-        left:left, top:top, right:right, bottom:bottom,
+        left: left,
+        top: top,
+        right: right,
+        bottom: bottom,
         icon: Icon(Icons.pause),
-        onPressed:(){
+        onPressed: () {
           _videoPlayer!.pause();
           _isPlaying = false;
           _ref!.read(previewScreenProvider).notifyListeners();
@@ -789,67 +756,70 @@ class PreviewScreen extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
         width: 200,
         color: Colors.black54,
-        child: Align(alignment: Alignment.centerLeft,
+        child: Align(
+          alignment: Alignment.centerLeft,
           child: Text(txt, style: TextStyle(color: Colors.white, fontSize: 16)),
-        )
-    );
+        ));
   }
 }
 
 ///--------------------------------------------------------
 final previewListProvider = ChangeNotifierProvider((ref) => previewListNotifier(ref));
+
 class previewListNotifier extends ChangeNotifier {
   List<PreviewScreen> list = [];
-  previewListNotifier(ref){}
+  previewListNotifier(ref) {}
 }
+
 class previewPage extends ConsumerWidget {
   late PageController controller;
-  previewPage(int index){
-    controller = PageController(initialPage:index);
+  previewPage(int index) {
+    controller = PageController(initialPage: index);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     List<PreviewScreen> pages = ref.watch(previewListProvider).list;
     return Scaffold(
-      appBar: AppBar(
-      title: Text('Preview'),
-    ),
-    body: Container(child: GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onPanUpdate: (DragUpdateDetails details){
-        if(details.delta.dy>12){
-          Navigator.of(context).pop();
-        }
-      },
-      child: Stack(
-      alignment: Alignment.center,
-      children:[
-        PageView(
-          controller:controller,
-          children:pages,
+        appBar: AppBar(
+          title: Text('Preview'),
         ),
-        Positioned(
-          top:0, bottom:0, left:30,
-          child: IconButton(
-            icon: Icon(Icons.arrow_back_ios, size:30),
-            onPressed: () => controller.previousPage(
-              duration: Duration(milliseconds:300),
-              curve: Curves.easeIn,
-            ),
-          ),
-        ),
-        Positioned(
-          top:0, bottom:0, right:30,
-          child:IconButton(
-            icon: Icon(Icons.arrow_forward_ios, size:30),
-            onPressed: () => controller.nextPage(
-              duration: Duration(milliseconds:300),
-              curve: Curves.easeIn,
-            ),
-          )
-        ),
-      ]
-    ))));
+        body: Container(
+            child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onPanUpdate: (DragUpdateDetails details) {
+                  if (details.delta.dy > 12) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: Stack(alignment: Alignment.center, children: [
+                  PageView(
+                    controller: controller,
+                    children: pages,
+                  ),
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: 30,
+                    child: IconButton(
+                      icon: Icon(Icons.arrow_back_ios, size: 30),
+                      onPressed: () => controller.previousPage(
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeIn,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                      top: 0,
+                      bottom: 0,
+                      right: 30,
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_forward_ios, size: 30),
+                        onPressed: () => controller.nextPage(
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.easeIn,
+                        ),
+                      )),
+                ]))));
   }
 }

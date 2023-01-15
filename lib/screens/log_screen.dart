@@ -8,11 +8,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '/common.dart';
 
 class MyLogData {
-  String time='';
-  String user='';
-  String level='';
-  String event='';
-  String msg='';
+  String time = '';
+  String user = '';
+  String level = '';
+  String event = '';
+  String msg = '';
   MyLogData({String? time, String? user, String? level, String? event, String? msg}) {
     this.time = time ?? '';
     this.user = user ?? '';
@@ -20,14 +20,9 @@ class MyLogData {
     this.event = event ?? '';
     this.msg = msg ?? '';
   }
-  static MyLogData fromJson(Map<String,dynamic> json) {
+  static MyLogData fromJson(Map<String, dynamic> json) {
     return MyLogData(
-        time: json['time'],
-        user: json['user'],
-        level: json['level'],
-        event: json['event'],
-        msg: json['msg']
-    );
+        time: json['time'], user: json['user'], level: json['level'], event: json['event'], msg: json['msg']);
   }
 }
 
@@ -43,46 +38,52 @@ final logListProvider = StateProvider<List<MyLogData>>((ref) {
 
 class MyLog {
   static String _fname = "app.log";
-  
-  static Future info(String msg) async {
+
+  static info(String msg) async {
     await MyLog.write('info', 'app', msg);
   }
-  static Future warn(String msg) async {
+
+  static warn(String msg) async {
     await MyLog.write('warn', 'app', msg);
   }
-  static Future err(String msg) async {
-    await MyLog.write('err', 'app', msg);
+
+  static err(String msg) async {
+    await MyLog.write('error', 'app', msg);
   }
-  static Future write(String level, String event, String msg) async {
+
+  static debug(String msg) async {
+    await MyLog.write('debug', 'app', msg);
+  }
+
+  static write(String level, String event, String msg) async {
     print('-- ${level} ${msg}');
-    if(kIsWeb)
-      return ;
+    if (kIsWeb) return;
 
     String t = new DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
     String l = level;
     String e = event;
     String u = 'user';
-    
+
     final Directory appdir = await getApplicationDocumentsDirectory();
     await Directory('${appdir.path}/logs').create(recursive: true);
     final String path = '${appdir.path}/logs/$_fname';
-    
+
     // length byte 100kb
-    if(await File(path).exists() && File(path).lengthSync()>100*1024) {
-      if(await File(path+'.1').exists())
-        File(path+'.1').deleteSync();
-      File(path).renameSync(path+'.1');
+    if (await File(path).exists() && File(path).lengthSync() > 100 * 1024) {
+      if (await File(path + '.1').exists()) File(path + '.1').deleteSync();
+      File(path).renameSync(path + '.1');
       File(path).deleteSync();
-    }    
+    }
     String tsv = '$t\t$u\t$l\t$e\t$msg\n';
-    await File(path).writeAsString(tsv, mode:FileMode.append, flush:true);
+    await File(path).writeAsString(tsv, mode: FileMode.append, flush: true);
   }
 
+  /// read
   static Future<List<MyLogData>> read() async {
     List<MyLogData> list = [];
     try {
       String txt = '';
-      if(kIsWeb) {
+      if (kIsWeb) {
         txt = sample;
       } else {
         final Directory appdir = await getApplicationDocumentsDirectory();
@@ -97,11 +98,11 @@ class MyLog {
 
       for (String line in txt.split('\n')) {
         List r = line.split('\t');
-        if(r.length>=5){
-          MyLogData d = MyLogData(time:r[0],user:r[1],level:r[2],event:r[3],msg:r[4]);
+        if (r.length >= 5) {
+          MyLogData d = MyLogData(time: r[0], user: r[1], level: r[2], event: r[3], msg: r[4]);
           list.add(d);
         }
-        list.sort((a,b) {
+        list.sort((a, b) {
           return b.time.compareTo(a.time);
         });
       }
@@ -113,27 +114,28 @@ class MyLog {
 }
 
 final logScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
+
 class LogScreen extends ConsumerWidget {
-  MyEdge _edge = MyEdge(provider:logScreenProvider);
+  MyEdge _edge = MyEdge(provider: logScreenProvider);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     Future.delayed(Duration.zero, () => readLog(ref));
     List<MyLogData> list = ref.watch(logListProvider);
-    _edge.getEdge(context,ref);
+    _edge.getEdge(context, ref);
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Logs'),
-        backgroundColor:Color(0xFF000000),
+        backgroundColor: Color(0xFF000000),
         actions: <Widget>[],
       ),
       body: Container(
         margin: _edge.settingsEdge,
         child: Stack(children: <Widget>[
-          getTable(context,ref,list),
-        ])
-      )
+          getTable(context, ref, list),
+        ]),
+      ),
     );
   }
 
@@ -144,47 +146,49 @@ class LogScreen extends ConsumerWidget {
 
   Widget getTable(BuildContext context, WidgetRef ref, List<MyLogData> list) {
     List<TextSpan> spans = [];
-    TextStyle tsErr = TextStyle(color:Color(0xFFFF8888));
-    TextStyle tsWarn = TextStyle(color:Color(0xFFeeee44));
-    TextStyle tsTime = TextStyle(color:Color(0xFFcccccc));
+    TextStyle tsErr = TextStyle(color: Color(0xFFFF8888));
+    TextStyle tsWarn = TextStyle(color: Color(0xFFeeee44));
+    TextStyle tsInfo = TextStyle(color: Color(0xFFFFFFFF));
+    TextStyle tsDebug = TextStyle(color: Color(0xFFaaaaaa));
+    TextStyle tsTime = TextStyle(color: Color(0xFFcccccc));
 
-    String format = MediaQuery.of(context).size.width > 500 ? "yyyy-MM-dd HH:mm" : "MM-dd HH:mm";
-    for(MyLogData d in list) {
-      String stime = DateFormat(format).format(DateTime.parse(d.time));
-      Wrap w = Wrap(children:[getText(stime),getText(d.msg)]);
-      spans.add(TextSpan(text:stime, style:tsTime));
-      if (d.level.contains('err'))
-        spans.add(TextSpan(text: ' '+d.level, style:tsErr));
-      else if (d.level.contains('warn'))
-        spans.add(TextSpan(text: ' '+d.level, style:tsWarn));
-      spans.add(TextSpan(text:' '+d.msg+'\n'));
+    String format = MediaQuery.of(context).size.width > 500 ? "yyyy-MM-dd HH:mm.ss" : "MM-dd HH:mm";
+    for (MyLogData d in list) {
+      try {
+        String stime = DateFormat(format).format(DateTime.parse(d.time));
+        Wrap w = Wrap(children: [getText(stime), getText(d.msg)]);
+        spans.add(TextSpan(text: stime, style: tsTime));
+        if (d.level.toLowerCase().contains('err'))
+          spans.add(TextSpan(text: ' error', style: tsErr));
+        else if (d.level.toLowerCase().contains('warn')) spans.add(TextSpan(text: ' warn', style: tsWarn));
+        if (d.level.toLowerCase().contains('debug'))
+          spans.add(TextSpan(text: ' ' + d.msg + '\n', style: tsDebug));
+        else
+          spans.add(TextSpan(text: ' ' + d.msg + '\n', style: tsInfo));
+      } on Exception catch (e) {}
     }
 
     return Container(
-      width: MediaQuery.of(context).size.width-20,
-      height: MediaQuery.of(context).size.height-120,
-        decoration: BoxDecoration(
-          color: Color(0xFF404040),
-          borderRadius: BorderRadius.circular(4),
-        ),
+      width: MediaQuery.of(context).size.width - 20,
+      height: MediaQuery.of(context).size.height - 120,
+      decoration: BoxDecoration(
+        color: Color(0xFF404040),
+        borderRadius: BorderRadius.circular(3),
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.vertical,
-          padding: EdgeInsets.fromLTRB(8,8,8,8),
+        padding: EdgeInsets.fromLTRB(8, 8, 8, 8),
         child: SelectableText.rich(
-          TextSpan(
-            style: TextStyle(fontSize:14, fontFamily:'monospace'),
-            children: spans
-          )
-        )
-      )
+          TextSpan(style: TextStyle(fontSize: 14, fontFamily: 'monospace'), children: spans),
+        ),
+      ),
     );
   }
 
   Widget getText(String s) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical:1, horizontal:4),
-      child: Text(s, style:TextStyle(fontSize:14, color:Colors.white)),
+      padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 4),
+      child: Text(s, style: TextStyle(fontSize: 14, color: Colors.white)),
     );
-  } 
+  }
 }
-
