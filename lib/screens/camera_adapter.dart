@@ -89,11 +89,26 @@ class CameraAdapter {
 
   static imglib.Image _fromRgb(CameraImage image) {
     print('_fromRgb() planes.length=${image.planes.length}');
-    return imglib.Image.fromBytes(
-      width: image.width,
-      height: image.height,
-      bytes: image.planes[0].bytes.buffer,
-      format: imglib.Format.uint8,
-    );
+    final int width = image.width;
+    final int height = image.height;
+
+    imglib.Image img = imglib.Image(width: width, height: height);
+    try {
+      for (int ay = 0; ay < height; ay++) {
+        for (int ax = 0; ax < width; ax++) {
+          final int index = (ax + (ay * width)) * 4;
+
+          int b = image.planes[0].bytes[index + 0];
+          int g = image.planes[0].bytes[index + 1];
+          int r = image.planes[0].bytes[index + 2];
+          int a = image.planes[0].bytes[index + 3];
+
+          img.setPixelRgb(ax, ay, r, g, b);
+        }
+      }
+    } catch (e) {
+      print("err _fromYuv() " + e.toString());
+    }
+    return img;
   }
 }

@@ -734,9 +734,9 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
           for (FileSystemEntity e in files) {
             try {
               await File(e.path).delete();
-              print('-- del ok ${basename(e.path)}');
+              //print('-- del ok ${basename(e.path)}');
             } on Exception catch (err) {
-              print('-- del err ${basename(e.path)}');
+              //print('-- del err ${basename(e.path)}');
             }
           }
         }
