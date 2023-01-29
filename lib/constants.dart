@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 bool IS_PREMIUM = false;
-String ALBUM_NAME = "TheseDays";
+String ALBUM_NAME = "thesedays";
 bool IS_TEST = false;
 
 // Text Style

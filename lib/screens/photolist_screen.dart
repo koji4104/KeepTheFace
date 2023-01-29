@@ -40,97 +40,8 @@ class PhotoListScreen extends BaseScreen {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    subBuild(context, ref);
-    bool bSelectMode = ref.watch(photolistProvider).data.isSelectMode;
-    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
+    super.build(context, ref);
 
-    return Scaffold(
-        appBar: AppBar(
-          title: Row(children: [
-            Text(l10n("photolist_title")),
-            Expanded(child: SizedBox(width: 1)),
-            Text(_photocount.toString() + ' pcs ' + _sizemb.toString() + ' mb', style: TextStyle(fontSize: 13)),
-          ]),
-          backgroundColor: Color(0xFF000000),
-          actions: <Widget>[],
-        ),
-        body: Container(
-            margin: edge.homebarEdge,
-            child: Stack(children: <Widget>[
-              Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 50,
-                  child: Container(
-                      color: Color(0xFF444444),
-                      child: Row(children: [
-                        SizedBox(width: 20),
-                        // ズームイン
-                        IconButton(
-                          icon: Icon(Icons.zoom_out),
-                          iconSize: 32.0,
-                          onPressed: () {
-                            if (_gridZoom < 1) {
-                              _gridZoom++;
-                              ref.read(photolistProvider).data.cardWidth =
-                                  (edge.width / (_crossAxisCount + _gridZoom)).toInt();
-                              redraw();
-                            }
-                          },
-                        ),
-                        SizedBox(width: 16),
-                        // ズームアウト
-                        IconButton(
-                          icon: Icon(Icons.zoom_in),
-                          iconSize: 32.0,
-                          onPressed: () {
-                            if (_gridZoom > -1) {
-                              _gridZoom--;
-                              ref.read(photolistProvider).data.cardWidth =
-                                  (edge.width / (_crossAxisCount + _gridZoom)).toInt();
-                              redraw();
-                            }
-                          },
-                        ),
-                        SizedBox(width: 16),
-                        IconButton(
-                          icon: bSelectMode == false ? Icon(Icons.check_circle_outline) : Icon(Icons.check_circle),
-                          iconSize: 32.0,
-                          onPressed: () {
-                            ref.read(photolistProvider).data.isSelectMode = !bSelectMode;
-                            ref.read(photolistProvider).notifyListeners();
-                            ref.read(selectedListProvider).clear();
-                          },
-                        ),
-                        SizedBox(width: 16),
-                        // 保存
-                        if (bSelectMode)
-                          IconButton(
-                            icon: Icon(Icons.save),
-                            iconSize: 32.0,
-                            onPressed: () => _saveFileWithDialog(context, ref),
-                          ),
-                        SizedBox(width: 16),
-                        // 削除
-                        if (bSelectMode)
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            iconSize: 32.0,
-                            onPressed: () => _deleteFileWithDialog(context, ref),
-                          ),
-                        SizedBox(width: 20),
-                      ]))),
-              Container(
-                margin: EdgeInsets.only(top: 52),
-                child: getList(context, ref),
-              ),
-            ])));
-  }
-
-  @override
-  void subBuild(BuildContext context, WidgetRef ref) {
-    super.subBuild(context, ref);
     // 392x829
     double w = MediaQuery.of(context).size.width;
     if (w > 800)
@@ -139,6 +50,94 @@ class PhotoListScreen extends BaseScreen {
       _crossAxisCount = 4;
     else
       _crossAxisCount = 3;
+
+    bool bSelectMode = ref.watch(photolistProvider).data.isSelectMode;
+    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(children: [
+          Text(l10n("photolist_title")),
+          Expanded(child: SizedBox(width: 1)),
+          Text(_photocount.toString() + ' pcs ' + _sizemb.toString() + ' mb', style: TextStyle(fontSize: 13)),
+        ]),
+        backgroundColor: Color(0xFF000000),
+        actions: <Widget>[],
+      ),
+      body: Container(
+        margin: edge.homebarEdge,
+        child: Stack(children: <Widget>[
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 50,
+            child: Container(
+              color: Color(0xFF444444),
+              child: Row(children: [
+                SizedBox(width: 20),
+                // ズームイン
+                IconButton(
+                  icon: Icon(Icons.zoom_out),
+                  iconSize: 32.0,
+                  onPressed: () {
+                    if (_gridZoom < 1) {
+                      _gridZoom++;
+                      ref.read(photolistProvider).data.cardWidth = (edge.width / (_crossAxisCount + _gridZoom)).toInt();
+                      ref.read(photolistProvider).notifyListeners();
+                    }
+                  },
+                ),
+                SizedBox(width: 16),
+                // ズームアウト
+                IconButton(
+                  icon: Icon(Icons.zoom_in),
+                  iconSize: 32.0,
+                  onPressed: () {
+                    if (_gridZoom > -1) {
+                      _gridZoom--;
+                      ref.read(photolistProvider).data.cardWidth = (edge.width / (_crossAxisCount + _gridZoom)).toInt();
+                      ref.read(photolistProvider).notifyListeners();
+                    }
+                  },
+                ),
+                SizedBox(width: 16),
+                IconButton(
+                  icon: bSelectMode == false ? Icon(Icons.check_circle_outline) : Icon(Icons.check_circle),
+                  iconSize: 32.0,
+                  onPressed: () {
+                    ref.read(photolistProvider).data.isSelectMode = !bSelectMode;
+                    ref.read(photolistProvider).notifyListeners();
+                    ref.read(selectedListProvider).clear();
+                  },
+                ),
+                SizedBox(width: 16),
+                // 保存
+                if (bSelectMode)
+                  IconButton(
+                    icon: Icon(Icons.save),
+                    iconSize: 32.0,
+                    onPressed: () => _saveFileWithDialog(context, ref),
+                  ),
+                SizedBox(width: 16),
+                // 削除
+                if (bSelectMode)
+                  IconButton(
+                    icon: Icon(Icons.delete),
+                    iconSize: 32.0,
+                    onPressed: () => _deleteFileWithDialog(context, ref),
+                  ),
+                SizedBox(width: 20),
+              ]),
+            ),
+          ),
+          Container(
+            margin: EdgeInsets.only(top: 52),
+            child: getList(context, ref),
+          ),
+        ]),
+      ),
+    );
   }
 
   Widget getList(BuildContext context, WidgetRef ref) {
@@ -146,10 +145,11 @@ class PhotoListScreen extends BaseScreen {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 4, horizontal: 6),
       child: GridView.count(
-          crossAxisCount: _crossAxisCount + _gridZoom,
-          children: List.generate(cardList.length, (index) {
-            return cardList[index];
-          })),
+        crossAxisCount: _crossAxisCount + _gridZoom,
+        children: List.generate(cardList.length, (index) {
+          return cardList[index];
+        }),
+      ),
     );
   }
 
@@ -224,9 +224,7 @@ class PhotoListScreen extends BaseScreen {
         previewList.add(PreviewScreen(data: f));
       }
       ref.read(previewListProvider).list = previewList;
-
       ref.read(selectedListProvider).clear();
-      redraw();
     } on Exception catch (e) {
       print('-- readFiles() e=' + e.toString());
     }
@@ -247,48 +245,53 @@ class PhotoListScreen extends BaseScreen {
     } else {
       Text msg = Text('Selected ' + ' ${list.length}');
       showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              actions: <Widget>[
-                Container(
-                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                    child: Column(children: [
-                      if (photo_cnt > 0)
-                        MyTextButton(
-                            title: l10n('save_photo_app'),
-                            onPressed: () {
-                              _saveFile(list, 1);
-                              Navigator.of(context).pop();
-                            }),
-                      MyTextButton(
-                          title: l10n('save_file_app'),
-                          onPressed: files_cnt > 5
-                              ? () {
-                                  showSnackBar('Files ${files_cnt}');
-                                }
-                              : () {
-                                  _saveFile(list, 2);
-                                  Navigator.of(context).pop();
-                                }),
-                      if (gdriveAd.isSignedIn())
-                        MyTextButton(
-                            title: l10n('save_gdrive'),
-                            onPressed: () {
-                              _saveFile(list, 4);
-                              Navigator.of(context).pop();
-                            }),
-                      MyTextButton(
-                        title: l10n('cancel'),
-                        cancelStyle: true,
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ]))
-              ],
-            );
-          });
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            actions: <Widget>[
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                child: Column(children: [
+                  if (photo_cnt > 0)
+                    MyTextButton(
+                      title: l10n('save_photo_app'),
+                      onPressed: () {
+                        _saveFile(list, 1);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  MyTextButton(
+                    title: l10n('save_file_app'),
+                    onPressed: files_cnt > 5
+                        ? () {
+                            showSnackBar('Files ${files_cnt}');
+                          }
+                        : () {
+                            _saveFile(list, 2);
+                            Navigator.of(context).pop();
+                          },
+                  ),
+                  if (gdriveAd.isSignedIn())
+                    MyTextButton(
+                      title: l10n('save_gdrive'),
+                      onPressed: () {
+                        _saveFile(list, 4);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  MyTextButton(
+                    title: l10n('cancel'),
+                    cancelStyle: true,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ]),
+              )
+            ],
+          );
+        },
+      );
     }
   }
 
@@ -329,31 +332,32 @@ class PhotoListScreen extends BaseScreen {
     } else {
       Text msg = Text(l10n('delete_files'));
       showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              content: msg,
-              actions: <Widget>[
-                MyTextButton(
-                  title: l10n('cancel'),
-                  cancelStyle: true,
-                  width: 130,
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                MyTextButton(
-                  title: l10n('delete'),
-                  deleteStyle: true,
-                  width: 130,
-                  onPressed: () {
-                    _deleteFile(list);
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          });
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: msg,
+            actions: <Widget>[
+              MyTextButton(
+                title: l10n('cancel'),
+                cancelStyle: true,
+                width: 130,
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              MyTextButton(
+                title: l10n('delete'),
+                deleteStyle: true,
+                width: 130,
+                onPressed: () {
+                  _deleteFile(list);
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 
@@ -364,7 +368,6 @@ class PhotoListScreen extends BaseScreen {
         if (await File(f.thumb).exists()) await File(f.thumb).delete();
         await new Future.delayed(new Duration(milliseconds: 100));
       }
-      ;
       readFiles();
     } on Exception catch (e) {
       print('-- _deleteFile ${e.toString()}');
@@ -442,42 +445,49 @@ class MyCard extends ConsumerWidget {
   }
 
   Widget getWidget(WidgetRef ref) {
-    return Stack(fit: StackFit.expand, children: <Widget>[
-      // サムネイル
-      getThumbnail(),
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        // サムネイル
+        getThumbnail(),
 
-      // 日付
-      getDateText(),
+        // 日付
+        getDateText(),
 
-      // 保存済アイコン
-      if (data.isLibrary)
-        Positioned(
+        // 保存済アイコン
+        if (data.isLibrary)
+          Positioned(
             right: 4.0,
             top: 4.0,
             child: CircleAvatar(
-                radius: 20.0,
-                backgroundColor: Colors.black54,
-                child: Icon(Icons.save, size: 24, color: Color(0xFFFFFFFF)))),
+              radius: 20.0,
+              backgroundColor: Colors.black54,
+              child: Icon(Icons.save, size: 24, color: Color(0xFFFFFFFF)),
+            ),
+          ),
 
-      // 選択状態
-      Positioned(
+        // 選択状態
+        Positioned(
           right: 6.0,
           bottom: 6.0,
           child: CircleAvatar(
-              backgroundColor: _selected ? Color(0xFF303030) : Color(0x00000000),
-              radius: _width < 100
-                  ? 12.0 + 4.0
-                  : _width > 200
-                      ? 24.0 + 4.0
-                      : 18.0 + 4.0,
-              child: Icon(_selected ? Icons.check : null,
-                  size: _width < 100
-                      ? 24.0
-                      : _width > 200
-                          ? 48.0
-                          : 36.0,
-                  color: Colors.white))),
-    ]);
+            backgroundColor: _selected ? Color(0xFF303030) : Color(0x00000000),
+            radius: _width < 100
+                ? 12.0 + 4.0
+                : _width > 200
+                    ? 24.0 + 4.0
+                    : 18.0 + 4.0,
+            child: Icon(_selected ? Icons.check : null,
+                size: _width < 100
+                    ? 24.0
+                    : _width > 200
+                        ? 48.0
+                        : 36.0,
+                color: Colors.white),
+          ),
+        ),
+      ],
+    );
   }
 
   String sec2strtime(int sec) {
@@ -491,11 +501,12 @@ class MyCard extends ConsumerWidget {
   Widget getThumbnail() {
     if (_thumbWidget == null) {
       return Center(
-          child: SizedBox(
-        width: 32,
-        height: 32,
-        child: CircularProgressIndicator(),
-      ));
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: CircularProgressIndicator(),
+        ),
+      );
     } else {
       return _thumbWidget!;
     }
@@ -616,8 +627,9 @@ class PreviewScreen extends ConsumerWidget {
     print('PreviewScreen l=${l.toInt()} b=${b.toInt()}');
 
     return Container(
-        margin: _edge.homebarEdge,
-        child: Stack(children: <Widget>[
+      margin: _edge.homebarEdge,
+      child: Stack(
+        children: <Widget>[
           player(),
           getInfoText(),
           leftButton(bottom: b, left: l),
@@ -625,19 +637,22 @@ class PreviewScreen extends ConsumerWidget {
           rightButton(bottom: b, right: l),
           if (_videoPlayer != null)
             Positioned(
-                bottom: b + 70,
-                left: 4,
-                right: 4,
-                child: VideoProgressIndicator(
-                  _videoPlayer!,
-                  allowScrubbing: true,
-                  colors: new VideoProgressColors(
-                    playedColor: Colors.red,
-                    bufferedColor: Colors.black,
-                    backgroundColor: Colors.black,
-                  ),
-                )),
-        ]));
+              bottom: b + 70,
+              left: 4,
+              right: 4,
+              child: VideoProgressIndicator(
+                _videoPlayer!,
+                allowScrubbing: true,
+                colors: new VideoProgressColors(
+                  playedColor: Colors.red,
+                  bufferedColor: Colors.black,
+                  backgroundColor: Colors.black,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget player() {
@@ -753,13 +768,14 @@ class PreviewScreen extends ConsumerWidget {
 
   Widget getText(String txt) {
     return Container(
-        padding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-        width: 200,
-        color: Colors.black54,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(txt, style: TextStyle(color: Colors.white, fontSize: 16)),
-        ));
+      padding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+      width: 200,
+      color: Colors.black54,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(txt, style: TextStyle(color: Colors.white, fontSize: 16)),
+      ),
+    );
   }
 }
 
@@ -781,45 +797,49 @@ class previewPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     List<PreviewScreen> pages = ref.watch(previewListProvider).list;
     return Scaffold(
-        appBar: AppBar(
-          title: Text('Preview'),
+      appBar: AppBar(
+        title: Text('Preview'),
+      ),
+      body: Container(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onPanUpdate: (DragUpdateDetails details) {
+            if (details.delta.dy > 12) {
+              Navigator.of(context).pop();
+            }
+          },
+          child: Stack(alignment: Alignment.center, children: [
+            PageView(
+              controller: controller,
+              children: pages,
+            ),
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 30,
+              child: IconButton(
+                icon: Icon(Icons.arrow_back_ios, size: 30),
+                onPressed: () => controller.previousPage(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeIn,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: 30,
+              child: IconButton(
+                icon: Icon(Icons.arrow_forward_ios, size: 30),
+                onPressed: () => controller.nextPage(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeIn,
+                ),
+              ),
+            ),
+          ]),
         ),
-        body: Container(
-            child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onPanUpdate: (DragUpdateDetails details) {
-                  if (details.delta.dy > 12) {
-                    Navigator.of(context).pop();
-                  }
-                },
-                child: Stack(alignment: Alignment.center, children: [
-                  PageView(
-                    controller: controller,
-                    children: pages,
-                  ),
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: 30,
-                    child: IconButton(
-                      icon: Icon(Icons.arrow_back_ios, size: 30),
-                      onPressed: () => controller.previousPage(
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.easeIn,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                      top: 0,
-                      bottom: 0,
-                      right: 30,
-                      child: IconButton(
-                        icon: Icon(Icons.arrow_forward_ios, size: 30),
-                        onPressed: () => controller.nextPage(
-                          duration: Duration(milliseconds: 300),
-                          curve: Curves.easeIn,
-                        ),
-                      )),
-                ]))));
+      ),
+    );
   }
 }

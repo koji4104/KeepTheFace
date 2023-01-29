@@ -1,15 +1,12 @@
 import 'package:camera/camera.dart';
 import 'package:image/image.dart' as imglib;
 import 'dart:async';
+import 'dart:typed_data'; // Uint8List
 
 class CameraAdapter {
   /// Take image silently
-  ///
-  /// i.g.
-  /// imglib.Image? img = await CameraAdapter.takeImage(_controller);
-  ///
-  /// If it fails.
-  /// CameraController.imageFormatGroup yuv420 -> bgra8888
+  /// - i.g. imglib.Image? img = await CameraAdapter.takeImage(_controller);
+  /// - If it fails. CameraController.imageFormatGroup yuv420 -> bgra8888
   static Future<imglib.Image?> takeImage(CameraController? controller) async {
     if (controller == null) {
       return null;
@@ -26,7 +23,8 @@ class CameraAdapter {
     return img;
   }
 
-  static Future<imglib.Image?> _toImage(CameraController? controller, CameraImage? cameraImage) async {
+  static Future<imglib.Image?> _toImage(
+      CameraController? controller, CameraImage? cameraImage) async {
     if (controller == null || cameraImage == null) {
       return null;
     }
@@ -35,7 +33,7 @@ class CameraAdapter {
       img = await _fromYuv(cameraImage);
       if (img != null) {
         int angle = controller.description.sensorOrientation;
-        if (angle > 0) img = imglib.copyRotate(img, angle);
+        if (angle > 0) img = imglib.copyRotate(img, angle: angle);
       }
     } else if (cameraImage.format.group == ImageFormatGroup.bgra8888) {
       img = _fromRgb(cameraImage);
@@ -55,12 +53,13 @@ class CameraAdapter {
       print('err _fromYuv() planes[1].bytesPerPixel=null');
       return null;
     } else if (image.planes[0].bytes.length < width * height) {
-      print('err _fromYuv() planes[0].bytes.length=${image.planes[0].bytes.length}');
+      print(
+          'err _fromYuv() planes[0].bytes.length=${image.planes[0].bytes.length}');
       return null;
     }
 
     try {
-      imglib.Image img = imglib.Image(width, height);
+      imglib.Image img = imglib.Image(width: width, height: height);
       final int perRow = image.planes[1].bytesPerRow;
       final int perPixel = image.planes[1].bytesPerPixel!;
 
@@ -68,14 +67,17 @@ class CameraAdapter {
       for (int ay = 0; ay < height; ay++) {
         for (int ax = 0; ax < width; ax++) {
           final int index = ax + (ay * width);
-          final int uvIndex = perPixel * (ax / 2).floor() + perRow * (ay / 2).floor();
+          final int uvIndex =
+              perPixel * (ax / 2).floor() + perRow * (ay / 2).floor();
           final y = image.planes[0].bytes[index];
           final u = image.planes[1].bytes[uvIndex];
           final v = image.planes[2].bytes[uvIndex];
           int r = (y + v * 1436 / 1024 - 179).round().clamp(0, 255);
-          int g = (y - u * 46549 / 131072 + 44 - v * 93604 / 131072 + 91).round().clamp(0, 255);
+          int g = (y - u * 46549 / 131072 + 44 - v * 93604 / 131072 + 91)
+              .round()
+              .clamp(0, 255);
           int b = (y + u * 1814 / 1024 - 227).round().clamp(0, 255);
-          img.data[index] = (0xFF << 24) | (b << 16) | (g << 8) | r;
+          img.setPixelRgb(ax, ay, r, g, b);
         }
       }
       return img;
@@ -86,11 +88,12 @@ class CameraAdapter {
   }
 
   static imglib.Image _fromRgb(CameraImage image) {
+    print('_fromRgb() planes.length=${image.planes.length}');
     return imglib.Image.fromBytes(
-      image.width,
-      image.height,
-      image.planes[0].bytes,
-      format: imglib.Format.bgra,
+      width: image.width,
+      height: image.height,
+      bytes: image.planes[0].bytes.buffer,
+      format: imglib.Format.uint8,
     );
   }
 }
