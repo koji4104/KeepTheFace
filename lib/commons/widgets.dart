@@ -60,10 +60,10 @@ Widget MyTextButton(
     {required String title, required void Function()? onPressed, double? width, bool? cancelStyle, bool? deleteStyle}) {
   Color fgcol = Color(0xFF303030);
   Color bgcol = Color(0xFFFFFFFF);
-  double fsize = 16.0;
+  double fsize = 14.0;
   if (cancelStyle != null) {
     fgcol = Color(0xFFFFFFFF);
-    bgcol = Color(0xFF606060);
+    bgcol = Color(0xFF707070);
   } else if (deleteStyle != null) {
     fgcol = Colors.redAccent;
   }
@@ -93,17 +93,16 @@ Widget MyListTile(
   Widget e = Expanded(child: SizedBox(width: 8));
   if (multiline != null) e = SizedBox(width: 8);
   Widget w = SizedBox(width: 8);
-  Icon icon = Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14.0);
+  Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0);
 
   Widget btn;
   if (textonly != null) {
     btn = title;
   } else if (radio != null) {
-    Icon icon = Icon(Icons.radio_button_unchecked_rounded, color: Color(0xFF808080), size: 16.0);
+    icon = Icon(Icons.radio_button_unchecked_rounded, color: myTheme.disabledColor, size: 16.0);
     if (radio == true) {
-      icon = Icon(Icons.radio_button_on_rounded, color: selectedTextColor, size: 16.0);
+      icon = Icon(Icons.radio_button_on_rounded, size: 16.0);
     }
-    //btn = Row(children: [icon, w, title]);
     btn = Row(children: [title, e, icon]);
   } else if (title2 != null && onPressed != null) {
     btn = Row(children: [title, e, title2, w, icon]);
@@ -117,7 +116,7 @@ Widget MyListTile(
     child: Container(
       padding: EdgeInsets.symmetric(vertical: 1, horizontal: 8),
       decoration: BoxDecoration(
-        color: tileColor,
+        color: myDarkTheme.cardColor,
         borderRadius: BorderRadius.circular(3),
       ),
       child: TextButton(child: btn, onPressed: onPressed),

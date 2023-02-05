@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '/gdrive_adapter.dart';
+import '/controllers/gdrive_adapter.dart';
 
 final gdriveProvider = ChangeNotifierProvider((ref) => gdriveNotifier(ref));
+
 class gdriveNotifier extends ChangeNotifier {
   GoogleDriveAdapter gdrive = GoogleDriveAdapter();
-  gdriveNotifier(ref){
-    gdrive.loginSilently().then((r){
+  gdriveNotifier(ref) {
+    gdrive.loginSilently().then((r) {
       this.notifyListeners();
     });
   }
@@ -15,6 +16,7 @@ class gdriveNotifier extends ChangeNotifier {
       this.notifyListeners();
     });
   }
+
   Future logout() async {
     gdrive.logout().then((_) {
       this.notifyListeners();

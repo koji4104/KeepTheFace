@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:image/image.dart' as imglib;
 import 'package:wakelock/wakelock.dart';
 import 'package:record/record.dart';
-import 'package:path/path.dart';
 
 import 'package:disk_space/disk_space.dart';
 import 'package:intl/intl.dart';
@@ -19,12 +18,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '/controllers/camera_controller.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'log_screen.dart';
-import '/common.dart';
+import '/controllers/mystorage.dart';
 import 'camera_adapter.dart';
 import '/controllers/environment.dart';
 import '/constants.dart';
-import 'widgets.dart';
-import 'base_screen.dart';
+import '/commons/widgets.dart';
+import '/commons/base_screen.dart';
 
 bool disableCamera = kIsWeb; // true=test
 
@@ -152,8 +151,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
             // STOP
             if (_state.isSaver == true)
-              if (env.saver_mode.val == 1 ||
-                  (env.saver_mode.val == 2 && _state.waitTime != null))
+              if (env.saver_mode.val == 1 || (env.saver_mode.val == 2 && _state.waitTime != null))
                 stopButton(
                   onPressed: () {
                     ref.read(stateProvider).hideWaitingScreen();
@@ -161,9 +159,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
                   },
                 ),
 
-            if ((_state.isSaver == false && env.saver_mode.val != 0) &&
-                env.take_mode.val != 2)
-              _cameraWidget(context),
+            if ((_state.isSaver == false && env.saver_mode.val != 0) && env.take_mode.val != 2) _cameraWidget(context),
 
             // START
             if (_state.isSaver == false)
@@ -199,8 +195,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
 
             // Zoom button
-            if (_state.isSaver == false && env.take_mode.val != 2)
-              optionButton(context),
+            if (_state.isSaver == false && env.take_mode.val != 2) optionButton(context),
 
             // Settings button
             if (_state.isSaver == false)
@@ -252,9 +247,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(30),
             ),
             child: Center(
-                child: Text(s,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.white))),
+                child: Text(s, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.white))),
           ),
         ),
         MyIconButton(
@@ -278,9 +271,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       print('-- zoom=${zoom10}');
       if (zoom10 > 40) zoom10 = 40;
       if (zoom10 < 10) zoom10 = 10;
-      ref
-          .read(environmentProvider)
-          .saveDataNoRound(env.camera_zoom, (zoom10).toInt());
+      ref.read(environmentProvider).saveDataNoRound(env.camera_zoom, (zoom10).toInt());
       this._zoom10 = zoom10;
       return;
     }
@@ -301,12 +292,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
     if (disableCamera && IS_TEST == false) {
-      return Positioned(
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(color: Color(0xFF222244)));
+      return Positioned(left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF222244)));
     }
 
     if (IS_TEST) {
@@ -336,9 +322,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     double sh = _screenSize.height;
     double dw = sw > sh ? sw : sh;
     double dh = sw > sh ? sh : sw;
-    double _aspect = sw > sh
-        ? _controller!.value.aspectRatio
-        : 1 / _controller!.value.aspectRatio;
+    double _aspect = sw > sh ? _controller!.value.aspectRatio : 1 / _controller!.value.aspectRatio;
 
     // 16:10 (Up-down black) or 17:9 (Left-right black)
     // e.g. double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
@@ -462,8 +446,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       MyLog.info(s);
       ref.read(stateProvider).stopped();
 
-      if (env.take_mode.val == 1 || env.take_mode.val == 3) if (_controller!
-          .value.isStreamingImages) await _controller!.stopImageStream();
+      if (env.take_mode.val == 1 || env.take_mode.val == 3) if (_controller!.value.isStreamingImages)
+        await _controller!.stopImageStream();
       if (env.take_mode.val == 2 || env.take_mode.val == 3) await stopAudio();
       if (env.take_mode.val == 4) await stopVideo();
 
@@ -489,8 +473,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
           await file.writeAsBytes(imglib.encodeJpg(img));
           if (env.isPremium()) {
             if (env.ex_storage.val == 1) {
-              if ((_storage.gdriveFiles.length + _takeCount) <
-                  env.ex_save_num.val) {
+              if ((_storage.gdriveFiles.length + _takeCount) < env.ex_save_num.val) {
                 _storage.saveGdrive(path);
               } else {
                 if (_bLogExstrageFull) {
@@ -512,8 +495,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         await moveFile(src: xfile.path, dst: path);
         if (env.isPremium()) {
           if (env.ex_storage.val == 1) {
-            if ((_storage.gdriveFiles.length + _takeCount) <
-                env.ex_save_num.val) {
+            if ((_storage.gdriveFiles.length + _takeCount) < env.ex_save_num.val) {
               _storage.saveGdrive(path);
             } else {
               if (_bLogExstrageFull) {
@@ -728,8 +710,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     try {
       final cacheDir = await getTemporaryDirectory();
       if (cacheDir.existsSync()) {
-        List<FileSystemEntity> files =
-            cacheDir.listSync(recursive: true, followLinks: false);
+        List<FileSystemEntity> files = cacheDir.listSync(recursive: true, followLinks: false);
         if (files.length > 0) {
           for (FileSystemEntity e in files) {
             try {
@@ -765,8 +746,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
             ),
           ),
-          child: Text('START',
-              style: TextStyle(fontSize: 16, color: Colors.white)),
+          child: Text('START', style: TextStyle(fontSize: 16, color: Colors.white)),
           onPressed: onPressed,
         ),
       ),
@@ -791,9 +771,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
             ),
           ),
-          child: Text(text,
-              style: TextStyle(fontSize: 16, color: COL_SS_TEXT),
-              textAlign: TextAlign.center),
+          child: Text(text, style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
           onPressed: onPressed,
         ),
       ),
@@ -830,8 +808,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       right: 0,
       child: TextButton(
         child: Text(''),
-        style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
+        style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
         onPressed: onPressed,
       ),
     );

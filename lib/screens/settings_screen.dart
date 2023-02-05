@@ -3,16 +3,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '/localizations.dart';
 import 'log_screen.dart';
-import '/common.dart';
-import '/gdrive_adapter.dart';
+import '/controllers/gdrive_adapter.dart';
 import '/controllers/environment.dart';
-import 'base_screen.dart';
+import '/commons/base_screen.dart';
 import 'purchase_screen.dart';
 import '/controllers/provider.dart';
 import '/constants.dart';
-import 'widgets.dart';
+import '/commons/widgets.dart';
 
 /// Settings
 class SettingsScreen extends BaseSettingsScreen {
@@ -162,21 +160,23 @@ class PremiumScreen extends BaseSettingsScreen {
           MyLabel(l10n('premium_desc')),
           MyListTile(title: MyText('trial'), title2: env.isTrial() ? MyText('ON') : Text('OFF')),
           MyTextButton(
-              title: 'trial',
-              onPressed: () async {
-                ref.read(environmentProvider).startTrial();
-              }),
+            title: 'trial',
+            onPressed: () async {
+              ref.read(environmentProvider).startTrial();
+            },
+          ),
           MyLabel(l10n('trial_desc')),
           MyLabel(''),
           MyLabel('Purchase'),
           MyListTile(title: Text(l10n('Purchase_desc'))),
           MyTextButton(
-              title: 'Purchase',
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => MyPurchase(),
-                ));
-              }),
+            title: 'Purchase',
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => MyPurchase(),
+              ));
+            },
+          ),
         ],
       ),
     );
@@ -253,10 +253,10 @@ class GoogleDriveScreen extends BaseSettingsScreen {
       width: 210,
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
       decoration: BoxDecoration(
-        color: tileColor,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(3),
       ),
-      child: Text(title, style: TextStyle(color: textColor, fontSize: 16), textAlign: TextAlign.center),
+      child: Text(title, style: TextStyle(fontSize: 16), textAlign: TextAlign.center),
     );
   }
 }

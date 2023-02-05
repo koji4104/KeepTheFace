@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -6,38 +5,38 @@ import 'package:http/io_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:googleapis/drive/v3.dart' as ga;
 import 'package:path/path.dart';
-import 'constants.dart';
+import '/constants.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class GoogleHttpClient extends IOClient {
   Map<String, String> _headers;
   GoogleHttpClient(this._headers) : super();
   @override
-  Future<IOStreamedResponse> send(http.BaseRequest request) =>
-      super.send(request..headers.addAll(_headers));
+  Future<IOStreamedResponse> send(http.BaseRequest request) => super.send(request..headers.addAll(_headers));
   @override
   Future<http.Response> head(Object url, {Map<String, String>? headers}) =>
       super.head(url as Uri, headers: headers!..addAll(_headers));
 }
 
 class GoogleDriveAdapter {
-  GoogleDriveAdapter(){}
+  GoogleDriveAdapter() {}
 
-  GoogleSignIn googleSignIn = GoogleSignIn(
-    scopes:[ga.DriveApi.driveScope]
-  );
+  GoogleSignIn googleSignIn = GoogleSignIn(scopes: [ga.DriveApi.driveScope]);
 
   final storage = new FlutterSecureStorage();
   GoogleSignInAccount? gsa;
-  bool isSignedIn(){ return gsa!=null; }
+  bool isSignedIn() {
+    return gsa != null;
+  }
+
   bool isInitialized = false;
   String loginerr = '';
 
   /// displayName
-  String getAccountName(){
+  String getAccountName() {
     String r = 'None';
-    if(gsa!=null){
-      if(gsa!.displayName!=null) {
+    if (gsa != null) {
+      if (gsa!.displayName != null) {
         r = '${gsa!.displayName!}\n${gsa!.email}';
       } else {
         r = '${gsa!.email}';
@@ -54,11 +53,11 @@ class GoogleDriveAdapter {
   Future<bool> loginSilently() async {
     gsa = null;
     loginerr = '';
-    try{
-      if (await storage.read(key:'signedIn')=='true') {
+    try {
+      if (await storage.read(key: 'signedIn') == 'true') {
         gsa = await googleSignIn.signInSilently();
-        if(gsa==null){
-          storage.write(key:'signedIn',value:'false');
+        if (gsa == null) {
+          storage.write(key: 'signedIn', value: 'false');
         }
       }
     } on Exception catch (e) {
@@ -66,8 +65,8 @@ class GoogleDriveAdapter {
       loginerr = e.toString();
     }
     isInitialized = true;
-    print('-- loginSilently() is ${gsa!=null}');
-    return gsa!=null;
+    print('-- loginSilently() is ${gsa != null}');
+    return gsa != null;
   }
 
   // New account or Existing account
@@ -75,23 +74,23 @@ class GoogleDriveAdapter {
   Future<bool> loginWithGoogle() async {
     print('-- loginWithGoogle()');
     loginerr = '';
-    try{
+    try {
       gsa = await googleSignIn.signIn();
-      if(gsa!=null) {
-        storage.write(key:'signedIn',value:'true');
+      if (gsa != null) {
+        storage.write(key: 'signedIn', value: 'true');
       }
     } on Exception catch (e) {
       print('-- err loginWithGoogle() ${e.toString()}');
       loginerr = e.toString();
     }
-    print('-- loginWithGoogle() is ${gsa!=null}');
-    return gsa!=null;
+    print('-- loginWithGoogle() is ${gsa != null}');
+    return gsa != null;
   }
 
   Future logout() async {
     print('-- logout');
     await googleSignIn.signOut();
-    await storage.write(key:'signedIn',value:'false');
+    await storage.write(key: 'signedIn', value: 'false');
     gsa = null;
   }
 
@@ -132,27 +131,26 @@ class GoogleDriveAdapter {
 
   Future<void> getFiles() async {
     print('-- getFiles');
-    if(isSignedIn()==false) {
+    if (isSignedIn() == false) {
       print('-- not SignedIn');
       return;
     }
     var client = GoogleHttpClient(await gsa!.authHeaders);
     var drive = ga.DriveApi(client);
-    try{
+    try {
       // folder id
-      if(folderId==null) {
+      if (folderId == null) {
         await getFolderId();
       }
 
       // File list
       String q = "mimeType!='application/vnd.google-apps.folder' and '${folderId}' in parents";
       gfilelist = await drive.files.list(
-        q:q,
-        $fields:'*',
-        orderBy:'name',
+        q: q,
+        $fields: '*',
+        orderBy: 'name',
       );
       print('gfilelist.length=${gfilelist!.files!.length}');
-
     } on Exception catch (e) {
       print('-- err _getFiles=${e.toString()}');
     }
@@ -160,13 +158,13 @@ class GoogleDriveAdapter {
 
   Future<void> uploadFile(String path) async {
     print('-- GoogleDriveAdapter.uploadFile()');
-    if(isSignedIn()==false) {
+    if (isSignedIn() == false) {
       print('-- not SignedIn');
       return;
     }
-    if(folderId==null) {
+    if (folderId == null) {
       await getFolderId();
-      if(folderId==null) {
+      if (folderId == null) {
         print('-- not folderId');
         return;
       }
@@ -180,15 +178,13 @@ class GoogleDriveAdapter {
     request.parents = [];
     request.parents!.add(folderId!);
 
-    var res = await drive.files.create(
-        request,
-        uploadMedia:ga.Media(file.openRead(),file.lengthSync()));
+    var res = await drive.files.create(request, uploadMedia: ga.Media(file.openRead(), file.lengthSync()));
     print(res);
   }
 
   /// fileId = gfilelist!.files![n].id
   Future<void> deleteFile(String fileId) async {
-    if(isSignedIn()==false) {
+    if (isSignedIn() == false) {
       print('-- not SignedIn');
       return;
     }

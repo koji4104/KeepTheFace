@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '/localizations.dart';
-import '/common.dart';
+import '/commons/common.dart';
+import '/commons/widgets.dart';
 import '/controllers/environment.dart';
 import '/constants.dart';
-import 'widgets.dart';
 
 /// BaseScreen
 class BaseScreen extends ConsumerWidget {
@@ -72,7 +72,7 @@ class BaseSettingsScreen extends BaseScreen {
   }
 
   Widget MyValue({required EnvData data}) {
-    TextStyle ts = TextStyle(fontSize: 16, color: Colors.white);
+    TextStyle ts = Theme.of(context).textTheme.bodyMedium!;
     return MyListTile(
       title: Text(l10n(data.name), style: ts),
       title2: Text(l10n(data.key), style: ts),
@@ -116,7 +116,7 @@ class RadioListScreen extends BaseSettingsScreen {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n(data.name)),
-        backgroundColor: Color(0xFF000000),
+        backgroundColor: Theme.of(context).backgroundColor,
       ),
       body: Container(margin: edge.settingsEdge, child: getList()),
     );
@@ -141,7 +141,8 @@ class RadioListScreen extends BaseSettingsScreen {
 
   Widget MyRadioListTile(
       {required String title, required int value, required int groupValue, required void Function()? onChanged}) {
-    TextStyle ts = TextStyle(fontSize: 16, color: groupValue == value ? selectedTextColor : textColor);
+    //TextStyle ts = TextStyle(fontSize: 16, color: groupValue == value ? selectedTextColor : textColor);
+    TextStyle ts = TextStyle(fontSize: 16);
     return Container(
       child: MyListTile(
         title: Text(title, style: ts),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '/common.dart';
+import '/controllers/mystorage.dart';
 
 class PhotolistData {
   PhotolistData() {}
@@ -14,6 +14,7 @@ final photolistProvider = ChangeNotifierProvider((ref) => PhotolistNotifier(ref)
 class PhotolistNotifier extends ChangeNotifier {
   PhotolistNotifier(ref) {}
   PhotolistData data = PhotolistData();
+  setfiles() {}
 }
 
 final selectedListProvider = ChangeNotifierProvider((ref) => selectedListNotifier(ref));

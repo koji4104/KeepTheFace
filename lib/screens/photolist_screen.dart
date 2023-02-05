@@ -8,13 +8,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:thesedays/constants.dart';
 import '/controllers/provider.dart';
 import '/controllers/photolist_controller.dart';
-import '/common.dart';
-import '/gdrive_adapter.dart';
+import '/commons/common.dart';
+import '/controllers/gdrive_adapter.dart';
 import 'package:video_thumbnail/video_thumbnail.dart' as video_thumbnail;
 import 'package:video_player/video_player.dart';
 import 'package:flutter_video_info/flutter_video_info.dart';
-import 'base_screen.dart';
-import 'widgets.dart';
+import '/commons/base_screen.dart';
+import '/commons/widgets.dart';
+import '/controllers/mystorage.dart';
 
 class PhotoListScreen extends BaseScreen {
   PhotoListScreen() {}
@@ -215,6 +216,7 @@ class PhotoListScreen extends BaseScreen {
       }
 
       ref.read(photolistProvider).data.files = fileList;
+      ref.read(photolistProvider).notifyListeners();
 
       for (int i = 0; i < fileList.length; i++) {
         cardList.add(MyCard(data: fileList[i], index: i));
@@ -224,6 +226,7 @@ class PhotoListScreen extends BaseScreen {
         previewList.add(PreviewScreen(data: f));
       }
       ref.read(previewListProvider).list = previewList;
+      ref.read(previewListProvider).notifyListeners();
       ref.read(selectedListProvider).clear();
     } on Exception catch (e) {
       print('-- readFiles() e=' + e.toString());
@@ -783,7 +786,7 @@ class PreviewScreen extends ConsumerWidget {
 final previewListProvider = ChangeNotifierProvider((ref) => previewListNotifier(ref));
 
 class previewListNotifier extends ChangeNotifier {
-  List<PreviewScreen> list = [];
+  List<ConsumerWidget> list = [];
   previewListNotifier(ref) {}
 }
 
@@ -795,7 +798,7 @@ class previewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    List<PreviewScreen> pages = ref.watch(previewListProvider).list;
+    List<ConsumerWidget> pages = ref.watch(previewListProvider).list;
     return Scaffold(
       appBar: AppBar(
         title: Text('Preview'),

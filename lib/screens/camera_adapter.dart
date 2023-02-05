@@ -1,7 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:image/image.dart' as imglib;
 import 'dart:async';
-import 'dart:typed_data'; // Uint8List
 
 class CameraAdapter {
   /// Take image silently

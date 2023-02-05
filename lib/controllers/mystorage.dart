@@ -1,26 +1,20 @@
-import 'package:flutter/material.dart';
-import 'package:native_device_orientation/native_device_orientation.dart';
 import 'dart:io';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:photo_gallery/photo_gallery.dart';
 import 'package:path/path.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'gdrive_adapter.dart';
 import 'package:googleapis/drive/v3.dart' as ga;
-
 import 'package:permission_handler/permission_handler.dart';
-
 import 'package:file_saver/file_saver.dart';
-import 'dart:convert' show utf8;
-import 'constants.dart';
+import '/controllers/gdrive_adapter.dart';
+import '/constants.dart';
 
-class MyFile{
+class MyFile {
   String path = '';
   String name = '';
-  DateTime date = DateTime(2000,1,1);
+  DateTime date = DateTime(2000, 1, 1);
   int byte = 0;
   String thumb = '';
   bool isLibrary = false;
@@ -32,22 +26,24 @@ class MyStorage {
   List<MyFile> libraryFiles = [];
   List<MyFile> gdriveFiles = [];
 
-  // アプリ内データ
+  /// In-app data
   Future getInApp(bool allinfo) async {
-    if(kIsWeb) return;
+    if (kIsWeb) return;
     final dt1 = DateTime.now();
     files.clear();
     totalBytes = 0;
     final Directory appdir = await getApplicationDocumentsDirectory();
     final files_dir = Directory('${appdir.path}/files');
-    await Directory('${appdir.path}/files').create(recursive:true);
-    List<FileSystemEntity> _files = files_dir.listSync(recursive:true, followLinks:false);
-    _files.sort((a,b) { return b.path.compareTo(a.path); });
+    await Directory('${appdir.path}/files').create(recursive: true);
+    List<FileSystemEntity> _files = files_dir.listSync(recursive: true, followLinks: false);
+    _files.sort((a, b) {
+      return b.path.compareTo(a.path);
+    });
 
     for (FileSystemEntity e in _files) {
       MyFile f = new MyFile();
       f.path = e.path;
-      if(allinfo) {
+      if (allinfo) {
         f.date = e.statSync().modified;
         f.name = basename(f.path);
         f.byte = e.statSync().size;
@@ -59,10 +55,11 @@ class MyStorage {
         ' msec=${DateTime.now().difference(dt1).inMilliseconds}');
   }
 
-  // フォトライブラリ
+  /// photo library
   Future getLibrary() async {
-    if(kIsWeb) return;
+    if (kIsWeb) return;
     print('-- WARN getLibrary()');
+
     /// Android (AndroidManifest.xml)
     /// READ_EXTERNAL_STORAGE (REQUIRED)
     /// WRITE_EXTERNAL_STORAGE
@@ -80,11 +77,10 @@ class MyStorage {
           if (a.name == ALBUM_NAME) {
             for (int page = 0; page < 10; page++) {
               // iOS
-              List<AssetEntity> paths = await a.getAssetListPaged(page:page, size:100);
+              List<AssetEntity> paths = await a.getAssetListPaged(page: page, size: 100);
               // Android
               //List<AssetEntity> paths = await a.getAssetListPaged(0, 100);
-              if (paths.length < 1)
-                break;
+              if (paths.length < 1) break;
               for (AssetEntity p in paths) {
                 File? f = await p.loadFile(isOrigin: true);
                 if (f != null) {
@@ -99,7 +95,7 @@ class MyStorage {
         }
       } else {
         final dt1 = DateTime.now();
-        List<Album> images = await PhotoGallery.listAlbums(mediumType:MediumType.image);
+        List<Album> images = await PhotoGallery.listAlbums(mediumType: MediumType.image);
         for (Album album in images) {
           if (album.name == ALBUM_NAME) {
             MediaPage page = await album.listMedia();
@@ -153,21 +149,34 @@ class MyStorage {
         final b = File(path).readAsBytesSync();
         String ext = "";
         MimeType type = MimeType.OTHER;
-        if(path.contains('.jpg')){ ext="jpg"; type=MimeType.JPEG; }
-        else if(path.contains('.mp4')){ ext="mp4"; type=MimeType.MPEG; }
-        else if(path.contains('.m4a')){ ext="m4a"; type=MimeType.AAC; }
+        if (path.contains('.jpg')) {
+          ext = "jpg";
+          type = MimeType.JPEG;
+        } else if (path.contains('.mp4')) {
+          ext = "mp4";
+          type = MimeType.MPEG;
+        } else if (path.contains('.m4a')) {
+          ext = "m4a";
+          type = MimeType.AAC;
+        }
         String res = await FileSaver.instance.saveAs(basenameWithoutExtension(path), b, ext, type);
         print('-- saveFileSaver ${res}');
-
       } else {
         // info.list
         // Supports Documents Browser
         final b = File(path).readAsBytesSync();
         String ext = "";
         MimeType type = MimeType.OTHER;
-        if(path.contains('.jpg')){ ext="jpg"; type=MimeType.JPEG; }
-        else if(path.contains('.mp4')){ ext="mp4"; type=MimeType.MPEG; }
-        else if(path.contains('.m4a')){ ext="m4a"; type=MimeType.AAC; }
+        if (path.contains('.jpg')) {
+          ext = "jpg";
+          type = MimeType.JPEG;
+        } else if (path.contains('.mp4')) {
+          ext = "mp4";
+          type = MimeType.MPEG;
+        } else if (path.contains('.m4a')) {
+          ext = "m4a";
+          type = MimeType.AAC;
+        }
         String res = await FileSaver.instance.saveAs(basenameWithoutExtension(path), b, ext, type);
         print('-- saveFileSaver ${res}');
       }
@@ -179,13 +188,11 @@ class MyStorage {
   GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
   Future getGdrive() async {
     gdriveFiles.clear();
-    if(gdriveAd.isSignedIn()==false)
-      await gdriveAd.loginSilently();
-    if(gdriveAd.isSignedIn()==false)
-      return;
+    if (gdriveAd.isSignedIn() == false) await gdriveAd.loginSilently();
+    if (gdriveAd.isSignedIn() == false) return;
 
     await gdriveAd.getFiles();
-    if(gdriveAd.gfilelist!=null) {
+    if (gdriveAd.gfilelist != null) {
       for (ga.File f in gdriveAd.gfilelist!.files!) {
         MyFile data = MyFile();
         data.path = f.id!;
@@ -197,7 +204,7 @@ class MyStorage {
 
   saveGdrive(String path) async {
     try {
-      if(gdriveAd.isSignedIn()==true){
+      if (gdriveAd.isSignedIn() == true) {
         gdriveAd.uploadFile(path);
       } else {
         print('-- warn google not signed in');
@@ -205,87 +212,5 @@ class MyStorage {
     } on Exception catch (e) {
       print('-- err saveGdrive=${e.toString()}');
     }
-  }
-}
-
-class MyUI {
-  static final double mobileWidth = 700.0;
-  static final double desktopWidth = 1100.0;
-
-  static bool isMobile(BuildContext context) {
-    return getWidth(context) < mobileWidth;
-  }
-
-  static bool isTablet(BuildContext context) {
-    return getWidth(context) < desktopWidth &&
-        getWidth(context) >= mobileWidth;
-  }
-
-  static bool isDesktop(BuildContext context) {
-    return getWidth(context) >= desktopWidth;
-  }
-
-  static double getWidth(BuildContext context) {
-    return MediaQuery.of(context).size.width;
-  }
-}
-
-class MyEdge {
-  /// ホームバーの幅（アンドロイド）
-  EdgeInsetsGeometry homebarEdge = EdgeInsets.all(0.0);
-
-  /// 設定画面で左側の余白
-  EdgeInsetsGeometry settingsEdge = EdgeInsets.all(0.0);
-
-  MyEdge({ProviderBase? provider}) {
-    if(provider!=null) this._provider = provider;
-  }
-
-  static double homebarWidth = 50.0; // ホームバーの幅
-  static double margin = 10.0; // 基本マージン
-  static double rightMargin = 200.0; // タブレット時の右マージン
-
-  ProviderBase? _provider;
-  double width = 100;
-  double height = 100;
-
-  /// Edgeを取得
-  /// 各スクリーンのbuild()内で呼び出す
-  void getEdge(BuildContext context, WidgetRef ref) async {
-    if (width == MediaQuery.of(context).size.width)
-      return;
-    width = MediaQuery.of(context).size.width;
-    height = MediaQuery.of(context).size.height;
-    print('-- getEdge() width=${width.toInt()}');
-
-    if (!kIsWeb && Platform.isAndroid) {
-      print('-- isAndroid');
-      NativeDeviceOrientation ori = await NativeDeviceOrientationCommunicator().orientation();
-      switch (ori) {
-        case NativeDeviceOrientation.landscapeRight:
-          homebarEdge = EdgeInsets.only(left: homebarWidth);
-          print('-- droid landscapeRight');
-          break;
-        case NativeDeviceOrientation.landscapeLeft:
-          homebarEdge = EdgeInsets.only(right: homebarWidth);
-          break;
-        case NativeDeviceOrientation.portraitDown:
-        case NativeDeviceOrientation.portraitUp:
-          homebarEdge = EdgeInsets.only(bottom: homebarWidth);
-          break;
-        default:
-          break;
-      }
-    }
-
-    EdgeInsetsGeometry leftrightEdge = EdgeInsets.all(0.0);
-    if (width > 700) {
-      leftrightEdge = EdgeInsets.only(left:width*10.0/100.0,right:width*10.0/100.0);
-    }
-    this.settingsEdge = EdgeInsets.all(margin);
-    this.settingsEdge = this.settingsEdge.add(leftrightEdge);
-    this.settingsEdge = this.settingsEdge.add(homebarEdge);
-    if(_provider!=null)
-      ref.read(_provider!).notifyListeners();
   }
 }
