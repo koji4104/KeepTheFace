@@ -4,7 +4,7 @@ import '/screens/camera_screen.dart';
 import 'localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '/constants.dart';
+import '/commons/widgets.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

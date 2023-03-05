@@ -77,7 +77,7 @@ class PhotoListScreen extends BaseScreen {
               color: Color(0xFF444444),
               child: Row(children: [
                 SizedBox(width: 20),
-                // ズームイン
+                // Zoom In
                 IconButton(
                   icon: Icon(Icons.zoom_out),
                   iconSize: 32.0,
@@ -90,7 +90,7 @@ class PhotoListScreen extends BaseScreen {
                   },
                 ),
                 SizedBox(width: 16),
-                // ズームアウト
+                // Zoom Out
                 IconButton(
                   icon: Icon(Icons.zoom_in),
                   iconSize: 32.0,
@@ -113,7 +113,7 @@ class PhotoListScreen extends BaseScreen {
                   },
                 ),
                 SizedBox(width: 16),
-                // 保存
+                // Save
                 if (bSelectMode)
                   IconButton(
                     icon: Icon(Icons.save),
@@ -121,7 +121,7 @@ class PhotoListScreen extends BaseScreen {
                     onPressed: () => _saveFileWithDialog(context, ref),
                   ),
                 SizedBox(width: 16),
-                // 削除
+                // Delete
                 if (bSelectMode)
                   IconButton(
                     icon: Icon(Icons.delete),
@@ -174,7 +174,7 @@ class PhotoListScreen extends BaseScreen {
         _photocount = fileList.length;
         _sizemb = 1;
       } else {
-        // アプリ内データ
+        // In-app data
         await _storage.getInApp(true);
         fileList = _storage.files;
         _photocount = fileList.length;

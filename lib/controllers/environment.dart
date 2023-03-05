@@ -44,7 +44,7 @@ class Environment {
     name: 'take_mode',
   );
 
-  /// 間隔
+  /// Photo interval
   EnvData photo_interval_sec = EnvData(
     val: 60,
     vals: [30, 60, 120, 300, 600, 900],
@@ -52,7 +52,7 @@ class Environment {
     name: 'photo_interval_sec',
   );
 
-  /// 分割
+  /// Split (video, audio)
   EnvData split_interval_sec = EnvData(
     val: 600,
     vals: IS_TEST ? [30, 300, 600] : [300, 600],
@@ -60,7 +60,7 @@ class Environment {
     name: 'split_interval_sec',
   );
 
-  /// スクリーンセーバー 0=なし 1=あり 2=5秒
+  /// Screensaver 0=No 1=Yes 2=5 seconds
   EnvData saver_mode = EnvData(
     val: 1,
     vals: [1, 2],
@@ -68,7 +68,7 @@ class Environment {
     name: 'saver_mode',
   );
 
-  /// 自動停止
+  /// Automatic stop
   EnvData autostop_sec = EnvData(
     val: 0,
     vals: IS_TEST ? [0, 120, 3600, 7200, 14400, 21600, 43200, 86400] : [0, 3600, 7200, 14400, 21600, 43200, 86400],
@@ -93,7 +93,7 @@ class Environment {
     name: 'ex_save_num',
   );
 
-  /// 外部ストレージ 0=None 1=GoogleDrive
+  /// external storage 0=None 1=GoogleDrive
   EnvData ex_storage = EnvData(
     val: 0,
     vals: [0, 1, 2],
@@ -101,8 +101,8 @@ class Environment {
     name: 'ex_storage',
   );
 
-  // 640x480 720x480
-  // 352x288 320x240
+  /// droid 320X240, 720x480..
+  /// ios 352x288 640x480..
   EnvData camera_height = EnvData(
     val: 480,
     vals: [240, 480, 720, 1080],
@@ -137,7 +137,7 @@ class Environment {
     return r;
   }
 
-  // 開始からの時間
+  /// Time since trial start
   int? trialHour() {
     int? h = null;
     print('-- trial_date = ' + trial_date);
@@ -152,7 +152,6 @@ class Environment {
     return h;
   }
 
-  /// 0.9=開始から4時間
   bool isTrial() {
     bool r = false;
     try {
@@ -165,8 +164,6 @@ class Environment {
     return r;
   }
 
-  /// 0.9=常に
-  /// 1.0=開始から48時間
   bool canReTrial() {
     return true;
     bool r = true;

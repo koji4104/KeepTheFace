@@ -223,12 +223,14 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   Widget optionButton(BuildContext context) {
     int z = env.camera_zoom.val;
     String s = (z / 10.0).toStringAsFixed(1);
-    double y = 40.0 + 8.0 + 48.0;
     double b = 48.0;
+    double y1 = 140.0;
+    double y2 = 90.0;
+    double y3 = 40.0;
     return Stack(
       children: <Widget>[
         MyIconButton(
-          bottom: y + b,
+          bottom: y1,
           left: 30.0,
           icon: Icon(Icons.add),
           iconSize: 30.0,
@@ -237,11 +239,11 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
           },
         ),
         Positioned(
-          bottom: y,
+          bottom: y2,
           left: 30.0,
           child: Container(
-            width: 44,
-            height: 44,
+            width: b,
+            height: b,
             decoration: BoxDecoration(
               color: Colors.black54,
               borderRadius: BorderRadius.circular(30),
@@ -251,7 +253,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
           ),
         ),
         MyIconButton(
-          bottom: y - b,
+          bottom: y3,
           left: 30.0,
           icon: Icon(Icons.remove),
           iconSize: 30.0,
@@ -292,15 +294,16 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
     if (disableCamera && IS_TEST == false) {
-      return Positioned(left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF222244)));
+      return Positioned(left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF445566)));
     }
 
     if (IS_TEST) {
       return Center(
         child: Transform.scale(
-          scale: 4.1,
+          scale: 2.0,
+          origin: Offset(60, 0),
           child: kIsWeb
-              ? Image.network('/lib/assets/sample.png', fit: BoxFit.cover)
+              ? Image.network('/lib/assets/sample.jpg', fit: BoxFit.cover)
               : Image(image: AssetImage('lib/assets/sample.png')),
         ),
       );
@@ -580,7 +583,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     }
   }
 
-  /// タイマー
+  /// Timer
   void _onTimer(Timer timer) async {
     if (this._batteryLevel < 0) {
       this._batteryLevel = 0;

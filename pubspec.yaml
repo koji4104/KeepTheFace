@@ -52,6 +52,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - lib/assets/test.jpg
-    - lib/assets/sample.png
     - lib/assets/appicon.png
+    - lib/assets/test.jpg
+    - lib/assets/sample.jpg

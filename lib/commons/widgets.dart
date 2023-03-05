@@ -1,5 +1,61 @@
 import 'package:flutter/material.dart';
-import '/constants.dart';
+
+BorderRadiusGeometry DEF_BORDER_RADIUS = BorderRadius.circular(0);
+
+// ON OFF button
+Color btnOn = Colors.white;
+Color btnNg = Colors.grey;
+Color btnNl = Colors.white;
+
+ThemeData myTheme = myDarkTheme;
+
+/// e.g.
+/// - myTheme.backgroundColor
+/// - myTheme.cardColor
+/// - myTheme.textTheme.bodyMedium (size 14)
+/// - myTheme.textTheme.titleMedium (size 16)
+ThemeData myDarkTheme = ThemeData.dark().copyWith(
+  pageTransitionsTheme: MyPageTransitionsTheme(),
+  backgroundColor: Color(0xFF000000),
+  scaffoldBackgroundColor: Color(0xFF000000),
+  canvasColor: Color(0xFF444444),
+  cardColor: Color(0xFF444444),
+  primaryColor: Color(0xFF444444),
+  primaryColorDark: Color(0xFF444444),
+  dividerColor: Color(0xFF555555),
+  textButtonTheme: TextButtonThemeData(
+    style: ButtonStyle(foregroundColor: MaterialStateProperty.all(Color(0xFFffffff))),
+  ),
+);
+ThemeData myLightTheme = ThemeData.light().copyWith(
+  pageTransitionsTheme: MyPageTransitionsTheme(),
+  backgroundColor: Color(0xFF444444),
+  scaffoldBackgroundColor: Color(0xFF444444),
+  canvasColor: Color(0xFFFFFFFF),
+  cardColor: Color(0xFFffffff),
+  primaryColor: Color(0xFFfffaf0),
+  dividerColor: Color(0xFFaaaaaa),
+  selectedRowColor: Color(0xFFbbbbbb),
+  textButtonTheme: TextButtonThemeData(
+    style: ButtonStyle(foregroundColor: MaterialStateProperty.all(Color(0xFFffffff))),
+  ),
+);
+
+// Swipe to cancel. From left to right.
+class MyPageTransitionsTheme extends PageTransitionsTheme {
+  const MyPageTransitionsTheme();
+  static const PageTransitionsBuilder builder = CupertinoPageTransitionsBuilder();
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return builder.buildTransitions<T>(route, context, animation, secondaryAnimation, child);
+  }
+}
 
 Widget MyLabel(String label, {int? size, Color? color}) {
   return Align(
@@ -31,20 +87,19 @@ Widget MyIconButton(
     double? right,
     double? bottom,
     double? iconSize}) {
-  Color fgcol = Colors.white;
-  Color bgcol = Colors.black54;
-  if (iconSize == null) iconSize = 38.0;
+  if (iconSize == null) iconSize = 32.0;
   return Positioned(
     left: left,
     top: top,
     right: right,
     bottom: bottom,
-    child: CircleAvatar(
-      backgroundColor: bgcol,
-      radius: iconSize * 0.75,
+    child: Container(
+      decoration: BoxDecoration(
+        color: myTheme.cardColor,
+        shape: BoxShape.circle,
+      ),
       child: IconButton(
         icon: icon,
-        color: fgcol,
         iconSize: iconSize,
         onPressed: onPressed,
       ),
@@ -72,7 +127,9 @@ Widget MyTextButton(
     padding: EdgeInsets.symmetric(vertical: 6, horizontal: 6),
     child: TextButton(
       style: TextButton.styleFrom(
-          backgroundColor: bgcol, shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(3)))),
+        backgroundColor: bgcol,
+        shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+      ),
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 6, horizontal: 0),
         child: Text(title, style: TextStyle(color: fgcol, fontSize: fsize), textAlign: TextAlign.center),
@@ -117,7 +174,7 @@ Widget MyListTile(
       padding: EdgeInsets.symmetric(vertical: 1, horizontal: 8),
       decoration: BoxDecoration(
         color: myDarkTheme.cardColor,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: DEF_BORDER_RADIUS,
       ),
       child: TextButton(child: btn, onPressed: onPressed),
     ),

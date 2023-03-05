@@ -226,7 +226,7 @@ class GoogleDriveScreen extends BaseSettingsScreen {
         MyLabel(''),
         if (gdriveAd!.isSignedIn() == false) MyGoogleTile(title: l10n('not_login')),
         if (gdriveAd!.isSignedIn()) MyGoogleTile(title: gdriveAd!.getAccountName()),
-        MyLabel(''),
+        SizedBox(height: 4),
         if (gdriveAd!.isSignedIn() == false)
           MyTextButton(
             width: 220,
@@ -254,7 +254,7 @@ class GoogleDriveScreen extends BaseSettingsScreen {
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: DEF_BORDER_RADIUS,
       ),
       child: Text(title, style: TextStyle(fontSize: 16), textAlign: TextAlign.center),
     );
