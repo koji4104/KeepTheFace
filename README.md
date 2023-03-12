@@ -1,5 +1,7 @@
 # TheseDays
 
+<img src='img/img1.png' height=120px> <img src='img/img2.png' height=120px>
+
 ## :notebook: Features
 - Interval shooting, voice recording and video recording are available.
 - Photos are taken every minute (changeable)
