@@ -27,7 +27,7 @@ class MyLogData {
 }
 
 String sample = '''
-2022-04-01 00:00:00\tuser\terr\tapp\tmessage1
+2022-04-01 00:00:00\tuser\terror\tapp\tmessage1
 2022-04-02 00:00:00\tuser\twarn\tapp\tmessage2
 2022-04-03 00:00:00\tuser\tinfo\tapp\tmessage3
 ''';

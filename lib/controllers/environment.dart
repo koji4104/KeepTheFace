@@ -78,8 +78,8 @@ class Environment {
     name: 'autostop_sec',
   );
 
-  /// Num of Save
-  EnvData save_num = EnvData(
+  /// Num of Save in-app
+  EnvData in_save_num = EnvData(
     val: 100,
     vals: IS_TEST ? [20, 500, 1000] : [100, 500, 1000],
     keys: IS_TEST ? ['20', '500', '1000'] : ['100', '500', '1000'],
@@ -205,7 +205,7 @@ class environmentNotifier extends ChangeNotifier {
       _loadSub(prefs, env.take_mode);
       _loadSub(prefs, env.photo_interval_sec);
       _loadSub(prefs, env.split_interval_sec);
-      _loadSub(prefs, env.save_num);
+      _loadSub(prefs, env.in_save_num);
       _loadSub(prefs, env.ex_storage);
       _loadSub(prefs, env.ex_save_num);
       _loadSub(prefs, env.saver_mode);
@@ -266,8 +266,8 @@ class environmentNotifier extends ChangeNotifier {
       case 'autostop_sec':
         ret = env.autostop_sec;
         break;
-      case 'save_num':
-        ret = env.save_num;
+      case 'in_save_num':
+        ret = env.in_save_num;
         break;
       case 'saver_mode':
         ret = env.saver_mode;

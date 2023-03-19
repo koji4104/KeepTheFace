@@ -158,7 +158,7 @@ class PhotoListScreen extends BaseScreen {
     try {
       fileList.clear();
       cardList.clear();
-      if (kIsWeb || IS_TEST) {
+      if (kIsWeb) {
         for (int i = 1; i < 28; i++) {
           MyFile f = new MyFile();
           f.date = DateTime(2022, 12, i, 0, 0, 0);

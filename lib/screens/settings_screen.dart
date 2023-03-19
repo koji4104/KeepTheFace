@@ -72,7 +72,7 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.camera_height),
         MyValue(data: env.photo_interval_sec),
         MyValue(data: env.split_interval_sec),
-        MyValue(data: env.save_num),
+        MyValue(data: env.in_save_num),
         MyValue(data: env.saver_mode),
         MyValue(data: env.autostop_sec),
         MyListTile(

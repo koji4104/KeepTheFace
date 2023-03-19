@@ -29,30 +29,34 @@ class MyStorage {
   /// In-app data
   Future getInApp(bool allinfo) async {
     if (kIsWeb) return;
-    final dt1 = DateTime.now();
-    files.clear();
-    totalBytes = 0;
-    final Directory appdir = await getApplicationDocumentsDirectory();
-    final files_dir = Directory('${appdir.path}/files');
-    await Directory('${appdir.path}/files').create(recursive: true);
-    List<FileSystemEntity> _files = files_dir.listSync(recursive: true, followLinks: false);
-    _files.sort((a, b) {
-      return b.path.compareTo(a.path);
-    });
+    try {
+      final dt1 = DateTime.now();
+      files.clear();
+      totalBytes = 0;
+      final Directory appdir = await getApplicationDocumentsDirectory();
+      final files_dir = Directory('${appdir.path}/files');
+      await Directory('${appdir.path}/files').create(recursive: true);
+      List<FileSystemEntity> _files = files_dir.listSync(recursive: true, followLinks: false);
+      _files.sort((a, b) {
+        return b.path.compareTo(a.path);
+      });
 
-    for (FileSystemEntity e in _files) {
-      MyFile f = new MyFile();
-      f.path = e.path;
-      if (allinfo) {
-        f.date = e.statSync().modified;
-        f.name = basename(f.path);
-        f.byte = e.statSync().size;
-        totalBytes += f.byte;
+      for (FileSystemEntity e in _files) {
+        MyFile f = new MyFile();
+        f.path = e.path;
+        if (allinfo) {
+          f.date = e.statSync().modified;
+          f.name = basename(f.path);
+          f.byte = e.statSync().size;
+          totalBytes += f.byte;
+        }
+        files.add(f);
       }
-      files.add(f);
+      print('-- inapp files=${files.length}'
+          ' msec=${DateTime.now().difference(dt1).inMilliseconds}');
+    } on Exception catch (e) {
+      print('-- err getInApp ex=' + e.toString());
     }
-    print('-- inapp files=${files.length}'
-        ' msec=${DateTime.now().difference(dt1).inMilliseconds}');
   }
 
   /// photo library

@@ -41,6 +41,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   StateData _state = StateData();
 
   int _takeCount = 0;
+  int _deletedCount = 0;
   DateTime? _photoTime;
   DateTime? _videoTime;
   DateTime? _audioTime;
@@ -55,6 +56,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   int _batteryLevel = -1;
   int _batteryLevelStart = -1;
   MyStorage _storage = new MyStorage();
+
+  bool enabledSystemUIMode = false;
 
   @override
   Future init() async {
@@ -124,12 +127,19 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
     if (kIsWeb == false) {
       if (_state.isSaver) {
-        print('-- _state.isSaver = true');
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
-        Wakelock.enable();
+        if (enabledSystemUIMode == false) {
+          print('-- setEnabledSystemUIMode');
+          enabledSystemUIMode = true;
+          SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+              overlays: []);
+          Wakelock.enable();
+        }
       } else {
-        //SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays:[]);
-        //Wakelock.disable();
+        if (enabledSystemUIMode == true) {
+          enabledSystemUIMode = false;
+          //SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays:[]);
+          //Wakelock.disable();
+        }
       }
     }
 
@@ -297,7 +307,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     try {
       _controller!.setZoomLevel(zoom10 / 10.0);
     } catch (e) {
-      await MyLog.err('${e.toString()}');
+      await MyLog.err('${e.toString()} zoomCamera()');
     }
     this._zoom10 = zoom10;
     ref.read(environmentProvider).saveDataNoRound(env.camera_zoom, zoom10);
@@ -305,7 +315,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
-    if (disableCamera && IS_TEST == false) {
+    if (disableCamera && IS_SAMPLE == false) {
       return Positioned(
           left: 0,
           top: 0,
@@ -314,7 +324,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
           child: Container(color: Color(0xFF445566)));
     }
 
-    if (IS_TEST) {
+    if (IS_SAMPLE) {
       return Center(
         child: Transform.scale(
           scale: 4.0,
@@ -370,7 +380,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// カメラ初期化
   Future<void> _initCameraSync(WidgetRef ref) async {
-    if (disableCamera || IS_TEST) return;
+    if (disableCamera || IS_SAMPLE) return;
     print('-- _initCameraSync');
     _cameras = await availableCameras();
     int pos = env.camera_pos.val;
@@ -412,7 +422,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         redraw();
       });
     } catch (e) {
-      await MyLog.err('${e.toString()}');
+      await MyLog.err('${e.toString()} onCameraSwitch()');
     }
     _zoom10 = 10;
   }
@@ -440,11 +450,11 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     // 先にセーバー起動
     ref.read(stateProvider).start();
 
-    await _storage.getInApp(false);
     if (env.isPremium()) {
       if (env.ex_storage.val == 1) await _storage.getGdrive();
     }
     _takeCount = 0;
+    _deletedCount = 0;
     if (env.take_mode.val == 1 || env.take_mode.val == 3) takePhoto();
     if (env.take_mode.val == 2 || env.take_mode.val == 3) startAudio();
     if (env.take_mode.val == 4) startVideo();
@@ -465,7 +475,13 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       if (_batteryLevel > 0 && _batteryLevelStart - _batteryLevel > 0) {
         s += ' batt ${_batteryLevelStart}->${_batteryLevel}%';
       }
-      MyLog.info(s);
+      await MyLog.info(s);
+
+      if (_deletedCount > 0) {
+        MyLog.info('Deleted old files ${_deletedCount}');
+        _deletedCount = 0;
+      }
+
       ref.read(stateProvider).stopped();
 
       if (env.take_mode.val == 1 || env.take_mode.val == 3) if (_controller!
@@ -533,7 +549,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         _takeCount++;
       }
     } catch (e) {
-      await MyLog.err('${e.toString()}');
+      await MyLog.err('${e.toString()} takePhoto()');
     }
   }
 
@@ -621,7 +637,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       if (env.saver_mode.val == 1) {
         ref.read(stopButtonProvider.notifier).state = takingString();
       } else if (env.saver_mode.val == 2 && _state.waitTime != null) {
-        if (DateTime.now().difference(_state.waitTime!).inSeconds > 5) {
+        if (DateTime.now().difference(_state.waitTime!).inSeconds > 6) {
           ref.read(stateProvider).hideWaitingScreen();
         }
         ref.read(stopButtonProvider.notifier).state = takingString();
@@ -632,7 +648,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     if (_state.isRunning == true && _state.startTime != null) {
       Duration dur = DateTime.now().difference(_state.startTime!);
       if (env.autostop_sec.val > 0 && dur.inSeconds > env.autostop_sec.val) {
-        await MyLog.info("Autostop by settings");
+        await MyLog.info("Autostop");
         onStop();
         return;
       }
@@ -697,13 +713,16 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   Future<bool> isUnitStorageFree() async {
     if (kIsWeb) return true;
     try {
-      // アプリ内で上限を超えた古いものを削除
-      if (env.save_num.val < await _storage.files.length) {
-        await _storage.getInApp(false);
+      // アプリ内で上限を超えた古いものを削除（消す前に呼ばれる）
+      await _storage.getInApp(false);
+      if (env.in_save_num.val <= await _storage.files.length) {
         for (int i = 0; i < 100; i++) {
-          if ((env.save_num.val) < _storage.files.length) break;
+          if ((env.in_save_num.val) > _storage.files.length) break;
+          print(
+              '-- removeLast files=${_storage.files.length} delCount=${_deletedCount}');
           await File(_storage.files.last.path).delete();
           _storage.files.removeLast();
+          _deletedCount++;
         }
       }
 
