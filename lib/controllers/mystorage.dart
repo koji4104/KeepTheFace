@@ -2,14 +2,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'package:gallery_saver/gallery_saver.dart';
-import 'package:photo_gallery/photo_gallery.dart';
 import 'package:path/path.dart';
-import 'package:photo_manager/photo_manager.dart';
 import 'package:googleapis/drive/v3.dart' as ga;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:file_saver/file_saver.dart';
 import '/controllers/gdrive_adapter.dart';
+import 'package:document_file_save_plus/document_file_save_plus.dart';
 import '/constants.dart';
+import 'dart:typed_data'; // Uint8List
 
 class MyFile {
   String path = '';
@@ -37,6 +36,8 @@ class MyStorage {
       final files_dir = Directory('${appdir.path}/files');
       await Directory('${appdir.path}/files').create(recursive: true);
       List<FileSystemEntity> _files = files_dir.listSync(recursive: true, followLinks: false);
+
+      // sort
       _files.sort((a, b) {
         return b.path.compareTo(a.path);
       });
@@ -44,11 +45,11 @@ class MyStorage {
       for (FileSystemEntity e in _files) {
         MyFile f = new MyFile();
         f.path = e.path;
+        f.byte = e.statSync().size;
+        totalBytes += f.byte;
         if (allinfo) {
           f.date = e.statSync().modified;
           f.name = basename(f.path);
-          f.byte = e.statSync().size;
-          totalBytes += f.byte;
         }
         files.add(f);
       }
@@ -56,67 +57,6 @@ class MyStorage {
           ' msec=${DateTime.now().difference(dt1).inMilliseconds}');
     } on Exception catch (e) {
       print('-- err getInApp ex=' + e.toString());
-    }
-  }
-
-  /// photo library
-  Future getLibrary() async {
-    if (kIsWeb) return;
-    print('-- WARN getLibrary()');
-
-    /// Android (AndroidManifest.xml)
-    /// READ_EXTERNAL_STORAGE (REQUIRED)
-    /// WRITE_EXTERNAL_STORAGE
-    /// ACCESS_MEDIA_LOCATION
-    /// iOS (Info.plist)
-    /// NSPhotoLibraryUsageDescription
-    /// NSPhotoLibraryAddUsageDescription
-    try {
-      final dt1 = DateTime.now();
-      libraryFiles.clear();
-      if (Platform.isIOS) {
-        final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList();
-        print('-- ios albums.length=${albums.length}');
-        for (AssetPathEntity a in albums) {
-          if (a.name == ALBUM_NAME) {
-            for (int page = 0; page < 10; page++) {
-              // iOS
-              List<AssetEntity> paths = await a.getAssetListPaged(page: page, size: 100);
-              // Android
-              //List<AssetEntity> paths = await a.getAssetListPaged(0, 100);
-              if (paths.length < 1) break;
-              for (AssetEntity p in paths) {
-                File? f = await p.loadFile(isOrigin: true);
-                if (f != null) {
-                  MyFile d = MyFile();
-                  d.path = f.path;
-                  d.name = basename(f.path);
-                  libraryFiles.add(d);
-                }
-              }
-            }
-          }
-        }
-      } else {
-        final dt1 = DateTime.now();
-        List<Album> images = await PhotoGallery.listAlbums(mediumType: MediumType.image);
-        for (Album album in images) {
-          if (album.name == ALBUM_NAME) {
-            MediaPage page = await album.listMedia();
-            for (Medium media in page.items) {
-              File f = await media.getFile();
-              MyFile data = MyFile();
-              data.path = f.path;
-              data.name = basename(f.path);
-              libraryFiles.add(data);
-            }
-          }
-        }
-      }
-      print('-- Library files=${libraryFiles.length}'
-          ' msec=${DateTime.now().difference(dt1).inMilliseconds}');
-    } on Exception catch (e) {
-      print('-- err MyStorage.getLibrary() ex=' + e.toString());
     }
   }
 
@@ -129,7 +69,11 @@ class MyStorage {
           permission = request.isGranted;
         }
         if (permission) {
-          await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
+          if (path.contains('.mp4')) {
+            await GallerySaver.saveVideo(path, albumName: ALBUM_NAME);
+          } else if (path.contains('.jpg')) {
+            await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
+          }
         }
       } else {
         var permission = await Permission.storage.isGranted;
@@ -138,7 +82,11 @@ class MyStorage {
           permission = request.isGranted;
         }
         if (permission) {
-          var result = await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
+          if (path.contains('.mp4')) {
+            await GallerySaver.saveVideo(path, albumName: ALBUM_NAME);
+          } else if (path.contains('.jpg')) {
+            await GallerySaver.saveImage(path, albumName: ALBUM_NAME);
+          }
         }
       }
     } on Exception catch (e) {
@@ -146,47 +94,34 @@ class MyStorage {
     }
   }
 
-  saveFileSaver(String path) async {
+  /// Download folder (Android), or show save dialog (iOS)
+  Future<String> saveFolder(List<MyFile> list) async {
+    String errmsg = '';
     try {
-      if (Platform.isAndroid) {
-        ///storage/emulated/0/Android/data/com.github.koji4104.thesedays/files/2022-1005-125744.mp4
-        final b = File(path).readAsBytesSync();
-        String ext = "";
-        MimeType type = MimeType.OTHER;
-        if (path.contains('.jpg')) {
-          ext = "jpg";
-          type = MimeType.JPEG;
-        } else if (path.contains('.mp4')) {
-          ext = "mp4";
-          type = MimeType.MPEG;
-        } else if (path.contains('.m4a')) {
-          ext = "m4a";
-          type = MimeType.AAC;
+      List<Uint8List> dataList = [];
+      List<String> fileNameList = [];
+      List<String> mimeTypeList = [];
+      for (MyFile f in list) {
+        dataList.add(File(f.path).readAsBytesSync());
+        String fname = basename(f.path);
+        fileNameList.add(fname);
+        if (fname.contains('.jpg')) {
+          mimeTypeList.add('image/jpeg');
+        } else if (fname.contains('.m4a')) {
+          mimeTypeList.add('audio/mp4');
         }
-        String res = await FileSaver.instance.saveAs(basenameWithoutExtension(path), b, ext, type);
-        print('-- saveFileSaver ${res}');
-      } else {
-        // info.list
-        // Supports Documents Browser
-        final b = File(path).readAsBytesSync();
-        String ext = "";
-        MimeType type = MimeType.OTHER;
-        if (path.contains('.jpg')) {
-          ext = "jpg";
-          type = MimeType.JPEG;
-        } else if (path.contains('.mp4')) {
-          ext = "mp4";
-          type = MimeType.MPEG;
-        } else if (path.contains('.m4a')) {
-          ext = "m4a";
-          type = MimeType.AAC;
-        }
-        String res = await FileSaver.instance.saveAs(basenameWithoutExtension(path), b, ext, type);
-        print('-- saveFileSaver ${res}');
       }
+      DocumentFileSavePlus().saveMultipleFiles(
+        dataList: dataList,
+        fileNameList: fileNameList,
+        mimeTypeList: mimeTypeList,
+      );
+      print('-- saveFolder()');
     } on Exception catch (e) {
-      print('-- err saveGallery=${e.toString()}');
+      print('-- err saveFolder()=${e.toString()}');
+      errmsg = e.toString();
     }
+    return errmsg;
   }
 
   GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();

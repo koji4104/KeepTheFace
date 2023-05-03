@@ -26,14 +26,9 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin camera_android, io.flutter.plugins.camera.CameraPlugin", e);
     }
     try {
-      flutterEngine.getPlugins().add(new de.appgewaltig.disk_space.DiskSpacePlugin());
+      flutterEngine.getPlugins().add(new com.advoques.document_file_save_plus.DocumentFileSavePlusPlugin());
     } catch(Exception e) {
-      Log.e(TAG, "Error registering plugin disk_space, de.appgewaltig.disk_space.DiskSpacePlugin", e);
-    }
-    try {
-      flutterEngine.getPlugins().add(new com.one.file_saver.FileSaverPlugin());
-    } catch(Exception e) {
-      Log.e(TAG, "Error registering plugin file_saver, com.one.file_saver.FileSaverPlugin", e);
+      Log.e(TAG, "Error registering plugin document_file_save_plus, com.advoques.document_file_save_plus.DocumentFileSavePlusPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new net.jonhanson.flutter_native_splash.FlutterNativeSplashPlugin());
@@ -89,11 +84,6 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new com.baseflow.permissionhandler.PermissionHandlerPlugin());
     } catch(Exception e) {
       Log.e(TAG, "Error registering plugin permission_handler_android, com.baseflow.permissionhandler.PermissionHandlerPlugin", e);
-    }
-    try {
-      flutterEngine.getPlugins().add(new com.morbit.photogallery.PhotoGalleryPlugin());
-    } catch(Exception e) {
-      Log.e(TAG, "Error registering plugin photo_gallery, com.morbit.photogallery.PhotoGalleryPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.fluttercandies.photo_manager.PhotoManagerPlugin());

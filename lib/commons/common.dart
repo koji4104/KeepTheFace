@@ -73,7 +73,7 @@ class MyEdge {
 
     EdgeInsetsGeometry leftrightEdge = EdgeInsets.all(0.0);
     if (width > 700) {
-      leftrightEdge = EdgeInsets.only(left: width * 10.0 / 100.0, right: width * 10.0 / 100.0);
+      leftrightEdge = EdgeInsets.only(left: 20.0, right: 20.0);
     }
     this.settingsEdge = EdgeInsets.all(margin);
     this.settingsEdge = this.settingsEdge.add(leftrightEdge);

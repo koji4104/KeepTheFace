@@ -265,14 +265,10 @@ class PhotoListScreen extends BaseScreen {
                     ),
                   MyTextButton(
                     title: l10n('save_file_app'),
-                    onPressed: files_cnt > 5
-                        ? () {
-                            showSnackBar('Files ${files_cnt}');
-                          }
-                        : () {
-                            _saveFile(list, 2);
-                            Navigator.of(context).pop();
-                          },
+                    onPressed: () {
+                      _saveFile(list, 2);
+                      Navigator.of(context).pop();
+                    },
                   ),
                   if (gdriveAd.isSignedIn())
                     MyTextButton(
@@ -307,13 +303,14 @@ class PhotoListScreen extends BaseScreen {
           if (f.path.contains('.jpg') || f.path.contains('.mp4')) await _storage.saveLibrary(f.path);
           await new Future.delayed(new Duration(milliseconds: 100));
         }
+        showSnackBar('Save completed (${list.length} files)');
       } else if (mode == 2) {
         // ファイルアプリ
-        int n = 0;
-        for (MyFile f in list) {
-          await _storage.saveFileSaver(f.path);
-          await new Future.delayed(new Duration(milliseconds: 100));
-          if (n++ >= 5) break;
+        String errmsg = await _storage.saveFolder(list);
+        if (errmsg == '') {
+          showSnackBar('Save completed (${list.length} files)');
+        } else {
+          showSnackBar('error ${errmsg}');
         }
       } else if (mode == 4) {
         for (MyFile f in list) {
@@ -321,9 +318,11 @@ class PhotoListScreen extends BaseScreen {
             await gdriveAd.uploadFile(f.path);
           await new Future.delayed(new Duration(milliseconds: 100));
         }
+        showSnackBar('Save completed (${list.length} files)');
       }
     } on Exception catch (e) {
       print('-- _saveFile ${e.toString()}');
+      showSnackBar('error ${e.toString()}');
     }
   }
 
@@ -333,7 +332,7 @@ class PhotoListScreen extends BaseScreen {
     if (list.length == 0) {
       showSnackBar('Please select');
     } else {
-      Text msg = Text(l10n('delete_files'));
+      Text msg = Text(l10n('delete_files') + ' (${list.length})');
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -627,7 +626,7 @@ class PreviewScreen extends ConsumerWidget {
     _edge.getEdge(context, ref);
     double l = MediaQuery.of(context).size.width / 2 - 120;
     double b = MediaQuery.of(context).size.height / 20;
-    print('PreviewScreen l=${l.toInt()} b=${b.toInt()}');
+    print('-- PreviewScreen build l=${l.toInt()} b=${b.toInt()}');
 
     return Container(
       margin: _edge.homebarEdge,
@@ -635,8 +634,8 @@ class PreviewScreen extends ConsumerWidget {
         children: <Widget>[
           player(),
           getInfoText(),
-          leftButton(bottom: b, left: l),
           playButton(bottom: b, left: 0, right: 0),
+          leftButton(bottom: b, left: l), // above the play button
           rightButton(bottom: b, right: l),
           if (_videoPlayer != null)
             Positioned(
@@ -706,6 +705,7 @@ class PreviewScreen extends ConsumerWidget {
     }
   }
 
+  /// jump -10 sec
   Widget leftButton({double? left, double? top, double? right, double? bottom}) {
     if (data.path.contains('.jpg') || _videoPlayer == null) return Container();
     return MyIconButton(
@@ -716,12 +716,15 @@ class PreviewScreen extends ConsumerWidget {
       icon: Icon(Icons.replay_10),
       onPressed: () {
         int sec = _videoPlayer!.value.position.inSeconds - 10;
+        if (sec < 0) sec = 0;
+        print('-- leftButton ${sec} sec');
         _videoPlayer!.seekTo(Duration(seconds: sec));
         _ref!.read(previewScreenProvider).notifyListeners();
       },
     );
   }
 
+  /// jump +10 sec
   Widget rightButton({double? left, double? top, double? right, double? bottom}) {
     if (data.path.contains('.jpg') || _videoPlayer == null) return Container();
     return MyIconButton(
@@ -732,6 +735,8 @@ class PreviewScreen extends ConsumerWidget {
       icon: Icon(Icons.forward_10),
       onPressed: () async {
         int sec = _videoPlayer!.value.position.inSeconds + 10;
+        if (sec > _duration) sec = _duration;
+        print('-- rightButton ${sec} sec');
         _videoPlayer!.seekTo(Duration(seconds: sec));
         _ref!.read(previewScreenProvider).notifyListeners();
       },
@@ -769,6 +774,14 @@ class PreviewScreen extends ConsumerWidget {
     }
   }
 
+  stop() {
+    if (_videoPlayer != null && _isPlaying == true) {
+      _videoPlayer!.pause();
+      _isPlaying = false;
+      _ref!.read(previewScreenProvider).notifyListeners();
+    }
+  }
+
   Widget getText(String txt) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
@@ -786,7 +799,7 @@ class PreviewScreen extends ConsumerWidget {
 final previewListProvider = ChangeNotifierProvider((ref) => previewListNotifier(ref));
 
 class previewListNotifier extends ChangeNotifier {
-  List<ConsumerWidget> list = [];
+  List<PreviewScreen> list = [];
   previewListNotifier(ref) {}
 }
 
@@ -795,10 +808,11 @@ class previewPage extends ConsumerWidget {
   previewPage(int index) {
     controller = PageController(initialPage: index);
   }
+  int oldIndex = 0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    List<ConsumerWidget> pages = ref.watch(previewListProvider).list;
+    List<PreviewScreen> pages = ref.watch(previewListProvider).list;
     return Scaffold(
       appBar: AppBar(
         title: Text('Preview'),
@@ -815,6 +829,13 @@ class previewPage extends ConsumerWidget {
             PageView(
               controller: controller,
               children: pages,
+              onPageChanged: (int index) {
+                if (oldIndex != index) {
+                  print('-- onPageChanged stop index=${oldIndex}');
+                  pages[oldIndex].stop();
+                  oldIndex = index;
+                }
+              },
             ),
             Positioned(
               top: 0,
@@ -822,10 +843,12 @@ class previewPage extends ConsumerWidget {
               left: 30,
               child: IconButton(
                 icon: Icon(Icons.arrow_back_ios, size: 30),
-                onPressed: () => controller.previousPage(
-                  duration: Duration(milliseconds: 300),
-                  curve: Curves.easeIn,
-                ),
+                onPressed: () {
+                  controller.previousPage(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeIn,
+                  );
+                },
               ),
             ),
             Positioned(
@@ -834,10 +857,12 @@ class previewPage extends ConsumerWidget {
               right: 30,
               child: IconButton(
                 icon: Icon(Icons.arrow_forward_ios, size: 30),
-                onPressed: () => controller.nextPage(
-                  duration: Duration(milliseconds: 300),
-                  curve: Curves.easeIn,
-                ),
+                onPressed: () {
+                  controller.nextPage(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeIn,
+                  );
+                },
               ),
             ),
           ]),

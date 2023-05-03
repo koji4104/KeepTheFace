@@ -10,7 +10,6 @@ import 'package:image/image.dart' as imglib;
 import 'package:wakelock/wakelock.dart';
 import 'package:record/record.dart';
 
-import 'package:disk_space/disk_space.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:battery_plus/battery_plus.dart';
@@ -130,8 +129,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         if (enabledSystemUIMode == false) {
           print('-- setEnabledSystemUIMode');
           enabledSystemUIMode = true;
-          SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-              overlays: []);
+          SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
           Wakelock.enable();
         }
       } else {
@@ -165,8 +163,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
             // STOP
             if (_state.isSaver == true)
-              if (env.saver_mode.val == 1 ||
-                  (env.saver_mode.val == 2 && _state.waitTime != null))
+              if (env.saver_mode.val == 1 || (env.saver_mode.val == 2 && _state.waitTime != null))
                 stopButton(
                   onPressed: () {
                     ref.read(stateProvider).hideWaitingScreen();
@@ -174,9 +171,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
                   },
                 ),
 
-            if ((_state.isSaver == false && env.saver_mode.val != 0) &&
-                env.take_mode.val != 2)
-              _cameraWidget(context),
+            if ((_state.isSaver == false && env.saver_mode.val != 0) && env.take_mode.val != 2) _cameraWidget(context),
 
             // START
             if (_state.isSaver == false)
@@ -212,8 +207,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
 
             // Zoom button
-            if (_state.isSaver == false && env.take_mode.val != 2)
-              optionButton(context),
+            if (_state.isSaver == false && env.take_mode.val != 2) optionButton(context),
 
             // Settings button
             if (_state.isSaver == false)
@@ -267,9 +261,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(30),
             ),
             child: Center(
-                child: Text(s,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.white))),
+                child: Text(s, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.white))),
           ),
         ),
         MyIconButton(
@@ -293,9 +285,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       print('-- zoom=${zoom10}');
       if (zoom10 > 40) zoom10 = 40;
       if (zoom10 < 10) zoom10 = 10;
-      ref
-          .read(environmentProvider)
-          .saveDataNoRound(env.camera_zoom, (zoom10).toInt());
+      ref.read(environmentProvider).saveDataNoRound(env.camera_zoom, (zoom10).toInt());
       this._zoom10 = zoom10;
       return;
     }
@@ -316,12 +306,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
     if (disableCamera && IS_SAMPLE == false) {
-      return Positioned(
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(color: Color(0xFF445566)));
+      return Positioned(left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF445566)));
     }
 
     if (IS_SAMPLE) {
@@ -352,9 +337,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     double sh = _screenSize.height;
     double dw = sw > sh ? sw : sh;
     double dh = sw > sh ? sh : sw;
-    double _aspect = sw > sh
-        ? _controller!.value.aspectRatio
-        : 1 / _controller!.value.aspectRatio;
+    double _aspect = sw > sh ? _controller!.value.aspectRatio : 1 / _controller!.value.aspectRatio;
 
     // 16:10 (Up-down black) or 17:9 (Left-right black)
     // e.g. double _scale = dw/dh < 16.0/9.0 ? dh/dw * 16.0/9.0 : dw/dh * 9.0/16.0;
@@ -407,7 +390,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     if (disableCamera || _cameras.length < 2) return;
 
     int pos = env.camera_pos.val == 0 ? 1 : 0;
-    env.camera_pos.set(pos);
+    env.camera_pos.setVal(pos);
     env.save(env.camera_pos);
 
     await _controller!.dispose();
@@ -438,8 +421,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       return false;
     }
 
-    if (isUnitStorageFree() == false) {
-      print('-- err isUnitStorageFree');
+    if (await deleteOldFiles() == false) {
+      print('-- err deleteOldFiles');
       return false;
     }
 
@@ -447,7 +430,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     _batteryLevelStart = await _battery.batteryLevel;
     _bLogExstrageFull = true;
 
-    // 先にセーバー起動
+    // 先にセーバーを起動
     ref.read(stateProvider).start();
 
     if (env.isPremium()) {
@@ -455,8 +438,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     }
     _takeCount = 0;
     _deletedCount = 0;
-    if (env.take_mode.val == 1 || env.take_mode.val == 3) takePhoto();
-    if (env.take_mode.val == 2 || env.take_mode.val == 3) startAudio();
+    if (env.take_mode.val == 1) takePhoto();
+    if (env.take_mode.val == 2) startAudio();
     if (env.take_mode.val == 4) startVideo();
 
     await MyLog.info("Start");
@@ -484,9 +467,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
       ref.read(stateProvider).stopped();
 
-      if (env.take_mode.val == 1 || env.take_mode.val == 3) if (_controller!
-          .value.isStreamingImages) await _controller!.stopImageStream();
-      if (env.take_mode.val == 2 || env.take_mode.val == 3) await stopAudio();
+      if (env.take_mode.val == 1) if (_controller!.value.isStreamingImages) await _controller!.stopImageStream();
+      if (env.take_mode.val == 2) await stopAudio();
       if (env.take_mode.val == 4) await stopVideo();
 
       await Future.delayed(Duration(milliseconds: 100));
@@ -511,8 +493,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
           await file.writeAsBytes(imglib.encodeJpg(img));
           if (env.isPremium()) {
             if (env.ex_storage.val == 1) {
-              if ((_storage.gdriveFiles.length + _takeCount) <
-                  env.ex_save_num.val) {
+              if ((_storage.gdriveFiles.length + _takeCount) < env.ex_save_num.val) {
                 _storage.saveGdrive(path);
               } else {
                 if (_bLogExstrageFull) {
@@ -534,8 +515,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         await moveFile(src: xfile.path, dst: path);
         if (env.isPremium()) {
           if (env.ex_storage.val == 1) {
-            if ((_storage.gdriveFiles.length + _takeCount) <
-                env.ex_save_num.val) {
+            if ((_storage.gdriveFiles.length + _takeCount) < env.ex_save_num.val) {
               _storage.saveGdrive(path);
             } else {
               if (_bLogExstrageFull) {
@@ -603,11 +583,11 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   Future<File> moveFile({required String src, required String dst}) async {
     File srcfile = File(src);
     try {
-      for (var i = 1; i <= 5; i++) {
+      for (var i = 0; i < 10; i++) {
         if (await srcfile.exists()) {
           return await srcfile.rename(dst);
         } else {
-          await Future.delayed(Duration(milliseconds: 400));
+          await Future.delayed(Duration(milliseconds: 500));
         }
       }
       MyLog.warn('move file not exists src=${src}');
@@ -669,7 +649,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       if (_photoTime != null) {
         Duration dur = DateTime.now().difference(_photoTime!);
         if (dur.inSeconds > env.photo_interval_sec.val) {
-          if (await isUnitStorageFree()) {
+          if (await deleteOldFiles()) {
             takePhoto();
           } else {
             onStop();
@@ -679,7 +659,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       if (_videoTime != null) {
         Duration dur = DateTime.now().difference(_videoTime!);
         if (dur.inSeconds > env.split_interval_sec.val) {
-          if (await isUnitStorageFree()) {
+          if (await deleteOldFiles()) {
             await stopVideo();
             await startVideo();
           } else {
@@ -690,7 +670,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       if (_audioTime != null) {
         Duration dur = DateTime.now().difference(_audioTime!);
         if (dur.inSeconds > env.split_interval_sec.val) {
-          if (await isUnitStorageFree()) {
+          if (await deleteOldFiles()) {
             await stopAudio();
             await startAudio();
           } else {
@@ -709,43 +689,28 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     return '${dirPath}/${dt}${ext}';
   }
 
-  /// 本体ストレージの空き容量
-  Future<bool> isUnitStorageFree() async {
+  /// 古いファイルを消す
+  Future<bool> deleteOldFiles() async {
     if (kIsWeb) return true;
     try {
       // アプリ内で上限を超えた古いものを削除（消す前に呼ばれる）
       await _storage.getInApp(false);
-      if (env.in_save_num.val <= await _storage.files.length) {
-        for (int i = 0; i < 100; i++) {
-          if ((env.in_save_num.val) > _storage.files.length) break;
-          print(
-              '-- removeLast files=${_storage.files.length} delCount=${_deletedCount}');
-          await File(_storage.files.last.path).delete();
-          _storage.files.removeLast();
-          _deletedCount++;
-        }
-      }
 
-      // 本体の空きが5GB必要
-      int enough = 5;
-      if (kIsWeb) enough = 0;
+      for (int i = 0; i < 10000; i++) {
+        if (env.in_save_num.val > _storage.files.length && env.in_save_mb.val > _storage.totalBytes / (1024 * 1024))
+          break;
+        print('-- removeLast files=${_storage.files.length} bytes=${_storage.totalBytes} delCount=${_deletedCount}');
 
-      double? totalMb = await DiskSpace.getTotalDiskSpace;
-      double? freeMb = await DiskSpace.getFreeDiskSpace;
-      int totalGb = totalMb != null ? (totalMb / 1024.0).toInt() : 0;
-      int freeGb = freeMb != null ? (freeMb / 1024.0).toInt() : 0;
-      if (freeGb < enough) {
-        await MyLog.warn("Not enough free space ${freeGb}/${totalGb} GB");
-        return false;
+        _storage.totalBytes -= _storage.files.last.byte;
+        await File(_storage.files.last.path).delete();
+        _storage.files.removeLast();
+        _deletedCount++;
       }
     } on Exception catch (e) {
-      print('-- checkDiskFree() Exception ' + e.toString());
+      await MyLog.err('${e.toString()} deleteOldFiles()');
+      return false;
     }
     return true;
-  }
-
-  void logError(String code, String? message) {
-    print('-- Error Code: $code\n-- Error Message: $message');
   }
 
   /// キャッシュ削除
@@ -753,8 +718,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     try {
       final cacheDir = await getTemporaryDirectory();
       if (cacheDir.existsSync()) {
-        List<FileSystemEntity> files =
-            cacheDir.listSync(recursive: true, followLinks: false);
+        List<FileSystemEntity> files = cacheDir.listSync(recursive: true, followLinks: false);
         if (files.length > 0) {
           for (FileSystemEntity e in files) {
             try {
@@ -790,8 +754,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
             ),
           ),
-          child: Text('START',
-              style: TextStyle(fontSize: 16, color: Colors.white)),
+          child: Text('START', style: TextStyle(fontSize: 16, color: Colors.white)),
           onPressed: onPressed,
         ),
       ),
@@ -816,9 +779,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
             ),
           ),
-          child: Text(text,
-              style: TextStyle(fontSize: 16, color: COL_SS_TEXT),
-              textAlign: TextAlign.center),
+          child: Text(text, style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
           onPressed: onPressed,
         ),
       ),
@@ -855,8 +816,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       right: 0,
       child: TextButton(
         child: Text(''),
-        style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
+        style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
         onPressed: onPressed,
       ),
     );
