@@ -78,10 +78,12 @@ class Environment {
   EnvData autostop_sec = EnvData(
     val: 0,
     def: 0,
-    vals: IS_TEST ? [0, 120, 3600, 7200, 14400, 21600, 43200, 86400] : [0, 3600, 7200, 14400, 43200, 86400],
+    vals: IS_TEST
+        ? [0, 120, 3600, 7200, 14400, 21600, 43200, 86400]
+        : [0, 1800, 3600, 7200, 14400, 43200, 86400],
     keys: IS_TEST
         ? ['Nonstop', '2 min', '1 hour', '2 hour', '4 hour', '6 hour', '12 hour', '24 hour']
-        : ['Nonstop', '1 hour', '2 hour', '4 hour', '12 hour', '24 hour'],
+        : ['Nonstop', '30 min', '1 hour', '2 hour', '4 hour', '12 hour', '24 hour'],
     name: 'autostop_sec',
   );
 
