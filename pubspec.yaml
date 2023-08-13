@@ -1,5 +1,5 @@
-name: thesedays
-description: Flutter long-time photo shooting.
+name: keeptheface
+description: Interval shooting, voice recording.
 version: 1.0.0
 
 environment:

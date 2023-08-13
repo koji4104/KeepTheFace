@@ -45,9 +45,9 @@ class MyStorage {
       for (FileSystemEntity e in _files) {
         MyFile f = new MyFile();
         f.path = e.path;
-        f.byte = e.statSync().size;
-        totalBytes += f.byte;
         if (allinfo) {
+          f.byte = e.statSync().size;
+          totalBytes += f.byte;
           f.date = e.statSync().modified;
           f.name = basename(f.path);
         }

@@ -5,7 +5,7 @@ import 'package:path/path.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:thesedays/constants.dart';
+import '/constants.dart';
 import '/controllers/provider.dart';
 import '/controllers/photolist_controller.dart';
 import '/commons/common.dart';

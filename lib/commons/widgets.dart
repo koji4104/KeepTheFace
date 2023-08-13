@@ -76,7 +76,7 @@ Widget MyText(String text, {double? size}) {
     ts = TextStyle(color: btnNg, fontSize: fsize);
   else
     ts = TextStyle(color: btnNl, fontSize: fsize);
-  return Text(text, style: ts);
+  return Text(text, style: ts, overflow: TextOverflow.ellipsis);
 }
 
 Widget MyIconButton(
@@ -144,7 +144,8 @@ Widget MyTextButton(
 /// - title2
 /// - onPressed
 /// - multiline: null or true
-/// - radio: null or true or false
+/// - radio: null or true
+/// - textonly: null or true
 Widget MyListTile(
     {required Widget title, Widget? title2, Function()? onPressed, bool? multiline, bool? radio, bool? textonly}) {
   Widget e = Expanded(child: SizedBox(width: 8));

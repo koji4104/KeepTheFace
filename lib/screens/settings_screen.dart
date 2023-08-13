@@ -71,8 +71,7 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.take_mode),
         MyValue(data: env.camera_height),
         MyValue(data: env.photo_interval_sec),
-        MyValue(data: env.split_interval_sec),
-        MyValue(data: env.in_save_mb),
+        //MyValue(data: env.split_interval_sec),
         MyValue(data: env.in_save_num),
         MyValue(data: env.saver_mode),
         MyValue(data: env.autostop_sec),
@@ -115,7 +114,7 @@ class SettingsScreen extends BaseSettingsScreen {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (context) {
                 return LicensePage(
-                  applicationName: 'TheseDays',
+                  applicationName: 'Keep the face',
                   applicationVersion: info.version,
                   applicationIcon: Container(
                     padding: EdgeInsets.all(8),
@@ -244,7 +243,7 @@ class GoogleDriveScreen extends BaseSettingsScreen {
               ref.watch(gdriveProvider).logout();
             },
           ),
-        if (gdriveAd!.loginerr != '') MyListTile(title: MyText(gdriveAd!.loginerr), title2: Text('')),
+        if (gdriveAd!.loginerr != '') MyListTile(title: MyText(gdriveAd!.loginerr), title2: Text(''), textonly: true),
       ]);
     }
   }

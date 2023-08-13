@@ -42,21 +42,21 @@ class Environment {
   EnvData take_mode = EnvData(
     val: 1,
     def: 1,
-    vals: [1, 2, 4],
-    keys: ['photo', 'audio', 'video'],
+    vals: [1, 2],
+    keys: ['mode_photo', 'mode_audio'],
     name: 'take_mode',
   );
 
   /// Photo interval
   EnvData photo_interval_sec = EnvData(
-    val: 60,
-    def: 60,
-    vals: IS_TEST ? [10, 300, 600] : [60, 300, 600],
-    keys: IS_TEST ? ['10 sec', '5 min', '10 min'] : ['1 min', '5 min', '10 min'],
+    val: 300,
+    def: 300,
+    vals: IS_TEST ? [10, 300, 600] : [300, 600],
+    keys: IS_TEST ? ['10 sec', '5 min', '10 min'] : ['5 min', '10 min'],
     name: 'photo_interval_sec',
   );
 
-  /// Split (video, audio)
+  /// Split (audio)
   EnvData split_interval_sec = EnvData(
     val: 600,
     def: 600,
@@ -78,32 +78,21 @@ class Environment {
   EnvData autostop_sec = EnvData(
     val: 0,
     def: 0,
-    vals: IS_TEST
-        ? [0, 120, 3600, 7200, 14400, 21600, 43200, 86400]
-        : [0, 1800, 3600, 7200, 14400, 43200, 86400],
+    vals: IS_TEST ? [0, 120, 3600, 7200, 14400, 21600, 43200, 86400] : [0, 1800, 3600, 7200, 14400, 43200, 86400],
     keys: IS_TEST
         ? ['Nonstop', '2 min', '1 hour', '2 hour', '4 hour', '6 hour', '12 hour', '24 hour']
         : ['Nonstop', '30 min', '1 hour', '2 hour', '4 hour', '12 hour', '24 hour'],
     name: 'autostop_sec',
   );
 
-  /// MB of Save in-app
-  /// Photo 1MB Audio 5MB Video 50-500-1400MB
-  EnvData in_save_mb = EnvData(
-    val: 10000,
-    def: 10000,
-    vals: IS_TEST ? [20, 500, 10000] : [1000, 10000, 50000, 100000],
-    keys: IS_TEST ? ['20 mb', '500 mb', '10 gb'] : ['1 gb', '10 gb', '50 gb', '100 gb'],
-    name: 'in_save_mb',
-  );
-
   /// Num of Save in-app
-  /// Photo 1MB 24H=1440pcs 24H=144pcs
+  /// Photo / 5min 24H=288pcs
+  /// Audio /10min 24H=144pcs
   EnvData in_save_num = EnvData(
     val: 1000,
     def: 1000,
-    vals: IS_TEST ? [20, 500, 1000] : [100, 1000, 5000, 10000],
-    keys: IS_TEST ? ['20', '500', '1000'] : ['100', '1000', '5000', '10000'],
+    vals: IS_TEST ? [20, 500, 1000] : [100, 500, 1000],
+    keys: IS_TEST ? ['20', '500', '1000'] : ['100', '500', '1000'],
     name: 'in_save_num',
   );
 
@@ -232,7 +221,6 @@ class environmentNotifier extends ChangeNotifier {
       _loadSub(prefs, env.photo_interval_sec);
       _loadSub(prefs, env.split_interval_sec);
       _loadSub(prefs, env.in_save_num);
-      _loadSub(prefs, env.in_save_mb);
       _loadSub(prefs, env.saver_mode);
       _loadSub(prefs, env.autostop_sec);
       _loadSub(prefs, env.camera_height);
@@ -294,9 +282,6 @@ class environmentNotifier extends ChangeNotifier {
         break;
       case 'in_save_num':
         ret = env.in_save_num;
-        break;
-      case 'in_save_mb':
-        ret = env.in_save_mb;
         break;
       case 'saver_mode':
         ret = env.saver_mode;

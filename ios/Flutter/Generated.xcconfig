@@ -1,6 +1,6 @@
 // This is a generated file; do not edit or check into version control.
 FLUTTER_ROOT=/users/koji4104/a/pg/flutter/3.7.12
-FLUTTER_APPLICATION_PATH=/Users/koji4104/A/pg/app/TheseDays
+FLUTTER_APPLICATION_PATH=/Users/koji4104/A/pg/app/KeepTheFace
 COCOAPODS_PARALLEL_CODE_SIGN=true
 FLUTTER_TARGET=lib/main.dart
 FLUTTER_BUILD_DIR=build
@@ -11,4 +11,4 @@ EXCLUDED_ARCHS[sdk=iphoneos*]=armv7
 DART_OBFUSCATION=false
 TRACK_WIDGET_CREATION=false
 TREE_SHAKE_ICONS=true
-PACKAGE_CONFIG=/Users/koji4104/A/pg/app/TheseDays/.dart_tool/package_config.json
+PACKAGE_CONFIG=/Users/koji4104/A/pg/app/KeepTheFace/.dart_tool/package_config.json

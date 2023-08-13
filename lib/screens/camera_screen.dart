@@ -695,13 +695,9 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     try {
       // アプリ内で上限を超えた古いものを削除（消す前に呼ばれる）
       await _storage.getInApp(false);
-
-      for (int i = 0; i < 10000; i++) {
-        if (env.in_save_num.val > _storage.files.length && env.in_save_mb.val > _storage.totalBytes / (1024 * 1024))
-          break;
-        print('-- removeLast files=${_storage.files.length} bytes=${_storage.totalBytes} delCount=${_deletedCount}');
-
-        _storage.totalBytes -= _storage.files.last.byte;
+      for (int i = 0; i < 1000; i++) {
+        if (env.in_save_num.val > _storage.files.length) break;
+        print('-- removeLast files=${_storage.files.length} delCount=${_deletedCount}');
         await File(_storage.files.last.path).delete();
         _storage.files.removeLast();
         _deletedCount++;
