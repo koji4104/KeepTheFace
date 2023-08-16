@@ -24,7 +24,7 @@ class MyApp extends ConsumerWidget {
     //SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: []);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'title',
+      title: 'Keep the face',
       theme: myDarkTheme,
       home: CameraScreen(),
       localizationsDelegates: [

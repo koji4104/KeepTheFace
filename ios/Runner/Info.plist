@@ -29,7 +29,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.651160131271-g6hd591pfl2hob2qadkhfjqqfr8ha86p</string>
+				<string>com.googleusercontent.apps.1028607422233-t38r15sons9et2n9e9pmnnti629tehei</string>
 			</array>
 		</dict>
 	</array>
@@ -45,6 +45,8 @@
 	<string>Use Keep the face</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Use Keep the face</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -68,7 +70,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
 </dict>
 </plist>

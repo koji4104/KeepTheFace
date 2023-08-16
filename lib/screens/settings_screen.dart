@@ -69,8 +69,8 @@ class SettingsScreen extends BaseSettingsScreen {
     return Column(
       children: [
         MyValue(data: env.take_mode),
-        MyValue(data: env.camera_height),
         MyValue(data: env.photo_interval_sec),
+        MyValue(data: env.camera_height),
         //MyValue(data: env.split_interval_sec),
         MyValue(data: env.in_save_num),
         MyValue(data: env.saver_mode),
@@ -243,7 +243,8 @@ class GoogleDriveScreen extends BaseSettingsScreen {
               ref.watch(gdriveProvider).logout();
             },
           ),
-        if (gdriveAd!.loginerr != '') MyListTile(title: MyText(gdriveAd!.loginerr), title2: Text(''), textonly: true),
+        if (gdriveAd!.loginerr != '')
+          MyListTile(title: MyText(gdriveAd!.loginerr), title2: Text(''), textonly: true),
       ]);
     }
   }

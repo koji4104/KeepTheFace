@@ -113,7 +113,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       if (state == AppLifecycleState.inactive ||
           state == AppLifecycleState.paused ||
           state == AppLifecycleState.detached) {
-        MyLog.warn("App stopped or background");
+        MyLog.warn("App is inactive.");
         onStop();
       }
     }
@@ -171,7 +171,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
                   },
                 ),
 
-            if ((_state.isSaver == false && env.saver_mode.val != 0) && env.take_mode.val != 2) _cameraWidget(context),
+            if ((_state.isSaver == false && env.saver_mode.val != 0) && env.take_mode.val != 2)
+              _cameraWidget(context),
 
             // START
             if (_state.isSaver == false)
@@ -261,7 +262,9 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(30),
             ),
             child: Center(
-                child: Text(s, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.white))),
+                child: Text(s,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.white))),
           ),
         ),
         MyIconButton(
@@ -306,7 +309,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
     if (disableCamera && IS_SAMPLE == false) {
-      return Positioned(left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF445566)));
+      return Positioned(
+          left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF445566)));
     }
 
     if (IS_SAMPLE) {
@@ -466,8 +470,10 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       }
 
       ref.read(stateProvider).stopped();
+      ref.read(stopButtonProvider.notifier).state = '';
 
-      if (env.take_mode.val == 1) if (_controller!.value.isStreamingImages) await _controller!.stopImageStream();
+      if (env.take_mode.val == 1) if (_controller!.value.isStreamingImages)
+        await _controller!.stopImageStream();
       if (env.take_mode.val == 2) await stopAudio();
       if (env.take_mode.val == 4) await stopVideo();
 
@@ -759,11 +765,17 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   Widget stopButton({required void Function()? onPressed}) {
     String text = ref.watch(stopButtonProvider);
-    double d = ((DateTime.now().second / 10) % 2).toInt() * 4.0;
+
+    EdgeInsetsGeometry ed = EdgeInsets.only(left: 0.0);
+    int sd = ((DateTime.now().second / 10) % 3).toInt();
+    if (sd == 0) ed = EdgeInsets.only(right: 4.0);
+    if (sd == 2) ed = EdgeInsets.only(left: 4.0);
+
     return Center(
       child: Container(
-        width: 160 + d,
-        height: 160 + d,
+        margin: ed,
+        width: 160,
+        height: 160,
         child: TextButton(
           style: TextButton.styleFrom(
             backgroundColor: Colors.black26,
@@ -775,7 +787,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
             ),
           ),
-          child: Text(text, style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
+          child: Text(text,
+              style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
           onPressed: onPressed,
         ),
       ),
@@ -787,10 +800,10 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     if (_timer == null) {
       s = '2';
     } else if (_state.isRunning == false) {
-      s = 'STOPPED\n--:--';
+      s = 'STOPPED';
     } else if (_state.startTime != null && _state.isRunning) {
       Duration dur = DateTime.now().difference(_state.startTime!);
-      s = 'STOP\n' + dur2str(dur);
+      s = dur2str(dur);
     }
     return s;
   }

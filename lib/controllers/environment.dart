@@ -51,8 +51,8 @@ class Environment {
   EnvData photo_interval_sec = EnvData(
     val: 300,
     def: 300,
-    vals: IS_TEST ? [10, 300, 600] : [300, 600],
-    keys: IS_TEST ? ['10 sec', '5 min', '10 min'] : ['5 min', '10 min'],
+    vals: IS_TEST ? [10, 300, 600] : [60, 300, 600],
+    keys: IS_TEST ? ['10 sec', '5 min', '10 min'] : ['1 min', '5 min', '10 min'],
     name: 'photo_interval_sec',
   );
 
@@ -78,7 +78,9 @@ class Environment {
   EnvData autostop_sec = EnvData(
     val: 0,
     def: 0,
-    vals: IS_TEST ? [0, 120, 3600, 7200, 14400, 21600, 43200, 86400] : [0, 1800, 3600, 7200, 14400, 43200, 86400],
+    vals: IS_TEST
+        ? [0, 120, 3600, 7200, 14400, 21600, 43200, 86400]
+        : [0, 1800, 3600, 7200, 14400, 43200, 86400],
     keys: IS_TEST
         ? ['Nonstop', '2 min', '1 hour', '2 hour', '4 hour', '6 hour', '12 hour', '24 hour']
         : ['Nonstop', '30 min', '1 hour', '2 hour', '4 hour', '12 hour', '24 hour'],
