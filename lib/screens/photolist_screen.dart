@@ -313,9 +313,9 @@ class PhotoListScreen extends BaseScreen {
           showSnackBar('error ${errmsg}');
         }
       } else if (mode == 4) {
+        // Google Drive
         for (MyFile f in list) {
-          if (f.path.contains('.jpg') || f.path.contains('.mp4') || f.path.contains('.m4a'))
-            await gdriveAd.uploadFile(f.path);
+          await gdriveAd.uploadFile(f.path);
           await new Future.delayed(new Duration(milliseconds: 100));
         }
         showSnackBar('Save completed (${list.length} files)');

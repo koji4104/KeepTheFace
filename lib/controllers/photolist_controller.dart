@@ -27,7 +27,7 @@ class selectedListNotifier extends ChangeNotifier {
     if (list.contains(f)) {
       list.remove(f);
     } else {
-      list.add(f);
+      if (list.length < 20) list.add(f);
     }
     this.notifyListeners();
   }
