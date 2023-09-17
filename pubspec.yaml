@@ -12,22 +12,20 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.4
-  camera: ^0.9.4+21
-  path_provider: ^2.0.8
+  camera: ^0.9.8+1
+  path_provider: ^2.1.1
   gallery_saver: ^2.3.2
 
-  # ios 0.17.0 droid 0.18.1
-  intl: ^0.17.0
-
-  permission_handler: ^9.0.2
-  photo_manager: ^2.0.9
-  shared_preferences: ^2.0.13
-  battery_plus: ^2.1.0
+  intl: ^0.18.1
+  permission_handler: ^11.0.0
+  photo_manager: ^2.7.1
+  shared_preferences: ^2.2.1
+  battery_plus: ^4.0.2
 
   document_file_save_plus: ^2.0.0
   record: ^4.4.1
   video_thumbnail: ^0.5.0
-  video_player: ^2.4.7
+  video_player: ^2.6.1
   flutter_video_info: ^1.2.0
   package_info_plus: ^3.0.2
 
@@ -38,11 +36,11 @@ dependencies:
   wakelock: ^0.6.1+2
 
   googleapis: ^8.1.0
-  google_sign_in: ^5.3.0
-  google_sign_in_web: ^0.10.2
+  google_sign_in: ^6.1.5
+  google_sign_in_web: ^0.12.0+2
   extension_google_sign_in_as_googleapis_auth: ^2.0.4
   flutter_secure_storage: ^5.0.2
-  in_app_purchase: ^3.0.6
+  in_app_purchase: ^3.1.6
   flutter_advanced_segment: ^3.0.1
 
 dev_dependencies:
