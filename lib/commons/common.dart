@@ -46,10 +46,10 @@ class MyEdge {
   /// Edge
   /// Called in build() of each screen
   void getEdge(BuildContext context, WidgetRef ref) async {
-    if (width == MediaQuery.of(context).size.width) return;
-    width = MediaQuery.of(context).size.width;
-    height = MediaQuery.of(context).size.height;
-    print('-- getEdge() width=${width.toInt()}');
+    if (this.width == MediaQuery.of(context).size.width) return;
+    this.width = MediaQuery.of(context).size.width;
+    this.height = MediaQuery.of(context).size.height;
+    print('-- getEdge() width=${this.width.toInt()} height=${this.height.toInt()}');
 
     if (!kIsWeb && Platform.isAndroid) {
       print('-- isAndroid');
@@ -72,12 +72,12 @@ class MyEdge {
     }
 
     EdgeInsetsGeometry leftrightEdge = EdgeInsets.all(0.0);
-    if (width > 700) {
+    if (this.width > 800) {
       leftrightEdge = EdgeInsets.only(left: 20.0, right: 20.0);
     }
     this.settingsEdge = EdgeInsets.all(margin);
     this.settingsEdge = this.settingsEdge.add(leftrightEdge);
     this.settingsEdge = this.settingsEdge.add(homebarEdge);
-    if (_provider != null) ref.read(_provider!).notifyListeners();
+    if (_provider != null && ref.read(_provider!) != null) ref.read(_provider!).notifyListeners();
   }
 }

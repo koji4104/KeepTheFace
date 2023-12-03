@@ -141,7 +141,6 @@ class RadioListScreen extends BaseSettingsScreen {
 
   Widget MyRadioListTile(
       {required String title, required int value, required int groupValue, required void Function()? onChanged}) {
-    //TextStyle ts = TextStyle(fontSize: 16, color: groupValue == value ? selectedTextColor : textColor);
     TextStyle ts = TextStyle(fontSize: 16);
     return Container(
       child: MyListTile(
@@ -154,6 +153,6 @@ class RadioListScreen extends BaseSettingsScreen {
 
   void _onRadioSelected(value) {
     selVal = value;
-    ref.read(environmentProvider).saveData(data, selVal);
+    ref.read(environmentProvider).saveData(data.name, selVal);
   }
 }

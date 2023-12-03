@@ -14,24 +14,24 @@ class MyFile {
   String path = '';
   String name = '';
   DateTime date = DateTime(2000, 1, 1);
-  int byte = 0;
+  int byte = -1;
   String thumb = '';
   bool isLibrary = false;
 }
 
 class MyStorage {
-  List<MyFile> files = [];
-  int totalBytes = 0;
-  List<MyFile> libraryFiles = [];
+  GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
+  List<MyFile> inappFiles = [];
   List<MyFile> gdriveFiles = [];
+  int inappTotalMb = -1;
+  int gdriveTotalMb = -1;
 
   /// In-app data
   Future getInApp(bool allinfo) async {
     if (kIsWeb) return;
     try {
       final dt1 = DateTime.now();
-      files.clear();
-      totalBytes = 0;
+      inappFiles.clear();
       final Directory appdir = await getApplicationDocumentsDirectory();
       final files_dir = Directory('${appdir.path}/files');
       await Directory('${appdir.path}/files').create(recursive: true);
@@ -42,25 +42,28 @@ class MyStorage {
         return b.path.compareTo(a.path);
       });
 
+      int totalBytes = 0;
       for (FileSystemEntity e in _files) {
         MyFile f = new MyFile();
         f.path = e.path;
+        f.byte = e.statSync().size;
+        totalBytes += f.byte;
         if (allinfo) {
-          f.byte = e.statSync().size;
-          totalBytes += f.byte;
           f.date = e.statSync().modified;
           f.name = basename(f.path);
         }
-        files.add(f);
+        inappFiles.add(f);
       }
-      print('-- inapp files=${files.length}'
+      inappTotalMb = (totalBytes / 1024 / 1024).toInt();
+      print('-- inapp files=${inappFiles.length}'
           ' msec=${DateTime.now().difference(dt1).inMilliseconds}');
     } on Exception catch (e) {
       print('-- err getInApp ex=' + e.toString());
+      inappTotalMb = -1;
     }
   }
 
-  saveLibrary(String path) async {
+  Future saveLibrary(String path) async {
     try {
       if (Platform.isAndroid) {
         var permission = await Permission.storage.isGranted;
@@ -124,32 +127,43 @@ class MyStorage {
     return errmsg;
   }
 
-  GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
   Future getGdrive() async {
+    final dt1 = DateTime.now();
+
     gdriveFiles.clear();
+    gdriveTotalMb = -1;
     if (gdriveAd.isSignedIn() == false) await gdriveAd.loginSilently();
     if (gdriveAd.isSignedIn() == false) return;
 
     await gdriveAd.getFiles();
     if (gdriveAd.gfilelist != null) {
+      int totalBytes = 0;
       for (ga.File f in gdriveAd.gfilelist!.files!) {
         MyFile data = MyFile();
         data.path = f.id!;
         data.name = f.name!;
+        data.byte = f.size != null ? int.parse(f.size!) : 0;
+        totalBytes += data.byte;
         gdriveFiles.add(data);
       }
+      gdriveTotalMb = (totalBytes / 1024 / 1024).toInt();
     }
+
+    print('-- getGdrive() gdriveFiles=${gdriveFiles.length}'
+        ' msec=${DateTime.now().difference(dt1).inMilliseconds}');
   }
 
-  saveGdrive(String path) async {
+  Future<bool> saveGdrive(String path) async {
+    bool r = false;
     try {
       if (gdriveAd.isSignedIn() == true) {
-        gdriveAd.uploadFile(path);
+        r = await gdriveAd.uploadFile(path);
       } else {
         print('-- warn google not signed in');
       }
     } on Exception catch (e) {
       print('-- err saveGdrive=${e.toString()}');
     }
+    return r;
   }
 }

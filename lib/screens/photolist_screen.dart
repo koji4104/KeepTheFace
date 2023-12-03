@@ -176,10 +176,9 @@ class PhotoListScreen extends BaseScreen {
       } else {
         // In-app data
         await _storage.getInApp(true);
-        fileList = _storage.files;
+        fileList = _storage.inappFiles;
         _photocount = fileList.length;
-        _sizemb = (_storage.totalBytes / 1024 / 1024).toInt();
-        if (_storage.totalBytes > 0 && _sizemb == 0) _sizemb = 1;
+        _sizemb = _storage.inappTotalMb;
 
         // thumb
         final Directory appdir = await getApplicationDocumentsDirectory();
@@ -315,7 +314,8 @@ class PhotoListScreen extends BaseScreen {
       } else if (mode == 4) {
         // Google Drive
         for (MyFile f in list) {
-          await gdriveAd.uploadFile(f.path);
+          bool r = await gdriveAd.uploadFile(f.path);
+          if (r == false) break;
           await new Future.delayed(new Duration(milliseconds: 100));
         }
         showSnackBar('Save completed (${list.length} files)');
@@ -397,19 +397,16 @@ class MyCard extends ConsumerWidget {
   void init(BuildContext context, WidgetRef ref) async {
     if (_init == false) {
       _init = true;
-      //if(await f.exists()==true){
-      if (data.path.contains('.jpg')) {
-        if (kIsWeb) {
-          _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
-        } else if (await File(data.path).exists() == true) {
+      if (kIsWeb) {
+        _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
+      } else if (data.path.contains('.jpg')) {
+        if (await File(data.path).exists() == true) {
           _thumbWidget = Image.file(File(data.path), fit: BoxFit.cover);
         }
       } else if (data.path.contains('.m4a')) {
         _thumbWidget = Icon(Icons.volume_mute, size: 48, color: Color(0xFF666666));
       } else if (data.path.contains('.mp4')) {
-        if (kIsWeb) {
-          _thumbWidget = Image.network('/lib/assets/test.jpg', fit: BoxFit.cover);
-        } else if (await File(data.thumb).exists() == true) {
+        if (await File(data.thumb).exists() == true) {
           _thumbWidget = Image.file(File(data.thumb), fit: BoxFit.cover);
         }
       }
@@ -465,6 +462,18 @@ class MyCard extends ConsumerWidget {
               radius: 20.0,
               backgroundColor: Colors.black54,
               child: Icon(Icons.save, size: 24, color: Color(0xFFFFFFFF)),
+            ),
+          ),
+
+        // ビデオアイコン
+        if (data.path.contains('.mp4'))
+          Positioned(
+            left: 4.0,
+            bottom: 4.0,
+            child: CircleAvatar(
+              radius: 20.0,
+              backgroundColor: Colors.black54,
+              child: Icon(Icons.videocam_rounded, size: 24, color: Color(0xFFFFFFFF)),
             ),
           ),
 

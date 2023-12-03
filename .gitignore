@@ -52,3 +52,5 @@ app.*.map.json
 /ios/Pods/
 /ios/.symlinks/
 UserInterfaceState.xcuserstate
+/android/app/google-services.json
+

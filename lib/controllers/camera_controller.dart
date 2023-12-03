@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
-class StateData {
-  bool isRunning = false;
-  bool isSaver = false;
-  DateTime? startTime;
-  DateTime? waitTime;
-}
+import '/models/camera_model.dart';
 
 final stateProvider = ChangeNotifierProvider((ref) => stateNotifier(ref));
 
@@ -16,7 +10,7 @@ class stateNotifier extends ChangeNotifier {
   start() {
     print('-- stateNotifier start');
     state.isRunning = true;
-    state.isSaver = true;
+    state.isScreensaver = true;
     state.startTime = DateTime.now();
     this.notifyListeners();
   }
@@ -24,13 +18,19 @@ class stateNotifier extends ChangeNotifier {
   stop() {
     print('-- stateNotifier stop');
     state.isRunning = false;
-    state.isSaver = false;
+    state.isScreensaver = false;
     this.notifyListeners();
   }
 
-  stopped() {
+  autostop() {
     state.isRunning = false;
-    state.startTime = null;
+    state.isScreensaver = true;
+    this.notifyListeners();
+  }
+
+  pause() {
+    state.isRunning = true;
+    state.isScreensaver = true;
     this.notifyListeners();
   }
 

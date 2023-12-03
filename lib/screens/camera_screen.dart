@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-
 import 'package:path_provider/path_provider.dart';
 import 'photolist_screen.dart';
 import 'settings_screen.dart';
@@ -23,10 +22,11 @@ import '/controllers/environment.dart';
 import '/constants.dart';
 import '/commons/widgets.dart';
 import '/commons/base_screen.dart';
+import '/models/camera_model.dart';
 
 bool disableCamera = kIsWeb; // true=test
 
-const Color COL_SS_TEXT = Color(0xFF808080);
+const Color COL_SS_TEXT = Color(0xFFA0A0A0);
 
 const POS_TOP = 50.0;
 const POS_BOTTOM = 40.0;
@@ -41,15 +41,42 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   int _takeCount = 0;
   int _deletedCount = 0;
-  DateTime? _photoTime;
+
+  DateTime? _imageTime;
   DateTime? _videoTime;
   DateTime? _audioTime;
+
+  bool get isImageRecording {
+    return _imageTime != null;
+  }
+
+  bool get isVideoRecording {
+    return _videoTime != null;
+  }
+
+  bool get isAudioRecording {
+    return _audioTime != null;
+  }
+
+  int get imageSec {
+    return _imageTime != null ? DateTime.now().difference(_imageTime!).inSeconds : -1;
+  }
+
+  int get videoSec {
+    return _videoTime != null ? DateTime.now().difference(_videoTime!).inSeconds : -1;
+  }
+
+  int get audioSec {
+    return _audioTime != null ? DateTime.now().difference(_audioTime!).inSeconds : -1;
+  }
+
   bool _bLogExstrageFull = true;
+  int _nSaveGdriveErr = 0;
 
   Timer? _timer;
   ResolutionPreset _preset = ResolutionPreset.high; // 1280x720
   ImageFormatGroup _imageFormat = ImageFormatGroup.bgra8888;
-  int _zoom10 = 10;
+  int _zoom = 10;
 
   final Battery _battery = Battery();
   int _batteryLevel = -1;
@@ -80,7 +107,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   // ultraHigh 3840x2160
   ResolutionPreset getPreset() {
     ResolutionPreset p = ResolutionPreset.high;
-    int h = env.camera_height.val;
+    int h = env.take_mode.val == 1 ? env.image_camera_height.val : env.video_camera_height.val;
     if (h >= 2160)
       p = ResolutionPreset.ultraHigh;
     else if (h >= 1080)
@@ -125,7 +152,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     this._state = ref.watch(stateProvider).state;
 
     if (kIsWeb == false) {
-      if (_state.isSaver) {
+      if (_state.isScreensaver) {
         if (enabledSystemUIMode == false) {
           print('-- setEnabledSystemUIMode');
           enabledSystemUIMode = true;
@@ -141,7 +168,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       }
     }
 
-    if (_zoom10 != env.camera_zoom.val) {
+    if (_zoom != env.camera_zoom.val) {
       print('-- zoom ${env.camera_zoom.val}');
       zoomCamera(env.camera_zoom.val);
     }
@@ -154,7 +181,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         child: Stack(
           children: <Widget>[
             // Screen Saver
-            if (_state.isSaver == true)
+            if (_state.isScreensaver == true)
               blackScreen(
                 onPressed: () {
                   ref.read(stateProvider).showWaitingScreen();
@@ -162,8 +189,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
 
             // STOP
-            if (_state.isSaver == true)
-              if (env.saver_mode.val == 1 || (env.saver_mode.val == 2 && _state.waitTime != null))
+            if (_state.isScreensaver == true)
+              if (env.screensaver_mode.val == 1 || (env.screensaver_mode.val == 2 && _state.waitTime != null))
                 stopButton(
                   onPressed: () {
                     ref.read(stateProvider).hideWaitingScreen();
@@ -171,11 +198,11 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
                   },
                 ),
 
-            if ((_state.isSaver == false && env.saver_mode.val != 0) && env.take_mode.val != 2)
+            if ((_state.isScreensaver == false && env.screensaver_mode.val != 0) && env.take_mode.val != 2)
               _cameraWidget(context),
 
             // START
-            if (_state.isSaver == false)
+            if (_state.isScreensaver == false)
               recordButton(
                 onPressed: () {
                   ref.read(stateProvider).showWaitingScreen();
@@ -184,7 +211,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
 
             // Camera Switch button
-            if (_state.isSaver == false && env.take_mode.val != 2)
+            if (_state.isScreensaver == false && env.take_mode.val != 2)
               MyIconButton(
                 bottom: POS_BOTTOM,
                 right: POS_LEFTRIGHT,
@@ -193,7 +220,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
 
             // PhotoList screen button
-            if (_state.isSaver == false)
+            if (_state.isScreensaver == false)
               MyIconButton(
                 top: POS_TOP,
                 right: POS_LEFTRIGHT,
@@ -208,10 +235,10 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
 
             // Zoom button
-            if (_state.isSaver == false && env.take_mode.val != 2) optionButton(context),
+            if (_state.isScreensaver == false && env.take_mode.val != 2) optionButton(context),
 
             // Settings button
-            if (_state.isSaver == false)
+            if (_state.isScreensaver == false)
               MyIconButton(
                 top: POS_TOP,
                 left: POS_LEFTRIGHT,
@@ -221,7 +248,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
                     builder: (context) => SettingsScreen(),
                   ));
                   if (_preset != getPreset()) {
-                    print('-- change camera ${env.camera_height.val}');
+                    print('-- change camera ${env.image_camera_height.val}');
                     _preset = getPreset();
                     _initCameraSync(ref);
                   }
@@ -262,9 +289,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(30),
             ),
             child: Center(
-                child: Text(s,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.white))),
+                child: Text(s, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.white))),
           ),
         ),
         MyIconButton(
@@ -280,37 +305,34 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
-  /// ズーム
-  Future<void> zoomCamera(int zoom10) async {
-    if (this._zoom10 == zoom10) return;
+  /// Zoom
+  Future<void> zoomCamera(int zoom) async {
+    if (this._zoom == zoom) return;
 
     if (kIsWeb) {
-      print('-- zoom=${zoom10}');
-      if (zoom10 > 40) zoom10 = 40;
-      if (zoom10 < 10) zoom10 = 10;
-      ref.read(environmentProvider).saveDataNoRound(env.camera_zoom, (zoom10).toInt());
-      this._zoom10 = zoom10;
+      print('-- zoom=${zoom}');
+      if (zoom > 40) zoom = 40;
+      if (zoom < 10) zoom = 10;
+      ref.read(environmentProvider).saveData(env.camera_zoom.name, zoom);
+      this._zoom = zoom;
       return;
     }
     if (disableCamera || _controller == null) return;
-    int max_zoom = 40;
-    int min_zoom = 10;
-    if (zoom10 > max_zoom) zoom10 = max_zoom;
-    if (zoom10 < min_zoom) zoom10 = min_zoom;
+    if (zoom > 40) zoom = 40;
+    if (zoom < 10) zoom = 10;
     try {
-      _controller!.setZoomLevel(zoom10 / 10.0);
+      _controller!.setZoomLevel(zoom / 10.0);
     } catch (e) {
       await MyLog.err('${e.toString()} zoomCamera()');
     }
-    this._zoom10 = zoom10;
-    ref.read(environmentProvider).saveDataNoRound(env.camera_zoom, zoom10);
+    this._zoom = zoom;
+    ref.read(environmentProvider).saveData(env.camera_zoom.name, zoom);
   }
 
   /// カメラウィジェット
   Widget _cameraWidget(BuildContext context) {
     if (disableCamera && IS_SAMPLE == false) {
-      return Positioned(
-          left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF445566)));
+      return Positioned(left: 0, top: 0, right: 0, bottom: 0, child: Container(color: Color(0xFF445566)));
     }
 
     if (IS_SAMPLE) {
@@ -394,7 +416,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     if (disableCamera || _cameras.length < 2) return;
 
     int pos = env.camera_pos.val == 0 ? 1 : 0;
-    env.camera_pos.setVal(pos);
+    env.camera_pos.set(pos);
     env.save(env.camera_pos);
 
     await _controller!.dispose();
@@ -411,7 +433,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     } catch (e) {
       await MyLog.err('${e.toString()} onCameraSwitch()');
     }
-    _zoom10 = 10;
+    _zoom = 10;
   }
 
   /// START
@@ -430,19 +452,22 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       return false;
     }
 
-    _photoTime = null;
+    _imageTime = null;
     _batteryLevelStart = await _battery.batteryLevel;
     _bLogExstrageFull = true;
+    _nSaveGdriveErr = 0;
 
     // 先にセーバーを起動
     ref.read(stateProvider).start();
 
-    if (env.isPremium()) {
-      if (env.ex_storage.val == 1) await _storage.getGdrive();
+    if (env.ex_storage_type.val == 1) {
+      await _storage.getGdrive();
+      if (_storage.gdriveAd.isSignedIn() == false) MyLog.info("Not signed in to Google drive");
     }
+
     _takeCount = 0;
     _deletedCount = 0;
-    if (env.take_mode.val == 1) takePhoto();
+    if (env.take_mode.val == 1) takeImage();
     if (env.take_mode.val == 2) startAudio();
     if (env.take_mode.val == 4) startVideo();
 
@@ -459,6 +484,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         Duration dur = DateTime.now().difference(_state.startTime!);
         if (dur.inMinutes > 0) s += ' ${dur.inMinutes}min';
       }
+      _state.startTime = null;
+
       if (_batteryLevel > 0 && _batteryLevelStart - _batteryLevel > 0) {
         s += ' batt ${_batteryLevelStart}->${_batteryLevel}%';
       }
@@ -469,11 +496,9 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         _deletedCount = 0;
       }
 
-      ref.read(stateProvider).stopped();
       ref.read(stopButtonProvider.notifier).state = '';
 
-      if (env.take_mode.val == 1) if (_controller!.value.isStreamingImages)
-        await _controller!.stopImageStream();
+      if (env.take_mode.val == 1) if (_controller!.value.isStreamingImages) await _controller!.stopImageStream();
       if (env.take_mode.val == 2) await stopAudio();
       if (env.take_mode.val == 4) await stopVideo();
 
@@ -484,56 +509,41 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     }
   }
 
-  // 写真
-  Future<void> takePhoto() async {
-    print("-- takePhoto");
+  /// Take image
+  Future<void> takeImage() async {
+    print("-- takeImage");
     if (kIsWeb) return;
-    _photoTime = null;
+    _imageTime = null;
     DateTime dt = DateTime.now();
     try {
+      String path = "";
+      bool isImage = false;
       if (Platform.isIOS) {
         imglib.Image? img = await CameraAdapter.takeImage(_controller);
         if (img != null) {
-          String path = await getSavePath('.jpg');
+          path = await getSavePath('.jpg');
           final File file = File(path);
           await file.writeAsBytes(imglib.encodeJpg(img));
-          if (env.isPremium()) {
-            if (env.ex_storage.val == 1) {
-              if ((_storage.gdriveFiles.length + _takeCount) < env.ex_save_num.val) {
-                _storage.saveGdrive(path);
-              } else {
-                if (_bLogExstrageFull) {
-                  MyLog.warn('GoogleDrive is full');
-                  _bLogExstrageFull = false;
-                }
-              }
-            }
-          }
-          _photoTime = dt;
-          _takeCount++;
+          isImage = true;
         } else {
-          print('-- photoShooting img=null');
+          print('-- iOS takeImage img=null');
         }
       } else {
         // android
-        XFile xfile = await _controller!.takePicture();
-        String path = await getSavePath('.jpg');
-        await moveFile(src: xfile.path, dst: path);
-        if (env.isPremium()) {
-          if (env.ex_storage.val == 1) {
-            if ((_storage.gdriveFiles.length + _takeCount) < env.ex_save_num.val) {
-              _storage.saveGdrive(path);
-            } else {
-              if (_bLogExstrageFull) {
-                MyLog.warn('GoogleDrive is full');
-                _bLogExstrageFull = false;
-              }
-            }
-          }
+        try {
+          XFile xfile = await _controller!.takePicture();
+          path = await getSavePath('.jpg');
+          await moveFile(src: xfile.path, dst: path);
+          isImage = true;
+        } catch (e) {
+          await MyLog.err('${e.toString()} takePhoto()');
         }
-        _photoTime = dt;
+      }
+      if (isImage) {
+        saveGdrive(path);
         _takeCount++;
       }
+      _imageTime = dt;
     } catch (e) {
       await MyLog.err('${e.toString()} takePhoto()');
     }
@@ -558,7 +568,9 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     try {
       _videoTime = null;
       XFile xfile = await _controller!.stopVideoRecording();
-      await moveFile(src: xfile.path, dst: await getSavePath('.mp4'));
+      String path = await getSavePath('.mp4');
+      moveFile(src: xfile.path, dst: path); // not await
+      saveGdrive(path);
     } catch (e) {
       await MyLog.err('${e.toString()} stopVideo()');
     }
@@ -580,7 +592,10 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   Future<void> stopAudio() async {
     try {
       _audioTime = null;
-      final path = await _record.stop();
+      String? path = await _record.stop();
+      if (path != null) {
+        saveGdrive(path);
+      }
     } catch (e) {
       MyLog.err('${e.toString()} stopAudio()');
     }
@@ -606,6 +621,40 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     }
   }
 
+  Future saveGdrive(String path) async {
+    if (env.ex_storage_type.val == 1 && _storage.gdriveAd.isSignedIn()) {
+      File fobj = File(path);
+      bool isExists = false;
+      for (var i = 0; i < 10; i++) {
+        if (await fobj.exists()) {
+          isExists = true;
+          break;
+        }
+        await Future.delayed(Duration(milliseconds: 500));
+      }
+
+      if (isExists == false) {
+        MyLog.warn('file not exists path=${path}');
+        return;
+      }
+
+      if (_storage.gdriveTotalMb >= env.ex_save_mb.val) {
+        if (_bLogExstrageFull) {
+          MyLog.warn('GoogleDrive is full ${_storage.gdriveTotalMb}/${env.ex_save_mb.val} mb');
+          _bLogExstrageFull = false;
+        }
+      } else if (_nSaveGdriveErr < 3) {
+        bool r = await _storage.saveGdrive(path);
+        if (r == false) {
+          _nSaveGdriveErr++;
+          if (_nSaveGdriveErr == 1) {
+            MyLog.err('Upload GoogleDrive');
+          }
+        }
+      }
+    }
+  }
+
   /// Timer
   void _onTimer(Timer timer) async {
     if (this._batteryLevel < 0) {
@@ -619,11 +668,11 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     }
 
     // スクリーンセーバー中
-    if (_state.isSaver == true) {
-      if (env.saver_mode.val == 1) {
+    if (_state.isScreensaver == true) {
+      if (env.screensaver_mode.val == 1) {
         ref.read(stopButtonProvider.notifier).state = takingString();
-      } else if (env.saver_mode.val == 2 && _state.waitTime != null) {
-        if (DateTime.now().difference(_state.waitTime!).inSeconds > 6) {
+      } else if (env.screensaver_mode.val == 2 && _state.waitTime != null) {
+        if (DateTime.now().difference(_state.waitTime!).inSeconds >= 8) {
           ref.read(stateProvider).hideWaitingScreen();
         }
         ref.read(stopButtonProvider.notifier).state = takingString();
@@ -631,12 +680,22 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     }
 
     // 自動停止
-    if (_state.isRunning == true && _state.startTime != null) {
+    if (_state.isRunning == true && _state.startTime != null && env.timer_mode.val >= 1) {
       Duration dur = DateTime.now().difference(_state.startTime!);
-      if (env.autostop_sec.val > 0 && dur.inSeconds > env.autostop_sec.val) {
+      if (dur.inSeconds > env.timer_stop_sec.val) {
         await MyLog.info("Autostop");
         onStop();
+        if (env.timer_mode.val == 1)
+          ref.read(stateProvider).autostop();
+        else if (env.timer_mode.val == 2) ref.read(stateProvider).pause();
         return;
+      }
+    }
+
+    // 時間指定
+    if (_state.isRunning == true && _state.startTime == null && env.timer_mode.val == 2) {
+      if (DateTime.now().hour == env.timer_start_hour) {
+        onStart();
       }
     }
 
@@ -650,38 +709,37 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       }
     }
 
+    // GoogleDriveチェック（10分毎）
+    if (_state.isRunning == true &&
+        env.ex_storage_type.val == 1 &&
+        (DateTime.now().minute % 10) == 0 &&
+        DateTime.now().second == 0) {
+      _storage.getGdrive();
+    }
+
     // インターバル
     if (_state.isRunning == true) {
-      if (_photoTime != null) {
-        Duration dur = DateTime.now().difference(_photoTime!);
-        if (dur.inSeconds > env.photo_interval_sec.val) {
-          if (await deleteOldFiles()) {
-            takePhoto();
-          } else {
-            onStop();
-          }
+      if (_imageTime != null && imageSec > env.image_interval_sec.val) {
+        if (await deleteOldFiles()) {
+          takeImage();
+        } else {
+          onStop();
         }
       }
-      if (_videoTime != null) {
-        Duration dur = DateTime.now().difference(_videoTime!);
-        if (dur.inSeconds > env.split_interval_sec.val) {
-          if (await deleteOldFiles()) {
-            await stopVideo();
-            await startVideo();
-          } else {
-            onStop();
-          }
+      if (_videoTime != null && videoSec > env.video_interval_sec.val) {
+        if (await deleteOldFiles()) {
+          await stopVideo();
+          await startVideo();
+        } else {
+          onStop();
         }
       }
-      if (_audioTime != null) {
-        Duration dur = DateTime.now().difference(_audioTime!);
-        if (dur.inSeconds > env.split_interval_sec.val) {
-          if (await deleteOldFiles()) {
-            await stopAudio();
-            await startAudio();
-          } else {
-            onStop();
-          }
+      if (_audioTime != null && audioSec > env.audio_interval_sec.val) {
+        if (await deleteOldFiles()) {
+          await stopAudio();
+          await startAudio();
+        } else {
+          onStop();
         }
       }
     }
@@ -692,7 +750,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     final String dirPath = '${appdir.path}/files';
     await Directory(dirPath).create(recursive: true);
     String dt = DateFormat("yyyy-MMdd-HHmmss").format(DateTime.now());
-    return '${dirPath}/${dt}${ext}';
+    String pre = env.file_prefix.length > 0 ? env.file_prefix + "-" : "";
+    return '${dirPath}/${pre}${dt}${ext}';
   }
 
   /// 古いファイルを消す
@@ -701,11 +760,14 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     try {
       // アプリ内で上限を超えた古いものを削除（消す前に呼ばれる）
       await _storage.getInApp(false);
-      for (int i = 0; i < 1000; i++) {
-        if (env.in_save_num.val > _storage.files.length) break;
-        print('-- removeLast files=${_storage.files.length} delCount=${_deletedCount}');
-        await File(_storage.files.last.path).delete();
-        _storage.files.removeLast();
+      int totalMb = _storage.inappTotalMb;
+      for (int i = 0; i < 500; i++) {
+        if (env.in_save_mb.val > totalMb) break;
+        print('-- removeLast totalMb=${totalMb} delCount=${_deletedCount}');
+        int byte = _storage.inappFiles.last.byte;
+        await File(_storage.inappFiles.last.path).delete();
+        _storage.inappFiles.removeLast();
+        totalMb -= (byte / 1024 / 1024).toInt();
         _deletedCount++;
       }
     } on Exception catch (e) {
@@ -787,8 +849,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
               ),
             ),
           ),
-          child: Text(text,
-              style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
+          child: Text(text, style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
           onPressed: onPressed,
         ),
       ),
@@ -796,9 +857,9 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   String takingString() {
-    String s = '1';
+    String s = '';
     if (_timer == null) {
-      s = '2';
+      s = '--';
     } else if (_state.isRunning == false) {
       s = 'STOPPED';
     } else if (_state.startTime != null && _state.isRunning) {

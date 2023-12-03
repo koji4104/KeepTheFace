@@ -149,6 +149,7 @@ class GoogleDriveAdapter {
         q: q,
         $fields: '*',
         orderBy: 'name',
+        pageSize: 2000,
       );
       print('gfilelist.length=${gfilelist!.files!.length}');
     } on Exception catch (e) {
@@ -156,30 +157,55 @@ class GoogleDriveAdapter {
     }
   }
 
-  Future<void> uploadFile(String path) async {
+  int getFileCount() {
+    int r = 0;
+    if (gfilelist != null && gfilelist!.files != null) r = gfilelist!.files!.length;
+    return r;
+  }
+
+  int getFileMb() {
+    int r = 0;
+    if (gfilelist != null && gfilelist!.files != null) {
+      int totalBytes = 0;
+      for (ga.File f in gfilelist!.files!) {
+        totalBytes += f.size != null ? int.parse(f.size!) : 0;
+      }
+      r = (totalBytes / 1024 / 1024).toInt();
+    }
+    return r;
+  }
+
+  Future<bool> uploadFile(String path) async {
     print('-- GoogleDriveAdapter.uploadFile()');
     if (isSignedIn() == false) {
       print('-- not SignedIn');
-      return;
+      return false;
     }
     if (folderId == null) {
       await getFolderId();
       if (folderId == null) {
         print('-- not folderId');
-        return;
+        return false;
       }
     }
-    var client = GoogleHttpClient(await gsa!.authHeaders);
-    var drive = ga.DriveApi(client);
 
-    var request = new ga.File();
-    File file = File(path);
-    request.name = basename(path);
-    request.parents = [];
-    request.parents!.add(folderId!);
+    try {
+      var client = GoogleHttpClient(await gsa!.authHeaders);
+      var drive = ga.DriveApi(client);
 
-    var res = await drive.files.create(request, uploadMedia: ga.Media(file.openRead(), file.lengthSync()));
-    print(res);
+      var request = new ga.File();
+      File file = File(path);
+      request.name = basename(path);
+      request.parents = [];
+      request.parents!.add(folderId!);
+
+      var retfile = await drive.files.create(request, uploadMedia: ga.Media(file.openRead(), file.lengthSync()));
+      print('-- uploadFile() id=${retfile.id}');
+      return true;
+    } catch (e) {
+      print('-- err uploadFile() ${e}');
+      return false;
+    }
   }
 
   /// fileId = gfilelist!.files![n].id
