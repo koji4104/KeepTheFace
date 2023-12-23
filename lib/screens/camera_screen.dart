@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:image/image.dart' as imglib;
 import 'package:wakelock/wakelock.dart';
 import 'package:record/record.dart';
+import 'package:path/path.dart';
 
 import 'package:intl/intl.dart';
 import 'dart:async';
@@ -26,7 +27,9 @@ import '/models/camera_model.dart';
 
 bool disableCamera = kIsWeb; // true=test
 
-const Color COL_SS_TEXT = Color(0xFFA0A0A0);
+const Color COL_TEXT = Color(0xFFA0A0A0);
+const Color COL_STOP = Color(0xFFA0A0A0);
+const Color COL_REC = Color(0xFFA00000);
 
 const POS_TOP = 50.0;
 const POS_BOTTOM = 40.0;
@@ -81,7 +84,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   final Battery _battery = Battery();
   int _batteryLevel = -1;
   int _batteryLevelStart = -1;
-  MyStorage _storage = new MyStorage();
+  late MyStorageNotifier mystorage;
 
   bool enabledSystemUIMode = false;
 
@@ -150,6 +153,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
     this._state = ref.watch(stateProvider).state;
+    this.mystorage = ref.watch(myStorageProvider);
 
     if (kIsWeb == false) {
       if (_state.isScreensaver) {
@@ -460,9 +464,10 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     // 先にセーバーを起動
     ref.read(stateProvider).start();
 
+    print('-- env.ex_storage_type.val = ${env.ex_storage_type.val}');
     if (env.ex_storage_type.val == 1) {
-      await _storage.getGdrive();
-      if (_storage.gdriveAd.isSignedIn() == false) MyLog.info("Not signed in to Google drive");
+      await mystorage.getGdrive();
+      if (mystorage.gdriveAd.isSignedIn() == false) MyLog.info("Not signed in to Google drive");
     }
 
     _takeCount = 0;
@@ -511,7 +516,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// Take image
   Future<void> takeImage() async {
-    print("-- takeImage");
+    print("-- takeImage()");
     if (kIsWeb) return;
     _imageTime = null;
     DateTime dt = DateTime.now();
@@ -540,8 +545,11 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         }
       }
       if (isImage) {
-        saveGdrive(path);
         _takeCount++;
+        print("-- takeImage() _takeCount=${_takeCount}");
+        saveGdrive(path);
+      } else {
+        print("-- err takeImage() isImage=false");
       }
       _imageTime = dt;
     } catch (e) {
@@ -570,6 +578,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       XFile xfile = await _controller!.stopVideoRecording();
       String path = await getSavePath('.mp4');
       moveFile(src: xfile.path, dst: path); // not await
+      _takeCount++;
       saveGdrive(path);
     } catch (e) {
       await MyLog.err('${e.toString()} stopVideo()');
@@ -594,6 +603,7 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       _audioTime = null;
       String? path = await _record.stop();
       if (path != null) {
+        _takeCount++;
         saveGdrive(path);
       }
     } catch (e) {
@@ -622,7 +632,8 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Future saveGdrive(String path) async {
-    if (env.ex_storage_type.val == 1 && _storage.gdriveAd.isSignedIn()) {
+    if (env.ex_storage_type.val == 1 && mystorage.gdriveAd.isSignedIn()) {
+      print("-- saveGdrive()");
       File fobj = File(path);
       bool isExists = false;
       for (var i = 0; i < 10; i++) {
@@ -638,18 +649,37 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
         return;
       }
 
-      if (_storage.gdriveTotalMb >= env.ex_save_mb.val) {
+      String name = "ktf-";
+      String ext = ".jpg";
+      int rem = 2;
+      if (path.contains('.mp4')) {
+        rem = 2;
+        ext = ".mp4";
+      } else if (path.contains('.jpg')) {
+        rem = 10;
+        ext = ".jpg";
+      } else if (path.contains('.m4a')) {
+        rem = 10;
+        ext = ".m4a";
+      }
+      int num = ((_takeCount - 1) % rem) + 1;
+      name += "${num.toString().padLeft(2, '0')}";
+      name += ext;
+
+      if (mystorage.gdriveAd.getTempFileMb() >= env.ex_save_mb.val) {
         if (_bLogExstrageFull) {
-          MyLog.warn('GoogleDrive is full ${_storage.gdriveTotalMb}/${env.ex_save_mb.val} mb');
+          MyLog.warn('GoogleDrive is full ${mystorage.gdriveAd.getTempFileMb()}/${env.ex_save_mb.val} mb');
           _bLogExstrageFull = false;
         }
       } else if (_nSaveGdriveErr < 3) {
-        bool r = await _storage.saveGdrive(path);
+        bool r = await mystorage.uploadTempFile(path, basename(path), env.ex_save_mb.val);
         if (r == false) {
           _nSaveGdriveErr++;
           if (_nSaveGdriveErr == 1) {
             MyLog.err('Upload GoogleDrive');
           }
+        } else {
+          print("-- saveGdrive() OK");
         }
       }
     }
@@ -709,13 +739,14 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
       }
     }
 
+    /*
     // GoogleDriveチェック（10分毎）
     if (_state.isRunning == true &&
         env.ex_storage_type.val == 1 &&
         (DateTime.now().minute % 10) == 0 &&
         DateTime.now().second == 0) {
       _storage.getGdrive();
-    }
+    }*/
 
     // インターバル
     if (_state.isRunning == true) {
@@ -745,12 +776,14 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     }
   } // _onTimer
 
+  // kf-2023-1201-181000.mp4
+  // A2023-1201-181000.mp4
   Future<String> getSavePath(String ext) async {
     final Directory appdir = await getApplicationDocumentsDirectory();
     final String dirPath = '${appdir.path}/files';
     await Directory(dirPath).create(recursive: true);
     String dt = DateFormat("yyyy-MMdd-HHmmss").format(DateTime.now());
-    String pre = env.file_prefix.length > 0 ? env.file_prefix + "-" : "";
+    String pre = env.file_prefix.length > 0 ? env.file_prefix : "";
     return '${dirPath}/${pre}${dt}${ext}';
   }
 
@@ -759,14 +792,14 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
     if (kIsWeb) return true;
     try {
       // アプリ内で上限を超えた古いものを削除（消す前に呼ばれる）
-      await _storage.getInApp(false);
-      int totalMb = _storage.inappTotalMb;
+      await mystorage.getInApp(false);
+      int totalMb = mystorage.inappTotalMb;
       for (int i = 0; i < 500; i++) {
         if (env.in_save_mb.val > totalMb) break;
         print('-- removeLast totalMb=${totalMb} delCount=${_deletedCount}');
-        int byte = _storage.inappFiles.last.byte;
-        await File(_storage.inappFiles.last.path).delete();
-        _storage.inappFiles.removeLast();
+        int byte = mystorage.inappFiles.last.byte;
+        await File(mystorage.inappFiles.last.path).delete();
+        mystorage.inappFiles.removeLast();
         totalMb -= (byte / 1024 / 1024).toInt();
         _deletedCount++;
       }
@@ -843,13 +876,13 @@ class CameraScreen extends BaseScreen with WidgetsBindingObserver {
             backgroundColor: Colors.black26,
             shape: const CircleBorder(
               side: BorderSide(
-                color: COL_SS_TEXT,
+                color: COL_TEXT,
                 width: 1,
                 style: BorderStyle.solid,
               ),
             ),
           ),
-          child: Text(text, style: TextStyle(fontSize: 16, color: COL_SS_TEXT), textAlign: TextAlign.center),
+          child: Text(text, style: TextStyle(fontSize: 16, color: COL_TEXT), textAlign: TextAlign.center),
           onPressed: onPressed,
         ),
       ),

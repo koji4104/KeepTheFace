@@ -31,8 +31,8 @@ class PhotoListScreen extends BaseScreen {
   int _sizemb = 0;
   int selectedIndex = 0;
 
-  MyStorage _storage = new MyStorage();
-  late GoogleDriveAdapter gdriveAd;
+  late MyStorageNotifier mystorage;
+  //late GoogleDriveAdapter gdriveAd;
 
   @override
   Future init() async {
@@ -53,7 +53,8 @@ class PhotoListScreen extends BaseScreen {
       _crossAxisCount = 3;
 
     bool bSelectMode = ref.watch(photolistProvider).data.isSelectMode;
-    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
+    //this.gdriveAd = ref.watch(gdriveProvider).gdrive;
+    this.mystorage = ref.watch(myStorageProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -175,10 +176,10 @@ class PhotoListScreen extends BaseScreen {
         _sizemb = 1;
       } else {
         // In-app data
-        await _storage.getInApp(true);
-        fileList = _storage.inappFiles;
+        await mystorage.getInApp(true);
+        fileList = mystorage.inappFiles;
         _photocount = fileList.length;
-        _sizemb = _storage.inappTotalMb;
+        _sizemb = mystorage.inappTotalMb;
 
         // thumb
         final Directory appdir = await getApplicationDocumentsDirectory();
@@ -269,7 +270,7 @@ class PhotoListScreen extends BaseScreen {
                       Navigator.of(context).pop();
                     },
                   ),
-                  if (gdriveAd.isSignedIn())
+                  if (mystorage.gdriveAd.isSignedIn())
                     MyTextButton(
                       title: l10n('save_gdrive'),
                       onPressed: () {
@@ -299,13 +300,13 @@ class PhotoListScreen extends BaseScreen {
       if (mode == 1) {
         // 写真アプリ
         for (MyFile f in list) {
-          if (f.path.contains('.jpg') || f.path.contains('.mp4')) await _storage.saveLibrary(f.path);
+          if (f.path.contains('.jpg') || f.path.contains('.mp4')) await mystorage.saveLibrary(f.path);
           await new Future.delayed(new Duration(milliseconds: 100));
         }
         showSnackBar('Save completed (${list.length} files)');
       } else if (mode == 2) {
         // ファイルアプリ
-        String errmsg = await _storage.saveFolder(list);
+        String errmsg = await mystorage.saveFolder(list);
         if (errmsg == '') {
           showSnackBar('Save completed (${list.length} files)');
         } else {
@@ -314,7 +315,7 @@ class PhotoListScreen extends BaseScreen {
       } else if (mode == 4) {
         // Google Drive
         for (MyFile f in list) {
-          bool r = await gdriveAd.uploadFile(f.path);
+          bool r = await mystorage.uploadKeepFile(f.path, basename(f.path));
           if (r == false) break;
           await new Future.delayed(new Duration(milliseconds: 100));
         }
@@ -411,7 +412,6 @@ class MyCard extends ConsumerWidget {
         }
       }
       ref.read(myCardScreenProvider).notifyListeners();
-      //}
     }
   }
 

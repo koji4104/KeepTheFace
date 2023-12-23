@@ -9,6 +9,8 @@ import '/controllers/gdrive_adapter.dart';
 import 'package:document_file_save_plus/document_file_save_plus.dart';
 import '/constants.dart';
 import 'dart:typed_data'; // Uint8List
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter/material.dart';
 
 class MyFile {
   String path = '';
@@ -19,7 +21,11 @@ class MyFile {
   bool isLibrary = false;
 }
 
-class MyStorage {
+final myStorageProvider = ChangeNotifierProvider((ref) => MyStorageNotifier(ref));
+
+class MyStorageNotifier extends ChangeNotifier {
+  MyStorageNotifier(ref) {}
+
   GoogleDriveAdapter gdriveAd = GoogleDriveAdapter();
   List<MyFile> inappFiles = [];
   List<MyFile> gdriveFiles = [];
@@ -127,18 +133,32 @@ class MyStorage {
     return errmsg;
   }
 
+  bool _needToInitGetGdrive = true;
+  Future InitGetGdrive() async {
+    if (_needToInitGetGdrive) getGdrive();
+    _needToInitGetGdrive = false;
+  }
+
   Future getGdrive() async {
     final dt1 = DateTime.now();
 
     gdriveFiles.clear();
     gdriveTotalMb = -1;
-    if (gdriveAd.isSignedIn() == false) await gdriveAd.loginSilently();
-    if (gdriveAd.isSignedIn() == false) return;
+    if (gdriveAd.isSignedIn() == false) {
+      print('-- gdriveAd.loginSilently()');
+      await gdriveAd.loginSilently();
+    }
+    if (gdriveAd.isSignedIn() == false) {
+      print('-- err gdriveAd.isSignedIn() == false -> return');
+      return;
+    }
 
-    await gdriveAd.getFiles();
-    if (gdriveAd.gfilelist != null) {
+    await gdriveAd.getKeepFiles();
+    await gdriveAd.getTempFiles();
+    /*
+    if (gdriveAd.gaFiles.length > 0) {
       int totalBytes = 0;
-      for (ga.File f in gdriveAd.gfilelist!.files!) {
+      for (ga.File f in gdriveAd.gaFiles) {
         MyFile data = MyFile();
         data.path = f.id!;
         data.name = f.name!;
@@ -147,23 +167,19 @@ class MyStorage {
         gdriveFiles.add(data);
       }
       gdriveTotalMb = (totalBytes / 1024 / 1024).toInt();
+      if (gdriveTotalMb == 0 && totalBytes > 0) gdriveTotalMb = 1;
     }
-
+*/
     print('-- getGdrive() gdriveFiles=${gdriveFiles.length}'
         ' msec=${DateTime.now().difference(dt1).inMilliseconds}');
   }
 
-  Future<bool> saveGdrive(String path) async {
-    bool r = false;
-    try {
-      if (gdriveAd.isSignedIn() == true) {
-        r = await gdriveAd.uploadFile(path);
-      } else {
-        print('-- warn google not signed in');
-      }
-    } on Exception catch (e) {
-      print('-- err saveGdrive=${e.toString()}');
-    }
-    return r;
+  Future<bool> uploadKeepFile(String path, String name) async {
+    return await gdriveAd.uploadKeepFile(path, name);
+  }
+
+  Future<bool> uploadTempFile(String path, String name, int mb) async {
+    await gdriveAd.deleteOldTempFile(mb);
+    return await gdriveAd.uploadTempFile(path, name);
   }
 }

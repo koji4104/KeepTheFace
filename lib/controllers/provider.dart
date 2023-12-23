@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '/controllers/gdrive_adapter.dart';
 
-final gdriveProvider = ChangeNotifierProvider((ref) => gdriveNotifier(ref));
+//final gdriveProvider = ChangeNotifierProvider((ref) => gdriveNotifier(ref));
 
 class gdriveNotifier extends ChangeNotifier {
   GoogleDriveAdapter gdrive = GoogleDriveAdapter();
@@ -26,7 +26,7 @@ class gdriveNotifier extends ChangeNotifier {
   }
 
   Future getFiles() async {
-    gdrive.getFiles().then((_) {
+    gdrive.getTempFiles().then((_) {
       this.notifyListeners();
     });
   }

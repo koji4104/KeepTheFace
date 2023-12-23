@@ -12,10 +12,13 @@ import 'purchase_screen.dart';
 import '/controllers/provider.dart';
 import '/constants.dart';
 import '/commons/widgets.dart';
+import 'package:googleapis/drive/v3.dart' as ga;
+import '/controllers/mystorage.dart';
 
 /// Settings
 class SettingsScreen extends BaseSettingsScreen {
-  late GoogleDriveAdapter gdriveAd;
+  //late GoogleDriveAdapter gdriveAd;
+  late MyStorageNotifier mystorage;
 
   @override
   Future init() async {}
@@ -23,7 +26,9 @@ class SettingsScreen extends BaseSettingsScreen {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
-    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
+    //this.gdriveAd = ref.watch(gdriveProvider).gdrive;
+    this.mystorage = ref.watch(myStorageProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n("settings_title")),
@@ -60,12 +65,13 @@ class SettingsScreen extends BaseSettingsScreen {
   Widget getList() {
     bool pre = env.isPremium();
     int ex = env.ex_storage_type.val; // 0=none 1=Google
+    mystorage.InitGetGdrive();
     String gd = '--';
-    if (gdriveAd.isInitialized == false)
+    if (mystorage.gdriveAd.isInitialized == false)
       gd = '--';
-    else if (gdriveAd.isSignedIn())
+    else if (mystorage.gdriveAd.isSignedIn())
       gd = 'ON';
-    else if (gdriveAd.isSignedIn() == false) gd = 'OFF';
+    else if (mystorage.gdriveAd.isSignedIn() == false) gd = 'OFF';
     bool isImage = env.take_mode == 1;
     bool isAudio = env.take_mode == 2;
     bool isVideo = env.take_mode == 4;
@@ -80,7 +86,7 @@ class SettingsScreen extends BaseSettingsScreen {
         MyValue(data: env.screensaver_mode),
         MyValue(data: env.timer_mode),
         MyValue(data: env.timer_stop_sec),
-        MyValue(data: env.timer_start_hour),
+        //MyValue(data: env.timer_start_hour),
         MyListTile(
           title: MyText('Prefix'),
           title2: MyText(env.file_prefix),
@@ -94,19 +100,21 @@ class SettingsScreen extends BaseSettingsScreen {
             }
           },
         ),
-        MyListTile(
-          title: MyText(l10n('ex_storage_type')),
-          title2: MyText(gd),
-          onPressed: () {
-            if (is2screen()) {
-              this.rightScreen = GoogleDriveScreen();
-              this.rightScreen!.baseProvider = baseProvider;
-              this.rightScreen!.build(context, ref);
-            } else {
-              NavigatorPush(GoogleDriveScreen());
-            }
-          },
-        ),
+        MyValue(data: env.ex_storage_type),
+        if (env.ex_storage_type.val == 1)
+          MyListTile(
+            title: MyText(l10n('GoogleDrive')),
+            title2: MyText(gd),
+            onPressed: () {
+              if (is2screen()) {
+                this.rightScreen = GoogleDriveScreen();
+                this.rightScreen!.baseProvider = baseProvider;
+                this.rightScreen!.build(context, ref);
+              } else {
+                NavigatorPush(GoogleDriveScreen());
+              }
+            },
+          ),
         if (IS_PREMIUM) MyLabel(''),
         if (IS_PREMIUM) MyLabel('Premium'),
         if (IS_PREMIUM)
@@ -204,81 +212,110 @@ class PremiumScreen extends BaseSettingsScreen {
 
 /// GoogleDrive
 class GoogleDriveScreen extends BaseSettingsScreen {
-  GoogleDriveAdapter? gdriveAd;
-  bool bInit = false;
+  //GoogleDriveAdapter? refGdriveAd;
+  bool bGdriveRead = true;
+  bool showKeepFileList = false;
+  bool showTempFileList = false;
+  late MyStorageNotifier mystorage;
 
   @override
   Future init() async {}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    subBuild(context, ref);
+    super.build(context, ref);
+    //this.refGdriveAd = ref.watch(gdriveProvider).gdrive;
+    this.mystorage = ref.watch(myStorageProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n('Google Drive')),
         backgroundColor: Color(0xFF000000),
       ),
-      body: Container(
-        margin: edge.settingsEdge,
-        child: getList(),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(8),
+        child: Container(
+          margin: edge.settingsEdge,
+          child: getList(),
+        ),
       ),
     );
   }
 
-  @override
   void subBuild(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
-    this.gdriveAd = ref.watch(gdriveProvider).gdrive;
-    if (bInit == false && gdriveAd != null && gdriveAd!.isInitialized) {
-      ref.watch(gdriveProvider).getFiles();
-    }
+    //this.refGdriveAd = ref.watch(gdriveProvider).gdrive;
+    //if (bInit == false && refGdriveAd != null && refGdriveAd!.isInitialized) {
+    //  ref.watch(gdriveProvider).getFiles();
+    //}
   }
 
   @override
   Widget getList() {
-    if (gdriveAd == null || gdriveAd!.isInitialized == false) {
+    if (mystorage.gdriveAd.isInitialized == false) {
       return Center(
-        child: SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(),
-        ),
+        child: SizedBox(width: 32, height: 32, child: CircularProgressIndicator()),
       );
     } else {
       return Column(children: [
         MyLabel(''),
         MyGoogleTile(),
         SizedBox(height: 4),
-        if (gdriveAd!.isSignedIn() == false)
+        if (mystorage.gdriveAd.isSignedIn() == false)
           MyTextButton(
             width: 220,
             title: l10n('google_login'),
             onPressed: () {
-              ref.watch(gdriveProvider).loginWithGoogle();
+              ref.watch(myStorageProvider).gdriveAd.loginWithGoogle();
             },
           ),
-        if (gdriveAd!.isSignedIn())
+        if (mystorage.gdriveAd.isSignedIn())
           MyTextButton(
             width: 220,
             title: l10n('google_logout'),
             onPressed: () {
-              ref.watch(gdriveProvider).logout();
+              ref.watch(myStorageProvider).gdriveAd.logout();
             },
           ),
         MyLabel(l10n('gdrive_note')),
-        if (gdriveAd!.loginerr != '') MyListTile(title: MyText(gdriveAd!.loginerr), title2: Text(''), textonly: true),
+        if (mystorage.gdriveAd.loginerr != '')
+          MyListTile(title: MyText(mystorage.gdriveAd.loginerr), title2: Text(''), textonly: true),
+        if (mystorage.gdriveAd.isSignedIn())
+          MyTextButton(
+            width: 160,
+            title: l10n('Keep'),
+            onPressed: () {
+              showKeepFileList = !showKeepFileList;
+              showTempFileList = false;
+              redraw();
+            },
+          ),
+        if (showKeepFileList) getFileList(context),
+        if (mystorage.gdriveAd.isSignedIn())
+          MyTextButton(
+            width: 160,
+            title: l10n('Keep'),
+            onPressed: () {
+              showTempFileList = false;
+              showTempFileList = !showTempFileList;
+              redraw();
+            },
+          ),
+        if (showTempFileList) getFileList(context),
       ]);
     }
   }
 
   Widget MyGoogleTile() {
     String txt = "";
-    if (gdriveAd!.isSignedIn() == false) {
+    if (mystorage.gdriveAd.isSignedIn() == false) {
       txt = l10n('not_login');
     } else {
-      txt += gdriveAd!.getAccountName();
-      txt += "\n" + gdriveAd!.getFileMb().toString() + " mb";
-      txt += "\n" + gdriveAd!.getFileCount().toString() + " pcs";
+      txt += mystorage.gdriveAd.getAccountName();
+      txt += "\nKeep ${mystorage.gdriveAd.getKeepFileMb()} mb";
+      txt += " ${mystorage.gdriveAd.getKeepFileCount()} pcs";
+      txt += "\nTemp ${mystorage.gdriveAd.getTempFileMb()} mb";
+      txt += " ${mystorage.gdriveAd.getTempFileCount()} pcs";
     }
     return Container(
       width: 210,
@@ -288,6 +325,40 @@ class GoogleDriveScreen extends BaseSettingsScreen {
         child: Text(txt, style: TextStyle(fontSize: 14), textAlign: TextAlign.center),
       ),
     );
+  }
+
+  Widget getFileList(BuildContext context) {
+    if (mystorage.gdriveAd.isInitialized == false) {
+      return Container();
+    } else {
+      String txt = "";
+      if (showKeepFileList) {
+        for (ga.File f in mystorage.gdriveAd.gaKeepFiles) {
+          txt += f.name ?? "";
+          txt += "\n";
+        }
+      } else if (showTempFileList) {
+        for (ga.File f in mystorage.gdriveAd.gaTempFiles) {
+          txt += f.name ?? "";
+          txt += "\n";
+        }
+      }
+
+      return Container(
+        width: MediaQuery.of(context).size.width - 20,
+        height: MediaQuery.of(context).size.height - 120,
+        decoration: BoxDecoration(
+          color: Color(0xFF404040),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Text(txt, style: TextStyle(fontSize: 13)),
+        //child: SingleChildScrollView(
+        //  scrollDirection: Axis.vertical,
+        //  padding: EdgeInsets.fromLTRB(8, 8, 8, 8),
+        //  child: Text(txt, style: TextStyle(fontSize: 13)),
+        //),
+      );
+    }
   }
 }
 

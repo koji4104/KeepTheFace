@@ -33,9 +33,11 @@ class Localized {
       'ex_save_mb_desc': 'If the external storage limit is exceeded, data will not be saved. Please delete it.',
       'in_save_mb': 'In-App max size',
       'in_save_mb_desc': 'Old data will be deleted when in-app data exceeds the max size.',
-      'autostop_sec': 'Automatic stop',
-      'autostop_sec_desc':
+      'timer_mode': 'Automatic stop',
+      'timer_mode_desc':
           'Automatically stop shooting. It will stop when the remaining battery level is 10% or less. Stop when the app goes to background.',
+      'timer_stop_sec': 'Autostop sec',
+      'timer_stop_sec_desc': 'Autostop sec',
       'image_camera_height': 'Photo camera size',
       'image_camera_height_desc': 'Select the camera size for the photo.',
       'video_camera_height': 'Video camera size',
@@ -78,12 +80,14 @@ Even if saving to external storage fails, it will be saved to in-app data.
       'image_interval_sec_desc': '写真の撮影間隔を選んでください。',
       'ex_storage_type': '外部ストレージ',
       'ex_storage_type_desc': '外部ストレージ',
-      'ex_save_mb': '外部ストレージ最大容量',
-      'ex_save_mb_desc': '外部ストレージが最大容量を超えると保存されません。手動で削除してください。',
+      'ex_save_mb': '外部ストレージ一時容量',
+      'ex_save_mb_desc': '一時フォルダ(Temp)が容量を超えると古いものが削除されます。',
       'in_save_mb': 'アプリ内データ最大容量',
-      'in_save_mb_desc': 'アプリ内データが最大容量を超えると古いものから削除します。',
-      'autostop_sec': '自動停止',
-      'autostop_sec_desc': '自動的に撮影を停止します。バッテリー残量10%以下で停止します。アプリがバックグラウンドになると停止します。',
+      'in_save_mb_desc': 'アプリ内データが最大容量を超えると古いものが削除されます。',
+      'timer_mode': '自動停止',
+      'timer_mode_desc': '自動的に撮影を停止します。バッテリー残量10%以下で停止します。アプリがバックグラウンドになると停止します。',
+      'timer_stop_sec': '自動停止時間',
+      'timer_stop_sec_desc': '自動停止時間',
       'image_camera_height': '写真のカメラサイズ',
       'image_camera_height_desc': '写真のカメラのサイズを選んでください。',
       'video_camera_height': 'ビデオのカメラサイズ',
@@ -111,9 +115,8 @@ Even if saving to external storage fails, it will be saved to in-app data.
       'google_login': 'Googleにログイン',
       'google_logout': 'Googleにログアウト',
       'gdrive_note': '''
-外部ストレージが ON になっている場合は、外部ストレージとアプリ内データの両方に保存されます。
-外部ストレージ最大容量（変更可）を超えた場合は保存されません。お手数ですが手動で削除してください。
-外部ストレージに保存が失敗した場合でもアプリ内データには保存されます。
+外部ストレージが ON のとき外部ストレージとアプリ内データの両方に保存されます。
+外部ストレージに保存がしてもアプリ内データには保存されます。
 ''',
     },
   };

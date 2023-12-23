@@ -48,8 +48,8 @@ class Environment {
   /// Image interval seconds
   EnvData image_interval_sec = EnvData(
     val: 300,
-    vals: IS_TEST ? [10, 300] : [60, 300, 1800],
-    keys: IS_TEST ? ['10 sec', '5 min'] : ['1 min', '5 min', '30 min'],
+    vals: IS_TEST ? [15, 300] : [60, 300, 1800],
+    keys: IS_TEST ? ['15 sec', '5 min'] : ['1 min', '5 min', '30 min'],
     name: 'image_interval_sec',
   );
 
@@ -77,10 +77,11 @@ class Environment {
     name: 'screensaver_mode',
   );
 
+  /// 'Nonstop', 'AutoStop', 'SpecifiedTime'
   EnvData timer_mode = EnvData(
     val: 0,
-    vals: [0, 1, 2],
-    keys: ['Nonstop', 'AutoStop', 'SpecifiedTime'],
+    vals: [0, 1],
+    keys: ['Nonstop', 'AutoStop'],
     name: 'timer_mode',
   );
 
@@ -88,7 +89,9 @@ class Environment {
   EnvData timer_stop_sec = EnvData(
     val: 3600,
     vals: IS_TEST ? [120, 3600] : [1800, 3600, 7200, 14400, 43200, 86400],
-    keys: IS_TEST ? ['2 min', '1 hour'] : ['30 min', '1 hour', '2 hour', '4 hour', '12 hour', '24 hour'],
+    keys: IS_TEST
+        ? ['2 min', '1 hour']
+        : ['30 min', '1 hour', '2 hour', '4 hour', '12 hour', '24 hour'],
     name: 'timer_stop_sec',
   );
 
@@ -110,9 +113,8 @@ class Environment {
 
   EnvData video_camera_height = EnvData(
     val: 480,
-    vals: [240, 480, 720],
-    keys:
-        kIsWeb == false && Platform.isAndroid ? ['320X240', '720x480', '1280x720'] : ['352x288', '640x480', '1280x720'],
+    vals: [240, 480],
+    keys: kIsWeb == false && Platform.isAndroid ? ['320X240', '720x480'] : ['352x288', '640x480'],
     name: 'video_camera_height',
   );
 
@@ -141,8 +143,8 @@ class Environment {
 
   EnvData ex_save_mb = EnvData(
     val: 1000,
-    vals: IS_TEST ? [100, 1000] : [500, 1000, 2000, 4000, 8000],
-    keys: IS_TEST ? ['100 mb', '1000 mb'] : ['500 mb', '1 gb', '2 gb', '4 gb', '8 gb'],
+    vals: IS_TEST ? [100, 1000] : [500, 1000, 2000],
+    keys: IS_TEST ? ['100 mb', '1000 mb'] : ['500 mb', '1 gb', '2 gb'],
     name: 'ex_save_mb',
   );
 
@@ -307,10 +309,10 @@ class environmentNotifier extends ChangeNotifier {
       case 'ex_storage_type':
         ret = env.ex_storage_type;
         break;
-      case 'in_image_save_mb':
+      case 'in_save_mb':
         ret = env.in_save_mb;
         break;
-      case 'ex_image_save_mb':
+      case 'ex_save_mb':
         ret = env.ex_save_mb;
         break;
     }
